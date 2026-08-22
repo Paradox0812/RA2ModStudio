@@ -1,0 +1,75 @@
+<Window x:Class="RA2IniEditor.IDE.Views.SavePreflight.SavePreflightConfirmationDialog"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="SavePreflight.Dialog"
+        Title="保存前检查"
+        Width="500"
+        MinWidth="500"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource UiCanvasBrush}">
+    <Border Style="{StaticResource IdeAssistDialogRootStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Style="{StaticResource IdeAssistTitleTextStyle}"
+                       Text="保存前发现可能问题" />
+            <TextBlock Grid.Row="1"
+                       Margin="0,5,0,0"
+                       Style="{StaticResource IdeAssistMetadataTextStyle}"
+                       Text="请确认诊断摘要，再决定是否继续写入磁盘。" />
+
+            <Border Grid.Row="2"
+                    AutomationProperties.AutomationId="SavePreflight.WarningBand"
+                    Margin="0,14,0,0"
+                    Style="{StaticResource IdeAssistWarningBandStyle}">
+                <StackPanel>
+                    <TextBlock x:Name="SummaryTextBlock"
+                               AutomationProperties.AutomationId="SavePreflight.SummaryText"
+                               Style="{StaticResource IdeAssistBodyTextStyle}"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="DetailTextBlock"
+                               Margin="0,8,0,0"
+                               Style="{StaticResource IdeAssistMutedTextStyle}"
+                               TextWrapping="Wrap" />
+                    <Border Margin="0,10,0,0" Style="{StaticResource IdeAssistDialogCardStyle}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource IdeAssistMutedTextStyle}"
+                                       Text="这些诊断提示不会阻止保存。详细问题已显示在“问题”面板中。"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,6,0,0"
+                                       Style="{StaticResource IdeAssistMutedTextStyle}"
+                                       Text="你可以继续保存，也可以取消并返回编辑；取消后当前修改不会丢失。"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="3" Style="{StaticResource IdeAssistDialogFooterStyle}">
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button AutomationProperties.AutomationId="SavePreflight.ContinueButton"
+                            AutomationProperties.Name="继续保存"
+                            MinWidth="86"
+                            Click="ContinueButton_OnClick"
+                            Content="继续保存"
+                            Style="{StaticResource IdeAssistAccentButtonStyle}" />
+                    <Button AutomationProperties.AutomationId="SavePreflight.CancelButton"
+                            AutomationProperties.Name="取消，返回编辑"
+                            MinWidth="112"
+                            Margin="8,0,0,0"
+                            Click="CancelButton_OnClick"
+                            Content="取消，返回编辑"
+                            Style="{StaticResource IdeAssistCommandButtonStyle}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

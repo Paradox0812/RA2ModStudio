@@ -1,0 +1,38 @@
+.vs/
+bin/
+obj/
+TestResults/
+artifacts/
+.coverage/
+coverage/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+*.vsidx
+*.DotSettings.user
+
+# Logs
+Logs/
+**/Logs/
+*.log
+
+# publish / package outputs
+publish/
+**/publish/
+*.nupkg
+*.snupkg
+*.zip
+*.7z
+*.rar
+
+# temp / backup
+*.tmp
+*.cache
+*.bak
+*.orig
+*_wpftmp*
+
+# optional local IDE metadata
+.ra2ide/local/

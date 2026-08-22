@@ -1,0 +1,707 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework">
+    <!-- M1C resources are keyed and remain dormant until explicit Shell/Search adoption in M1D. -->
+    <ItemsPanelTemplate x:Key="UiTabItemsPanel">
+        <StackPanel IsItemsHost="True" Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+
+    <Style x:Key="UiTabControlStyle" TargetType="{x:Type TabControl}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource UiBorderThickness}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+        <Setter Property="ItemsPanel" Value="{StaticResource UiTabItemsPanel}" />
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource UiTabItemStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabControl}">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0"
+                                MinHeight="{DynamicResource UiDocumentTabHeight}"
+                                Background="{DynamicResource UiSurfaceSubtleBrush}"
+                                BorderBrush="{DynamicResource UiBorderBrush}"
+                                BorderThickness="0,0,0,1">
+                            <ItemsPresenter x:Name="TabHeaderItemsPresenter"
+                                            KeyboardNavigation.DirectionalNavigation="Cycle"
+                                            KeyboardNavigation.TabIndex="1" />
+                        </Border>
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource UiSurfaceBrush}"
+                                BorderBrush="{DynamicResource UiBorderBrush}"
+                                BorderThickness="{DynamicResource UiBorderThickness}">
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              Margin="{TemplateBinding Padding}"
+                                              ContentSource="SelectedContent"
+                                              ContentStringFormat="{TemplateBinding SelectedContentStringFormat}"
+                                              ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiTabItemStyle" TargetType="{x:Type TabItem}">
+        <Setter Property="MinHeight" Value="{StaticResource UiDocumentTabHeight}" />
+        <Setter Property="MinWidth" Value="72" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,0,0,2" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource UiFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Border x:Name="TabBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="TabHeaderPresenter"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          ContentSource="Header"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+                            <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextDisabledBrush}" />
+                            <Setter Property="Opacity" Value="0.72" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiTreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
+        <Setter Property="MinHeight" Value="{StaticResource UiTreeRowHeight}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="ItemContainerStyle" Value="{DynamicResource UiTreeViewItemStyle}" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ToggleButton x:Name="ExpanderToggle"
+                                      Grid.Row="0"
+                                      Grid.Column="0"
+                                      Width="16"
+                                      Height="{DynamicResource UiTreeRowHeight}"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      Focusable="False"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                    <Border Background="Transparent">
+                                        <Path x:Name="TreeArrow"
+                                              Width="5"
+                                              Height="8"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Data="M 0 0 L 4 4 L 0 8"
+                                              Stroke="{DynamicResource UiTextSecondaryBrush}"
+                                              StrokeThickness="1.2" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="TreeArrow" Property="Data" Value="M 0 0 L 4 4 L 8 0" />
+                                            <Setter TargetName="TreeArrow" Property="Width" Value="8" />
+                                            <Setter TargetName="TreeArrow" Property="Height" Value="5" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Border x:Name="TreeHeaderBorder"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                MinHeight="{DynamicResource UiTreeRowHeight}"
+                                Padding="3,1"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="2,0,0,0"
+                                CornerRadius="0">
+                            <ContentPresenter x:Name="TreeHeaderPresenter"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"
+                                              ContentSource="Header"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                        <ItemsPresenter x:Name="TreeItemsHost"
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        Visibility="Collapsed" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasItems" Value="False">
+                            <Setter TargetName="ExpanderToggle" Property="Visibility" Value="Hidden" />
+                        </Trigger>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="TreeItemsHost" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TreeHeaderBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="TreeHeaderBorder" Property="Background" Value="{DynamicResource UiSelectionBrush}" />
+                            <Setter TargetName="TreeHeaderBorder" Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True" />
+                                <Condition Property="Selector.IsSelectionActive" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="TreeHeaderBorder" Property="Background" Value="{DynamicResource UiSelectionInactiveBrush}" />
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextDisabledBrush}" />
+                            <Setter Property="Opacity" Value="0.72" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiTreeViewStyle" TargetType="{x:Type TreeView}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UiTreeViewItemStyle}" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TreeView}">
+                    <Border Background="{DynamicResource UiSurfaceBrush}"
+                            BorderBrush="{DynamicResource UiBorderBrush}"
+                            BorderThickness="0">
+                        <ScrollViewer x:Name="TreeScrollViewer"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                            <ItemsPresenter x:Name="TreeItemsPresenter" />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+        <Setter Property="MinHeight" Value="{StaticResource UiTreeRowHeight}" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="ListItemBorder"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{DynamicResource UiCornerSmall}">
+                        <ContentPresenter x:Name="ListItemContentPresenter"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          SnapsToDevicePixels="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ListItemBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ListItemBorder" Property="Background" Value="{DynamicResource UiSelectionBrush}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True" />
+                                <Condition Property="Selector.IsSelectionActive" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="ListItemBorder" Property="Background" Value="{DynamicResource UiSelectionInactiveBrush}" />
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextDisabledBrush}" />
+                            <Setter Property="Opacity" Value="0.72" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiListViewItemStyle" TargetType="{x:Type ListViewItem}">
+        <Setter Property="MinHeight" Value="{StaticResource UiTreeRowHeight}" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSelectionBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource UiTextDisabledBrush}" />
+                <Setter Property="Opacity" Value="0.72" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="UiListBoxStyle" TargetType="{x:Type ListBox}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource UiBorderThickness}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UiListBoxItemStyle}" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBox}">
+                    <Border Background="{DynamicResource UiSurfaceBrush}"
+                            BorderBrush="{DynamicResource UiBorderBrush}"
+                            BorderThickness="{DynamicResource UiBorderThickness}">
+                        <ScrollViewer x:Name="ListBoxScrollViewer"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                            <ItemsPresenter x:Name="ListBoxItemsPresenter" />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiListViewStyle" TargetType="{x:Type ListView}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource UiBorderThickness}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource UiListViewItemStyle}" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListView}">
+                    <Border Background="{DynamicResource UiSurfaceBrush}"
+                            BorderBrush="{DynamicResource UiBorderBrush}"
+                            BorderThickness="{DynamicResource UiBorderThickness}">
+                        <ScrollViewer x:Name="ListViewScrollViewer"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
+                                      Focusable="False"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}">
+                            <ItemsPresenter x:Name="ListViewItemsPresenter" />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiDataGridRowStyle" TargetType="{x:Type DataGridRow}">
+        <Setter Property="MinHeight" Value="{StaticResource UiGridRowHeight}" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSelectionBrush}" />
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsSelected" Value="True" />
+                    <Condition Property="Selector.IsSelectionActive" Value="False" />
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource UiSelectionInactiveBrush}" />
+            </MultiTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="UiDataGridCellStyle" TargetType="{x:Type DataGridCell}">
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource UiFocusVisualStyle}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <ControlTemplate x:Key="UiDataGridHeaderGripperTemplate" TargetType="{x:Type Thumb}">
+        <Border Background="Transparent"
+                SnapsToDevicePixels="True" />
+    </ControlTemplate>
+
+    <Style x:Key="UiDataGridColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+        <Setter Property="Height" Value="{StaticResource UiGridRowHeight}" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,1" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
+                    <Grid>
+                        <Border x:Name="ColumnHeaderBorder"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter x:Name="ColumnHeaderContentPresenter"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  ContentSource="Content"
+                                                  RecognizesAccessKey="True" />
+                                <Path x:Name="SortArrow"
+                                      Grid.Column="1"
+                                      Width="7"
+                                      Height="4"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Data="M 0 4 L 3.5 0 L 7 4"
+                                      Fill="{DynamicResource UiTextSecondaryBrush}"
+                                      Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+                        <Thumb x:Name="PART_LeftHeaderGripper"
+                               Width="4"
+                               HorizontalAlignment="Left"
+                               Background="Transparent"
+                               Cursor="SizeWE"
+                               Template="{StaticResource UiDataGridHeaderGripperTemplate}" />
+                        <Thumb x:Name="PART_RightHeaderGripper"
+                               Width="4"
+                               HorizontalAlignment="Right"
+                               Background="Transparent"
+                               Cursor="SizeWE"
+                               Template="{StaticResource UiDataGridHeaderGripperTemplate}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ColumnHeaderBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Ascending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Descending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="SortArrow" Property="Data" Value="M 0 0 L 3.5 4 L 7 0" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiDataGridStyle" TargetType="{x:Type DataGrid}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="{StaticResource UiBorderThickness}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFontFamily}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="RowHeaderWidth" Value="0" />
+        <Setter Property="RowStyle" Value="{StaticResource UiDataGridRowStyle}" />
+        <Setter Property="CellStyle" Value="{StaticResource UiDataGridCellStyle}" />
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource UiDataGridColumnHeaderStyle}" />
+        <Setter Property="SelectionUnit" Value="FullRow" />
+        <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="EnableRowVirtualization" Value="True" />
+        <Setter Property="EnableColumnVirtualization" Value="True" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="UiScrollBarLineButtonStyle" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border x:Name="LineButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{DynamicResource UiCornerSmall}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="LineButtonBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="LineButtonBorder" Property="Background" Value="{DynamicResource UiSurfacePressedBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiScrollBarPageButtonStyle" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border Background="{TemplateBinding Background}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="UiScrollBarThumbStyle" TargetType="{x:Type Thumb}">
+        <Setter Property="MinWidth" Value="8" />
+        <Setter Property="MinHeight" Value="8" />
+        <Setter Property="Background" Value="{DynamicResource UiTextDisabledBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Border x:Name="ThumbBorder"
+                            Margin="2"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{DynamicResource UiCornerMedium}" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource UiTextSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource UiAccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <ControlTemplate x:Key="UiVerticalScrollBarTemplate" TargetType="{x:Type ScrollBar}">
+        <Grid Width="12" Background="{DynamicResource UiSurfaceSubtleBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="12" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="12" />
+            </Grid.RowDefinitions>
+            <RepeatButton Grid.Row="0"
+                          Command="{x:Static ScrollBar.LineUpCommand}"
+                          CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                          Style="{StaticResource UiScrollBarLineButtonStyle}">
+                <Path Width="6" Height="4" Data="M 0 4 L 3 0 L 6 4" Fill="{DynamicResource UiTextSecondaryBrush}" />
+            </RepeatButton>
+            <Track x:Name="PART_Track"
+                   Grid.Row="1"
+                   IsDirectionReversed="True"
+                   Orientation="Vertical">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
+                                  Style="{StaticResource UiScrollBarPageButtonStyle}" />
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource UiScrollBarThumbStyle}" />
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
+                                  Style="{StaticResource UiScrollBarPageButtonStyle}" />
+                </Track.IncreaseRepeatButton>
+            </Track>
+            <RepeatButton Grid.Row="2"
+                          Command="{x:Static ScrollBar.LineDownCommand}"
+                          CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                          Style="{StaticResource UiScrollBarLineButtonStyle}">
+                <Path Width="6" Height="4" Data="M 0 0 L 3 4 L 6 0" Fill="{DynamicResource UiTextSecondaryBrush}" />
+            </RepeatButton>
+        </Grid>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="UiHorizontalScrollBarTemplate" TargetType="{x:Type ScrollBar}">
+        <Grid Height="12" Background="{DynamicResource UiSurfaceSubtleBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+            </Grid.ColumnDefinitions>
+            <RepeatButton Grid.Column="0"
+                          Command="{x:Static ScrollBar.LineLeftCommand}"
+                          CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                          Style="{StaticResource UiScrollBarLineButtonStyle}">
+                <Path Width="4" Height="6" Data="M 4 0 L 0 3 L 4 6" Fill="{DynamicResource UiTextSecondaryBrush}" />
+            </RepeatButton>
+            <Track x:Name="PART_Track" Grid.Column="1" Orientation="Horizontal">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="{x:Static ScrollBar.PageLeftCommand}"
+                                  Style="{StaticResource UiScrollBarPageButtonStyle}" />
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource UiScrollBarThumbStyle}" />
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="{x:Static ScrollBar.PageRightCommand}"
+                                  Style="{StaticResource UiScrollBarPageButtonStyle}" />
+                </Track.IncreaseRepeatButton>
+            </Track>
+            <RepeatButton Grid.Column="2"
+                          Command="{x:Static ScrollBar.LineRightCommand}"
+                          CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                          Style="{StaticResource UiScrollBarLineButtonStyle}">
+                <Path Width="4" Height="6" Data="M 0 0 L 4 3 L 0 6" Fill="{DynamicResource UiTextSecondaryBrush}" />
+            </RepeatButton>
+        </Grid>
+    </ControlTemplate>
+
+    <Style x:Key="UiScrollBarStyle" TargetType="{x:Type ScrollBar}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="Width" Value="12" />
+        <Setter Property="MinWidth" Value="12" />
+        <Setter Property="Template" Value="{StaticResource UiVerticalScrollBarTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="Height" Value="12" />
+                <Setter Property="MinHeight" Value="12" />
+                <Setter Property="Template" Value="{StaticResource UiHorizontalScrollBarTemplate}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="UiGridSplitterPreviewStyle" TargetType="{x:Type Control}">
+        <Setter Property="Background" Value="{DynamicResource UiAccentBrush}" />
+        <Setter Property="Opacity" Value="0.55" />
+    </Style>
+
+    <Style x:Key="UiGridSplitterStyle" TargetType="{x:Type GridSplitter}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource UiFocusVisualStyle}" />
+        <Setter Property="KeyboardIncrement" Value="8" />
+        <Setter Property="PreviewStyle" Value="{StaticResource UiGridSplitterPreviewStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type GridSplitter}">
+                    <Border x:Name="SplitterBorder"
+                            Background="{TemplateBinding Background}"
+                            SnapsToDevicePixels="True" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="SplitterBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="SplitterBorder" Property="Background" Value="{DynamicResource UiAccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="ResizeDirection" Value="Columns">
+                <Setter Property="MinWidth" Value="{StaticResource UiSplitterThickness}" />
+                <Setter Property="Cursor" Value="SizeWE" />
+            </Trigger>
+            <Trigger Property="ResizeDirection" Value="Rows">
+                <Setter Property="MinHeight" Value="{StaticResource UiSplitterThickness}" />
+                <Setter Property="Cursor" Value="SizeNS" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="UiProgressBarStyle" TargetType="{x:Type ProgressBar}">
+        <Setter Property="Height" Value="4" />
+        <Setter Property="MinWidth" Value="40" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfacePressedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiAccentBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ProgressBar}">
+                    <Grid>
+                        <Border x:Name="PART_Track"
+                                Background="{DynamicResource UiSurfacePressedBrush}"
+                                CornerRadius="{DynamicResource UiCornerMedium}" />
+                        <Border x:Name="PART_Indicator"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Stretch"
+                                Background="{DynamicResource UiAccentBrush}"
+                                CornerRadius="{DynamicResource UiCornerMedium}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="PART_Indicator" Property="HorizontalAlignment" Value="Stretch" />
+                            <Setter TargetName="PART_Indicator" Property="VerticalAlignment" Value="Bottom" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

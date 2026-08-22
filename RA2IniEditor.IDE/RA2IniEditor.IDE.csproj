@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+    <PackageReference Include="Dirkster.AvalonDock" Version="4.74.1" />
+    <ProjectReference Include="..\RA2IniEditor.Core\RA2IniEditor.Core.csproj" />
+    <ProjectReference Include="..\RA2IniEditor.Infrastructure\RA2IniEditor.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>RA2IniEditor.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\AppIcon.ico" />
+    <None Remove="Assets\AppIcon.png" />
+    <Resource Include="Assets\AppIcon.ico" />
+    <Content Include="Assets\AppIcon.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Remove="Assets\Icons\**\*.png" />
+    <Resource Include="Assets\Icons\**\*.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Docs\UserGuide_v0.5.0-preview.md" Link="README.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Docs\ReleaseNotes_v0.5.0-preview.md" Link="ReleaseNotes_v0.5.0-preview.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Docs\KnownIssues_v0.5.0-preview.md" Link="KnownIssues_v0.5.0-preview.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Docs\FieldRegistryTrustLevels.md" Link="FieldRegistryTrustLevels.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Docs\SmokeChecklist_v0.5.0-preview.md" Link="SmokeChecklist_v0.5.0-preview.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,74 @@
+<Window x:Class="RA2IniEditor.IDE.Views.DirtyNavigation.Ra2DirtyNavigationDialog"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="DirtyNavigation.Dialog"
+        Title="未保存的修改"
+        Width="420"
+        MinWidth="420"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource UiCanvasBrush}">
+    <Border Style="{StaticResource IdeAssistDialogRootStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Style="{StaticResource IdeAssistTitleTextStyle}"
+                       Text="未保存的修改" />
+            <TextBlock Grid.Row="1"
+                       Margin="0,5,0,0"
+                       Style="{StaticResource IdeAssistMetadataTextStyle}"
+                       Text="离开当前文件前请选择如何处理编辑内容。" />
+
+            <Border Grid.Row="2"
+                    AutomationProperties.AutomationId="DirtyNavigation.WarningBand"
+                    Margin="0,14,0,0"
+                    Style="{StaticResource IdeAssistWarningBandStyle}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource IdeAssistBodyTextStyle}"
+                               Text="当前文件有未保存的修改。是否先保存？"
+                               TextWrapping="Wrap" />
+                    <Border Margin="0,10,0,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource IdeAssistBadgeStyle}">
+                        <TextBlock x:Name="FilePathTextBlock"
+                                   MaxWidth="330"
+                                   Style="{StaticResource IdeAssistCodeTextStyle}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="3" Style="{StaticResource IdeAssistDialogFooterStyle}">
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button AutomationProperties.AutomationId="DirtyNavigation.SaveButton"
+                            AutomationProperties.Name="保存"
+                            MinWidth="78"
+                            Click="SaveButton_OnClick"
+                            Content="保存"
+                            Style="{StaticResource IdeAssistAccentButtonStyle}" />
+                    <Button AutomationProperties.AutomationId="DirtyNavigation.DiscardButton"
+                            AutomationProperties.Name="放弃修改"
+                            MinWidth="94"
+                            Margin="8,0,0,0"
+                            Click="DiscardButton_OnClick"
+                            Content="放弃修改"
+                            Style="{StaticResource IdeAssistCommandButtonStyle}" />
+                    <Button AutomationProperties.AutomationId="DirtyNavigation.CancelButton"
+                            AutomationProperties.Name="取消"
+                            MinWidth="78"
+                            Margin="8,0,0,0"
+                            Click="CancelButton_OnClick"
+                            Content="取消"
+                            Style="{StaticResource IdeAssistCommandButtonStyle}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

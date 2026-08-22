@@ -1,0 +1,157 @@
+<Window x:Class="RA2IniEditor.IDE.Views.FieldQuickPeek.Ra2FieldQuickPeekWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="FieldQuickPeek.Window"
+        Title="字段详情速览"
+        AllowsTransparency="True"
+        Background="Transparent"
+        KeyDown="Window_OnKeyDown"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        WindowStyle="None">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </Window.Resources>
+
+    <Border Style="{StaticResource IdeAssistPopupFrameStyle}">
+        <Grid Width="520" Style="{StaticResource IdeAssistInspectorRootStyle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Style="{StaticResource IdeAssistInspectorHeaderStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock AutomationProperties.AutomationId="FieldQuickPeek.TitleText"
+                               Margin="0,2,8,0"
+                               Style="{StaticResource IdeAssistTitleTextStyle}"
+                               Text="{Binding Title}" />
+                    <Button AutomationProperties.AutomationId="FieldQuickPeek.CloseButton"
+                            AutomationProperties.Name="关闭"
+                            Grid.Column="1"
+                            Click="CloseButton_OnClick"
+                            Style="{StaticResource IdeAssistIconButtonStyle}"
+                            ToolTip="关闭">
+                        <Path Width="9"
+                              Height="9"
+                              Data="M 0,0 L 9,9 M 9,0 L 0,9"
+                              SnapsToDevicePixels="True"
+                              Stroke="{StaticResource UiTextSecondaryBrush}"
+                              StrokeThickness="1.2" />
+                    </Button>
+                    <WrapPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="0,7,0,0">
+                        <Border Style="{StaticResource IdeAssistAccentBadgeStyle}">
+                            <TextBlock Style="{StaticResource IdeAssistBadgeTextStyle}" Text="{Binding ValueKindDisplay}" />
+                        </Border>
+                        <Border Style="{StaticResource IdeAssistBadgeStyle}">
+                            <TextBlock Style="{StaticResource IdeAssistBadgeTextStyle}" Text="{Binding SectionKindDisplay}" />
+                        </Border>
+                        <Border Style="{StaticResource IdeAssistBadgeStyle}">
+                            <TextBlock Style="{StaticResource IdeAssistBadgeTextStyle}" Text="{Binding SourceDisplay}" />
+                        </Border>
+                        <Border Style="{StaticResource IdeAssistBadgeStyle}">
+                            <TextBlock Style="{StaticResource IdeAssistBadgeTextStyle}" Text="{Binding EditorKindDisplay}" />
+                        </Border>
+                        <Border Style="{StaticResource IdeAssistBadgeStyle}">
+                            <TextBlock Style="{StaticResource IdeAssistBadgeTextStyle}" Text="{Binding TrustDisplay}" />
+                        </Border>
+                    </WrapPanel>
+                    <TextBlock Grid.Row="2"
+                               Grid.ColumnSpan="2"
+                               Margin="0,2,0,0"
+                               Style="{StaticResource IdeAssistMutedTextStyle}"
+                               Text="{Binding NotFoundMessage}"
+                               Visibility="{Binding IsNotFound, Converter={StaticResource BoolToVisibilityConverter}}" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1"
+                          MaxHeight="450"
+                          Margin="10"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <WrapPanel Margin="2,0,0,2">
+                        <TextBlock Style="{StaticResource IdeAssistMutedTextStyle}" Text="字段 " />
+                        <TextBlock Style="{StaticResource IdeAssistCodeTextStyle}" Text="{Binding Key}" />
+                        <TextBlock Margin="14,0,0,0" Style="{StaticResource IdeAssistMutedTextStyle}" Text="显示名 " />
+                        <TextBlock Style="{StaticResource IdeAssistBodyTextStyle}" Text="{Binding DisplayName}" />
+                    </WrapPanel>
+
+                    <Border Style="{StaticResource IdeAssistSectionStyle}"
+                            Visibility="{Binding HasDescription, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource IdeAssistSectionTitleStyle}" Text="说明" />
+                            <TextBlock Style="{StaticResource IdeAssistBodyTextStyle}" Text="{Binding Description}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource IdeAssistSectionStyle}"
+                            Visibility="{Binding HasTrustDetail, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource IdeAssistSectionTitleStyle}" Text="可信度" />
+                            <TextBlock Style="{StaticResource IdeAssistMutedTextStyle}" Text="{Binding TrustDetail}" />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Examples}"
+                                  Visibility="{Binding HasExamples, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <Border Style="{StaticResource IdeAssistSectionStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource IdeAssistSectionTitleStyle}" Text="示例" />
+                                        <ItemsPresenter />
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2,0,0">
+                                    <TextBlock Width="112" Style="{StaticResource IdeAssistCodeTextStyle}" Text="{Binding Value}" />
+                                    <TextBlock Margin="8,0,0,0" Style="{StaticResource IdeAssistMutedTextStyle}" Text="{Binding Description}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl ItemsSource="{Binding AllowedValues}"
+                                  Visibility="{Binding HasAllowedValues, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <ItemsControl.Template>
+                            <ControlTemplate TargetType="ItemsControl">
+                                <Border Style="{StaticResource IdeAssistSectionStyle}">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource IdeAssistSectionTitleStyle}" Text="可选值" />
+                                        <ItemsPresenter />
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2,0,0">
+                                    <TextBlock Width="112" Style="{StaticResource IdeAssistCodeTextStyle}" Text="{Binding Value}" />
+                                    <TextBlock Margin="8,0,0,0" Style="{StaticResource IdeAssistMutedTextStyle}" Text="{Binding DisplayName}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

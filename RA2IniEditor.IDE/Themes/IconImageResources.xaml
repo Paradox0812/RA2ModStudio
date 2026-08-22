@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="IconGeometryResources.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+    <!-- 3K-C icon replacement: raster BitmapImage resources keep the existing Icon.* keys stable. -->
+    <BitmapImage x:Key="Icon.FileIni" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/file_ini.png" />
+    <BitmapImage x:Key="Icon.Registry" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/registry.png" />
+    <BitmapImage x:Key="Icon.Section" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/section.png" />
+    <BitmapImage x:Key="Icon.Infantry" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/infantry.png" />
+    <BitmapImage x:Key="Icon.Vehicle" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/vehicle.png" />
+    <BitmapImage x:Key="Icon.Aircraft" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/aircraft.png" />
+    <BitmapImage x:Key="Icon.Building" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/building.png" />
+    <BitmapImage x:Key="Icon.Weapon" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/weapon.png" />
+    <BitmapImage x:Key="Icon.Warhead" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/warhead.png" />
+    <BitmapImage x:Key="Icon.Projectile" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/projectile.png" />
+    <BitmapImage x:Key="Icon.Art" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/art.png" />
+    <BitmapImage x:Key="Icon.Sound" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/sound.png" />
+    <BitmapImage x:Key="Icon.AI" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/ai.png" />
+    <BitmapImage x:Key="Icon.Country" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country.png" />
+    <BitmapImage x:Key="Icon.Country.Custom" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_custom.png" />
+    <BitmapImage x:Key="Icon.Country.Unknown" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_unknown.png" />
+    <BitmapImage x:Key="Icon.Country.Common" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_common.png" />
+    <BitmapImage x:Key="Icon.Country.Allied" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_allied.png" />
+    <BitmapImage x:Key="Icon.Country.Soviet" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_soviet.png" />
+    <BitmapImage x:Key="Icon.Country.Yuri" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/country_yuri.png" />
+    <BitmapImage x:Key="Icon.Side" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/side.png" />
+    <BitmapImage x:Key="Icon.Side.Custom" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/side_custom.png" />
+    <BitmapImage x:Key="Icon.Tab.Section" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/tab_section.png" />
+    <BitmapImage x:Key="Icon.Tab.AI" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/tab_ai.png" />
+    <BitmapImage x:Key="Icon.Action.Send" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_send.png" />
+    <BitmapImage x:Key="Icon.Action.Cancel" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_cancel.png" />
+    <BitmapImage x:Key="Icon.Action.Advanced" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_advanced.png" />
+    <BitmapImage x:Key="Icon.Action.Clear" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_clear.png" />
+    <BitmapImage x:Key="Icon.Action.AttachContext" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_attach_context.png" />
+    <BitmapImage x:Key="Icon.Action.Stop" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/action_stop.png" />
+    <BitmapImage x:Key="Icon.TeamType" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/team_type.png" />
+    <BitmapImage x:Key="Icon.TaskForce" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/task_force.png" />
+    <BitmapImage x:Key="Icon.Script" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/script.png" />
+    <BitmapImage x:Key="Icon.AITrigger" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/ai_trigger.png" />
+    <BitmapImage x:Key="Icon.Animation" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/animation.png" />
+    <BitmapImage x:Key="Icon.VoxelAnimation" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/voxel_animation.png" />
+    <BitmapImage x:Key="Icon.Particle" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/particle.png" />
+    <BitmapImage x:Key="Icon.SuperWeapon" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/superweapon.png" />
+    <BitmapImage x:Key="Icon.Terrain" UriSource="pack://application:,,,/RA2IniEditor.IDE;component/Assets/Icons/terrain.png" />
+</ResourceDictionary>

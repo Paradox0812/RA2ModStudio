@@ -1,0 +1,121 @@
+<Window x:Class="RA2IniEditor.IDE.Views.RemoteSourcePresetEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="RemoteSourcePresetEditor.Window"
+        Title="远程来源预设"
+        Width="540"
+        Height="360"
+        MinWidth="460"
+        MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="{DynamicResource UiCanvasBrush}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+    <Window.Resources>
+        <Style TargetType="TextBox" BasedOn="{StaticResource IdeFieldRegistryFormInputStyle}" />
+        <Style TargetType="CheckBox" BasedOn="{StaticResource UiCheckBoxStyle}" />
+    </Window.Resources>
+    <Border Style="{StaticResource IdeFieldRegistryRootStyle}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="94" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,8"
+                   Style="{StaticResource IdeFieldRegistryFormLabelStyle}"
+                   Text="名称" />
+        <TextBox Grid.Row="0"
+                 Grid.Column="1"
+                 AutomationProperties.AutomationId="RemoteSourcePresetEditor.NameTextBox"
+                 Margin="0,0,0,8"
+                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+        <TextBlock Grid.Row="1"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,8"
+                   Style="{StaticResource IdeFieldRegistryFormLabelStyle}"
+                   Text="URL" />
+        <TextBox Grid.Row="1"
+                 Grid.Column="1"
+                 AutomationProperties.AutomationId="RemoteSourcePresetEditor.UrlTextBox"
+                 Margin="0,0,0,8"
+                 Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}"
+                 ToolTip="{Binding Url}" />
+
+        <TextBlock Grid.Row="2"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,8"
+                   Style="{StaticResource IdeFieldRegistryFormLabelStyle}"
+                   Text="说明" />
+        <TextBox Grid.Row="2"
+                 Grid.Column="1"
+                 AutomationProperties.AutomationId="RemoteSourcePresetEditor.DescriptionTextBox"
+                 Margin="0,0,0,8"
+                 Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+
+        <TextBlock Grid.Row="3"
+                   VerticalAlignment="Center"
+                   Margin="0,0,10,8"
+                   Style="{StaticResource IdeFieldRegistryFormLabelStyle}"
+                   Text="标签" />
+        <TextBox Grid.Row="3"
+                 Grid.Column="1"
+                 AutomationProperties.AutomationId="RemoteSourcePresetEditor.TagsTextBox"
+                 Margin="0,0,0,8"
+                 Text="{Binding TagsText, UpdateSourceTrigger=PropertyChanged}" />
+
+        <CheckBox Grid.Row="4"
+                  Grid.Column="1"
+                  AutomationProperties.AutomationId="RemoteSourcePresetEditor.EnabledCheckBox"
+                  Margin="0,0,0,8"
+                  VerticalAlignment="Center"
+                  Content="启用"
+                  IsChecked="{Binding IsEnabled, UpdateSourceTrigger=PropertyChanged}" />
+
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2">
+            <TextBlock AutomationProperties.AutomationId="RemoteSourcePresetEditor.LocalPresetNotice"
+                       Style="{StaticResource IdeFieldRegistryMetadataTextStyle}"
+                       Text="此处只编辑本地远程来源预设，不会获取内容或应用字段库。"
+                       TextWrapping="Wrap" />
+            <TextBlock AutomationProperties.AutomationId="RemoteSourcePresetEditor.ValidationText"
+                       Margin="0,4,0,0"
+                       Style="{StaticResource IdeFieldRegistryMetadataTextStyle}"
+                       Text="{Binding ValidationMessage}"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="6"
+                Grid.ColumnSpan="2"
+                AutomationProperties.AutomationId="RemoteSourcePresetEditor.ActionFooter"
+                Margin="0,10,0,0"
+                Style="{StaticResource IdeFieldRegistryWriteBoundaryStyle}">
+        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="80"
+                    AutomationProperties.AutomationId="RemoteSourcePresetEditor.OkButton"
+                    Margin="0,0,8,0"
+                    Click="Accept"
+                    Content="确定"
+                    Style="{StaticResource IdeFieldRegistryR2FlatAccentButtonStyle}" />
+            <Button MinWidth="80"
+                    AutomationProperties.AutomationId="RemoteSourcePresetEditor.CancelButton"
+                    Click="Cancel"
+                    Content="取消"
+                    Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+        </StackPanel>
+        </Border>
+    </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,577 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared IDE workspace patterns. Domain-specific surfaces extend these keyed styles. -->
+    <ItemsPanelTemplate x:Key="IdeWorkspaceHorizontalItemsPanel">
+        <StackPanel Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+
+    <Style x:Key="IdeWorkspaceRootStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceCommandBarStyle" TargetType="Border">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceCommandButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource UiButtonStyle}">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="Padding" Value="7,2" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceIconButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource UiIconButtonStyle}">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Margin" Value="0,0,4,0" />
+        <Setter Property="Padding" Value="5" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceSectionTitleStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeSectionTitle}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceMetadataTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeMetadata}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceStatusBarStyle" TargetType="Border">
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceDataGridStyle"
+           TargetType="DataGrid"
+           BasedOn="{StaticResource UiDataGridStyle}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="VerticalGridLinesBrush" Value="Transparent" />
+        <Setter Property="EnableRowVirtualization" Value="True" />
+        <Setter Property="EnableColumnVirtualization" Value="True" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceLogTextBoxStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource UiTextBoxStyle}">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource UiCodeFontFamily}" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceFlatListBoxStyle"
+           TargetType="ListBox"
+           BasedOn="{StaticResource UiListBoxStyle}">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="VirtualizingStackPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingStackPanel.VirtualizationMode" Value="Recycling" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceHorizontalSelectorStyle"
+           TargetType="ListBox"
+           BasedOn="{StaticResource IdeWorkspaceFlatListBoxStyle}">
+        <Setter Property="ItemsPanel" Value="{StaticResource IdeWorkspaceHorizontalItemsPanel}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+    </Style>
+
+    <Style x:Key="IdeWorkspaceEmptyStateTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="IdeIssueSeveritySelectorStyle"
+           TargetType="ListBox"
+           BasedOn="{StaticResource IdeWorkspaceHorizontalSelectorStyle}">
+        <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="IdeIssueSeveritySelectorItemStyle" TargetType="ListBoxItem">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Margin" Value="0,0,2,0" />
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource UiFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="SelectorItemBorder"
+                            Padding="{TemplateBinding Padding}"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0,0,0,2"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="SelectorItemBorder" Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="SelectorItemBorder" Property="Background" Value="{DynamicResource UiAccentSoftBrush}" />
+                            <Setter TargetName="SelectorItemBorder" Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="SelectorItemBorder" Property="BorderBrush" Value="{DynamicResource UiFocusBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource UiTextDisabledBrush}" />
+                            <Setter Property="Opacity" Value="0.72" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <DataTemplate x:Key="IdeIssueSeverityIconTemplate">
+        <Grid Width="20"
+              Height="20"
+              AutomationProperties.Name="{Binding SeverityText}"
+              ToolTip="{Binding SeverityText}">
+            <Path Data="{DynamicResource IconGeometry.Issue.Info}"
+                  Stroke="{DynamicResource UiInfoBrush}"
+                  StrokeThickness="1.5"
+                  StrokeLineJoin="Round"
+                  Stretch="Uniform">
+                <Path.Style>
+                    <Style TargetType="Path">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SeverityText}" Value="Error">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SeverityText}" Value="Warning">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Path.Style>
+            </Path>
+            <Path Data="{DynamicResource IconGeometry.Issue.Warning}"
+                  Stroke="{DynamicResource UiWarningBrush}"
+                  StrokeThickness="1.5"
+                  StrokeLineJoin="Round"
+                  Stretch="Uniform">
+                <Path.Style>
+                    <Style TargetType="Path">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SeverityText}" Value="Warning">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Path.Style>
+            </Path>
+            <Path Data="{DynamicResource IconGeometry.Issue.Error}"
+                  Stroke="{DynamicResource UiDangerBrush}"
+                  StrokeThickness="1.5"
+                  StrokeLineJoin="Round"
+                  Stretch="Uniform">
+                <Path.Style>
+                    <Style TargetType="Path">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SeverityText}" Value="Error">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Path.Style>
+            </Path>
+        </Grid>
+    </DataTemplate>
+
+    <Style x:Key="IdeIssueDataGridStyle"
+           TargetType="DataGrid"
+           BasedOn="{StaticResource IdeWorkspaceDataGridStyle}">
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="RowHeight" Value="26" />
+        <Setter Property="ColumnHeaderHeight" Value="25" />
+        <Setter Property="SelectionMode" Value="Single" />
+        <Setter Property="SelectionUnit" Value="FullRow" />
+    </Style>
+
+    <Style x:Key="IdeIssueSearchTextBoxStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource UiTextBoxStyle}">
+        <Setter Property="MinHeight" Value="26" />
+        <Setter Property="Padding" Value="7,2" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+    </Style>
+
+    <!-- AI workspace: a flat IDE conversation surface rather than nested form cards. -->
+    <Style x:Key="IdeAiWorkspaceRootStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiHeaderStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource IdeWorkspaceCommandBarStyle}">
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="Padding" Value="8,4" />
+    </Style>
+
+    <Style x:Key="IdeAiContextStripStyle" TargetType="Border">
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiContextTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource IdeWorkspaceMetadataTextStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="None" />
+        <Setter Property="LineHeight" Value="16" />
+    </Style>
+
+    <Style x:Key="IdeAiR2CompactContextTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="LineHeight" Value="16" />
+    </Style>
+
+    <Style x:Key="IdeAiChatViewportStyle" TargetType="Border">
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="IdeAiAssistantMessageStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,0,12,6" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+        <Setter Property="BorderThickness" Value="2,0,0,0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiUserMessageStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource IdeAiAssistantMessageStyle}">
+        <Setter Property="Margin" Value="20,0,0,6" />
+        <Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiAccentHoverBrush}" />
+    </Style>
+
+    <Style x:Key="IdeAiErrorMessageStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource IdeAiAssistantMessageStyle}">
+        <Setter Property="Background" Value="{DynamicResource UiDangerSoftBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDangerBrush}" />
+    </Style>
+
+    <Style x:Key="IdeAiMessageTextStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource UiFontSizeDefault}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight" Value="18" />
+    </Style>
+
+    <Style x:Key="IdeAiMetadataTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource IdeWorkspaceMetadataTextStyle}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="None" />
+    </Style>
+
+    <Style x:Key="IdeAiComposerStyle" TargetType="Border">
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceSubtleBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiComposerInputStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource UiTextBoxStyle}">
+        <Setter Property="MinHeight" Value="58" />
+        <Setter Property="MaxHeight" Value="112" />
+        <Setter Property="Padding" Value="7,5" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+    </Style>
+
+    <Style x:Key="IdeAiAdvancedOptionsStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,5,0,0" />
+        <Setter Property="Padding" Value="7,5" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+    </Style>
+
+    <!-- Copilot-style composer variants are additive so the accepted M3 AI styles remain frozen. -->
+    <Style x:Key="IdeAiCopilotComposerSurfaceStyle" TargetType="Border">
+        <Setter Property="Margin" Value="6,4,6,0" />
+        <Setter Property="Padding" Value="6,5" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource UiBorderThickness}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource UiCornerSmall}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <ControlTemplate x:Key="IdeAiComposerIconButtonTemplate" TargetType="Button">
+        <Border x:Name="Chrome"
+                Padding="{TemplateBinding Padding}"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{DynamicResource UiCornerSmall}"
+                SnapsToDevicePixels="True">
+            <ContentPresenter HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+        </Border>
+    </ControlTemplate>
+
+    <Style x:Key="IdeAiComposerAdvancedButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Width" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Height" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="MinHeight" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{DynamicResource UiCornerSmall}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceSelectedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IdeAiComposerSendButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Height" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="MinHeight" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="Background" Value="{DynamicResource UiAccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template" Value="{StaticResource IdeAiComposerIconButtonTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiAccentHoverBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource UiAccentHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiAccentPressedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource UiAccentPressedBrush}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource UiTextPrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IdeAiComposerCancelButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Height" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="MinHeight" Value="{DynamicResource UiControlHeightCompact}" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextPrimaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template" Value="{StaticResource IdeAiComposerIconButtonTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource UiSurfaceSelectedBrush}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IdeAiCopilotAdvancedOptionsStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="IdeAiCopilotConfigurationStatusStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource UiFontSizeMetadata}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="None" />
+    </Style>
+
+    <Style x:Key="IdeAiCopilotSafetyTextStyle" TargetType="TextBlock">
+        <Setter Property="Margin" Value="8,3,8,0" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="IdeAiR2SafetyTextStyle" TargetType="TextBlock">
+        <Setter Property="Margin" Value="8,3,8,4" />
+        <Setter Property="Foreground" Value="{DynamicResource UiTextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="None" />
+    </Style>
+
+    <Style x:Key="IdeAiMarkdownHeadingStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource IdeAiMessageTextStyle}">
+        <Setter Property="Margin" Value="0,7,0,2" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="IdeAiMarkdownParagraphStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource IdeAiMessageTextStyle}">
+        <Setter Property="Margin" Value="0,2,0,4" />
+    </Style>
+
+    <Style x:Key="IdeAiMarkdownTableStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,6" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiMarkdownTableCellStyle" TargetType="Border">
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeAiCodeBlockStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,6" />
+        <Setter Property="Padding" Value="7,6" />
+        <Setter Property="Background" Value="{DynamicResource UiCodeSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource UiCornerSmall}" />
+    </Style>
+
+    <Style x:Key="IdeAiReadOnlyCodeTextStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource IdeWorkspaceLogTextBoxStyle}">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="IdeAiPlainTextFallbackStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource IdeWorkspaceLogTextBoxStyle}">
+        <Setter Property="MaxHeight" Value="320" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource UiFontFamily}" />
+    </Style>
+
+    <Style x:Key="IdeAiInlineCodeStyle" TargetType="Run">
+        <Setter Property="Background" Value="{DynamicResource UiSelectionInactiveBrush}" />
+        <Setter Property="FontFamily" Value="{DynamicResource UiCodeFontFamily}" />
+    </Style>
+
+    <!-- Runtime Hover visuals consume the same tokens as static workspace surfaces. -->
+    <Style x:Key="IdeHoverCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="9,6" />
+        <Setter Property="CornerRadius" Value="{StaticResource UiCornerSmall}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style x:Key="IdeHoverCodePillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource UiCodeSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource UiCornerSmall}" />
+        <Setter Property="Padding" Value="4,1" />
+    </Style>
+</ResourceDictionary>

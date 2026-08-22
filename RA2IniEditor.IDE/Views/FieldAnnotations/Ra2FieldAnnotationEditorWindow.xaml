@@ -1,0 +1,143 @@
+<Window x:Class="RA2IniEditor.IDE.Views.FieldAnnotations.Ra2FieldAnnotationEditorWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Title="字段注释编辑"
+        Width="640"
+        Height="520"
+        MinWidth="520"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource UiCanvasBrush}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        mc:Ignorable="d">
+    <Window.Resources>
+        <Style TargetType="Button" BasedOn="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+        <Style TargetType="TextBox" BasedOn="{StaticResource IdeFieldRegistryFormInputStyle}" />
+    </Window.Resources>
+    <Border Style="{StaticResource IdeFieldRegistryRootStyle}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                AutomationProperties.AutomationId="FieldAnnotationEditor.Inspector"
+                Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+        <StackPanel>
+            <TextBlock FontSize="16"
+                       FontWeight="SemiBold"
+                       Text="{Binding Key}" />
+            <TextBlock Margin="0,4,0,0"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding SectionKindDisplayName}" />
+            <TextBlock Margin="0,4,0,0"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding FieldDescription}"
+                       TextWrapping="Wrap" />
+            <TextBlock Margin="0,8,0,0"
+                       FontSize="11"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding AnnotationPath}"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding FieldTypeDisplay, StringFormat=字段类型：{0}}" />
+            <TextBlock Grid.Column="1"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding FieldSourceDisplay, StringFormat=字段来源：{0}}" />
+        </Grid>
+
+        <Border Grid.Row="2"
+                AutomationProperties.AutomationId="FieldAnnotationEditor.Form"
+                Margin="0,12,0,0"
+                Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="中文显示名" />
+            <TextBox Grid.Row="1"
+                     Margin="0,4,0,12"
+                     AutomationProperties.AutomationId="FieldAnnotationEditor.DisplayNameTextBox"
+                     Text="{Binding DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="2" Text="别名（用逗号或分号分隔）" />
+            <TextBox Grid.Row="3"
+                     Margin="0,4,0,12"
+                     AutomationProperties.AutomationId="FieldAnnotationEditor.AliasesTextBox"
+                     Text="{Binding AliasesText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="4" Text="备注" />
+            <TextBox Grid.Row="5"
+                     Margin="0,4,0,0"
+                     AcceptsReturn="True"
+                     AutomationProperties.AutomationId="FieldAnnotationEditor.NoteTextBox"
+                     Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" />
+        </Grid>
+        </Border>
+
+        <Border Grid.Row="3"
+                AutomationProperties.AutomationId="FieldAnnotationEditor.ActionFooter"
+                Margin="0,12,0,0"
+                Style="{StaticResource IdeFieldRegistryWriteBoundaryStyle}">
+        <DockPanel>
+            <TextBlock VerticalAlignment="Center"
+                       DockPanel.Dock="Left"
+                       Foreground="{DynamicResource UiTextSecondaryBrush}"
+                       Text="{Binding StatusText}"
+                       TextWrapping="Wrap" />
+            <StackPanel DockPanel.Dock="Right"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button MinWidth="100"
+                        Margin="0,0,8,0"
+                        AutomationProperties.AutomationId="FieldAnnotationEditor.CreateLibraryButton"
+                        Click="CreateLibraryButton_OnClick"
+                        Content="创建注释库"
+                        IsEnabled="{Binding CanSave}" />
+                <Button MinWidth="88"
+                        Margin="0,0,8,0"
+                        AutomationProperties.AutomationId="FieldAnnotationEditor.CloseButton"
+                        Click="CloseButton_OnClick"
+                        Content="取消" />
+                <Button MinWidth="88"
+                        Margin="0,0,8,0"
+                        AutomationProperties.AutomationId="FieldAnnotationEditor.ApplyButton"
+                        Click="ApplyButton_OnClick"
+                        Content="应用"
+                        IsEnabled="{Binding CanSave}" />
+                <Button MinWidth="118"
+                        AutomationProperties.AutomationId="FieldAnnotationEditor.SaveAndCloseButton"
+                        Click="SaveAndCloseButton_OnClick"
+                        Content="保存并关闭"
+                        IsEnabled="{Binding CanSave}"
+                        Style="{StaticResource IdeFieldRegistryR2FlatAccentButtonStyle}" />
+            </StackPanel>
+        </DockPanel>
+        </Border>
+    </Grid>
+    </Border>
+</Window>

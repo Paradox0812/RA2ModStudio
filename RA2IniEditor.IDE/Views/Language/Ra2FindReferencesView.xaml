@@ -1,0 +1,60 @@
+<UserControl x:Class="RA2IniEditor.IDE.Views.Language.Ra2FindReferencesView"
+             x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             AutomationProperties.AutomationId="Ra2FindReferences.View"
+             Background="{StaticResource UiSurfaceBrush}">
+    <Border Style="{StaticResource IdeAssistToolWindowRootStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border AutomationProperties.AutomationId="Ra2FindReferences.Header"
+                    Style="{StaticResource IdeAssistToolWindowHeaderStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center"
+                               Style="{StaticResource IdeAssistMetadataTextStyle}"
+                               Text="当前符号" />
+                    <Border Grid.Column="1"
+                            Margin="8,0,0,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource IdeAssistAccentBadgeStyle}">
+                        <TextBlock AutomationProperties.AutomationId="Ra2FindReferences.TargetText"
+                                   MaxWidth="320"
+                                   Style="{StaticResource IdeAssistBadgeTextStyle}"
+                                   Text="{Binding Target}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <DataGrid x:Name="ReferencesGrid"
+                      Grid.Row="1"
+                      AutomationProperties.AutomationId="Ra2FindReferences.ReferencesGrid"
+                      ItemsSource="{Binding References}"
+                      MouseDoubleClick="ReferencesGrid_OnMouseDoubleClick"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      Style="{StaticResource IdeAssistDataGridStyle}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Width="2*" Binding="{Binding Section}" Header="所在 Section" />
+                    <DataGridTextColumn Width="*" Binding="{Binding Key}" Header="字段" />
+                    <DataGridTextColumn Width="*" Binding="{Binding Value}" Header="值" />
+                    <DataGridTextColumn Width="72" Binding="{Binding LineText}" Header="行" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Border Grid.Row="2" Style="{StaticResource IdeAssistStatusBarStyle}">
+                <TextBlock AutomationProperties.AutomationId="Ra2FindReferences.StatusText"
+                           Style="{StaticResource IdeAssistMetadataTextStyle}"
+                           Text="{Binding StatusText}" />
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

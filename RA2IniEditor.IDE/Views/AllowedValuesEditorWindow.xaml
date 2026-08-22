@@ -1,0 +1,151 @@
+<Window x:Class="RA2IniEditor.IDE.Views.AllowedValuesEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        AutomationProperties.AutomationId="AllowedValuesEditor.Window"
+        Title="编辑可选值"
+        WindowStyle="None"
+        Width="840"
+        Height="560"
+        MinWidth="660"
+        MinHeight="440"
+        ResizeMode="CanResize"
+        Background="{DynamicResource UiCanvasBrush}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="52"
+            ResizeBorderThickness="6"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="AllowedValuesEditorChromeCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource UiIconButtonStyle}">
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- Compatibility aliases remain scoped to this dialog while rendering through R2. -->
+        <Style x:Key="IdeFieldRegistryDataGridStyle"
+               TargetType="DataGrid"
+               BasedOn="{StaticResource IdeFieldRegistryR2DataGridStyle}" />
+        <Style x:Key="IdeFieldRegistryCommandButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+    </Window.Resources>
+
+    <Border Style="{StaticResource IdeFieldRegistryRootStyle}">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid AutomationProperties.AutomationId="AllowedValuesEditor.CustomChrome">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,0,10">
+                <TextBlock x:Name="TitleTextBlock"
+                           AutomationProperties.AutomationId="AllowedValuesEditor.ChromeTitle"
+                           Style="{StaticResource IdeAssistTitleTextStyle}" TextWrapping="Wrap" />
+                <TextBlock Margin="0,6,0,0"
+                           Style="{StaticResource IdeAssistMutedTextStyle}"
+                           Text="整理 enum/list 的可补全值。确认后只回写当前预览行；真正写入字段库仍需回到应用计划。" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    AutomationProperties.AutomationId="AllowedValuesEditor.CloseButton"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Top"
+                    ToolTip="关闭可选值编辑器"
+                    Click="CloseButton_OnClick"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                    Style="{StaticResource AllowedValuesEditorChromeCloseButtonStyle}">
+                <Path Width="16" Height="16" Data="{StaticResource IconGeometry.Action.Cancel}" Fill="Transparent" Stroke="{DynamicResource UiTextPrimaryBrush}" StrokeThickness="1.2" Stretch="Uniform" />
+            </Button>
+        </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+            <DataGrid x:Name="AllowedValuesGrid"
+                      AutomationProperties.AutomationId="AllowedValuesEditor.Grid"
+                      Style="{StaticResource IdeFieldRegistryR2DataGridStyle}"
+                      CanUserAddRows="True"
+                      CanUserDeleteRows="True"
+                      IsReadOnly="False"
+                      ItemsSource="{Binding Rows}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Width="180"
+                                        Binding="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                        Header="值" />
+                    <DataGridTextColumn Width="180"
+                                        Binding="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}"
+                                        Header="显示名" />
+                    <DataGridTextColumn Width="*"
+                                        Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                        Header="说明" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,8,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <WrapPanel AutomationProperties.AutomationId="AllowedValuesEditor.Toolbar">
+                <WrapPanel AutomationProperties.AutomationId="AllowedValuesEditor.RowCommands">
+                    <Button MinWidth="92"
+                            AutomationProperties.AutomationId="AllowedValuesEditor.AddButton"
+                            Margin="0,0,6,4"
+                            Click="AddRow"
+                            Content="添加可选值"
+                            Style="{StaticResource IdeFieldRegistryR2FlatAccentButtonStyle}" />
+                    <Button MinWidth="92"
+                            AutomationProperties.AutomationId="AllowedValuesEditor.RemoveButton"
+                            Margin="0,0,10,4"
+                            Click="RemoveSelectedRow"
+                            Content="删除选中项"
+                            IsEnabled="{Binding SelectedItem, ElementName=AllowedValuesGrid}"
+                            Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+                </WrapPanel>
+                <WrapPanel AutomationProperties.AutomationId="AllowedValuesEditor.NormalizationCommands">
+                    <Button MinWidth="64" AutomationProperties.AutomationId="AllowedValuesEditor.DedupeButton" Margin="0,0,6,4" Click="DedupeRows" Content="去重" Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+                    <Button MinWidth="64" AutomationProperties.AutomationId="AllowedValuesEditor.SortButton" Margin="0,0,6,4" Click="SortRows" Content="排序" Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+                    <Button MinWidth="116" AutomationProperties.AutomationId="AllowedValuesEditor.AppendBuiltInButton" Margin="0,0,6,4" Click="AppendBuiltInValues" Content="追加内置缺失项" Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+                    <Button MinWidth="96" AutomationProperties.AutomationId="AllowedValuesEditor.RestoreScannedButton" Margin="0,0,0,4" Click="RestoreScannedValues" Content="恢复扫描值" Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+                </WrapPanel>
+            </WrapPanel>
+            <TextBlock Grid.Row="1"
+                       AutomationProperties.AutomationId="AllowedValuesEditor.ValidationSummary"
+                       Margin="0,3,0,0"
+                       Style="{StaticResource IdeFieldRegistryMetadataTextStyle}"
+                       Text="更改只返回当前字段草稿；最终写入仍由字段学习或字段编辑器确认。"
+                       TextWrapping="Wrap" />
+            <StackPanel Grid.Row="2"
+                        AutomationProperties.AutomationId="AllowedValuesEditor.ActionFooter"
+                        Margin="0,6,0,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button MinWidth="80"
+                        AutomationProperties.AutomationId="AllowedValuesEditor.OkButton"
+                        Margin="0,0,8,0"
+                        Click="Accept"
+                        Content="确定"
+                        Style="{StaticResource IdeFieldRegistryR2FlatAccentButtonStyle}" />
+                <Button MinWidth="80"
+                        AutomationProperties.AutomationId="AllowedValuesEditor.CancelButton"
+                        Click="Cancel"
+                        Content="取消"
+                        Style="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+    </Border>
+</Window>

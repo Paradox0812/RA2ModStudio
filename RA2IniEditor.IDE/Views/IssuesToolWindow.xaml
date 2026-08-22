@@ -1,0 +1,102 @@
+<Window x:Class="RA2IniEditor.IDE.Views.IssuesToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="问题"
+        Width="960"
+        Height="540"
+        MinWidth="760"
+        MinHeight="420"
+        Background="{StaticResource ShellBackgroundBrush}"
+        AutomationProperties.AutomationId="Issues.Window">
+    <Border Style="{StaticResource IdeWorkspaceRootStyle}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Style="{StaticResource IdeWorkspaceCommandBarStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left"
+                               Style="{StaticResource IdeWorkspaceSectionTitleStyle}"
+                               Text="{Binding IssuesTitle}" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Width="14" Height="14" Data="{DynamicResource IconGeometry.Issue.Error}" Stroke="{DynamicResource UiDangerBrush}" StrokeThickness="1.4" Stretch="Uniform" />
+                        <TextBlock Margin="4,0,12,0" AutomationProperties.AutomationId="Issues.Count.Error" Text="{Binding Issues.ErrorCount}" VerticalAlignment="Center" />
+                        <Path Width="14" Height="14" Data="{DynamicResource IconGeometry.Issue.Warning}" Stroke="{DynamicResource UiWarningBrush}" StrokeThickness="1.4" Stretch="Uniform" />
+                        <TextBlock Margin="4,0,12,0" AutomationProperties.AutomationId="Issues.Count.Warning" Text="{Binding Issues.WarningCount}" VerticalAlignment="Center" />
+                        <Path Width="14" Height="14" Data="{DynamicResource IconGeometry.Issue.Info}" Stroke="{DynamicResource UiInfoBrush}" StrokeThickness="1.4" Stretch="Uniform" />
+                        <TextBlock Margin="4,0,0,0" AutomationProperties.AutomationId="Issues.Count.Info" Text="{Binding Issues.InfoCount}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="1" Style="{StaticResource IdeWorkspaceCommandBarStyle}">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button AutomationProperties.AutomationId="Issues.ClearFiltersButton" Click="ClearIssueFilters" Content="清除筛选" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" />
+                        <Button AutomationProperties.AutomationId="Issues.RefreshCurrentFileButton" Click="RefreshCurrentFileDiagnostics" Content="刷新当前" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" />
+                        <Button AutomationProperties.AutomationId="Issues.RunFullDiagnosticsButton" Click="RunManualFullDiagnostics" Content="全量诊断" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" />
+                        <Button AutomationProperties.AutomationId="Issues.ClearButton" Click="ClearIssues" Content="清空" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox Width="96"
+                                  Margin="0,0,6,0"
+                                  AutomationProperties.AutomationId="Issues.SeverityFilterComboBox"
+                                  ItemsSource="{Binding Issues.SeverityFilterOptions}"
+                                  SelectedItem="{Binding Issues.SelectedSeverityFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                  Style="{StaticResource UiComboBoxStyle}" />
+                        <TextBox Width="140"
+                                 Margin="0,0,6,0"
+                                 AutomationProperties.AutomationId="Issues.SourceFilterTextBox"
+                                 Style="{StaticResource IdeIssueSearchTextBoxStyle}"
+                                 Text="{Binding Issues.SourceFilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="按来源或文件名筛选" />
+                        <TextBox MinWidth="180"
+                                 AutomationProperties.AutomationId="Issues.SearchTextBox"
+                                 Style="{StaticResource IdeIssueSearchTextBoxStyle}"
+                                 Text="{Binding Issues.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="搜索代码、消息、位置或 Section" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <DataGrid x:Name="IssuesGrid"
+                      Grid.Row="2"
+                      AutomationProperties.AutomationId="Issues.Grid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding Issues.Items}"
+                      MouseDoubleClick="IssuesGrid_OnMouseDoubleClick"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      SelectedItem="{Binding Issues.SelectedIssue, Mode=TwoWay}"
+                      Style="{StaticResource IdeIssueDataGridStyle}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="36" Header="" CellTemplate="{StaticResource IdeIssueSeverityIconTemplate}" />
+                    <DataGridTextColumn Width="120" Binding="{Binding LocationText}" Header="位置" />
+                    <DataGridTextColumn Width="110" Binding="{Binding Code}" Header="代码" />
+                    <DataGridTemplateColumn Width="*" Header="消息">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Message}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Message}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Width="150" Binding="{Binding SourceText}" Header="来源" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Border Grid.Row="3" Style="{StaticResource IdeWorkspaceStatusBarStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Style="{StaticResource IdeWorkspaceMetadataTextStyle}" Text="{Binding Issues.StatusText}" />
+                    <TextBlock DockPanel.Dock="Right" Style="{StaticResource IdeWorkspaceMetadataTextStyle}" Text="{Binding Issues.CountText}" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

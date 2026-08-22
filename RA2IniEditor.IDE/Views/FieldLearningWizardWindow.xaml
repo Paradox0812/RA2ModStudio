@@ -1,0 +1,215 @@
+<Window x:Class="RA2IniEditor.IDE.Views.FieldLearningWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        AutomationProperties.AutomationId="FieldLearningWizard.Window"
+        Title="{Binding LearningWindowTitle}"
+        WindowStyle="None"
+        Width="1180"
+        Height="720"
+        MinWidth="820"
+        MinHeight="620"
+        ResizeMode="CanResize"
+        Background="{DynamicResource UiCanvasBrush}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="52"
+            ResizeBorderThickness="6"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <Style x:Key="FieldLearningWizardChromeCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource UiIconButtonStyle}">
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="FieldLearningWizardStepChipStyle" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Padding" Value="7,4" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="BorderBrush" Value="{DynamicResource UiDividerBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style x:Key="IdeFieldRegistryDataGridStyle"
+               TargetType="DataGrid"
+               BasedOn="{StaticResource IdeFieldRegistryR2DataGridStyle}" />
+        <Style x:Key="IdeFieldRegistryCommandButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+        <Style x:Key="IdeFieldRegistryAccentButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource IdeFieldRegistryR2FlatAccentButtonStyle}" />
+    </Window.Resources>
+
+    <Border AutomationProperties.AutomationId="FieldLearningWizard.CustomChrome" Style="{StaticResource IdeFieldRegistryRootStyle}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" AutomationProperties.AutomationId="FieldLearningWizard.HeaderArea" Margin="0,0,0,10">
+            <TextBlock AutomationProperties.AutomationId="FieldLearningWizard.ChromeTitle" Style="{StaticResource IdeAssistTitleTextStyle}" TextWrapping="Wrap" Text="字段学习" />
+            <TextBlock Margin="0,6,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="从当前 INI 或粘贴文本生成字段草稿。确认前不会写入字段库；应用时仍走预览、确认和备份流程。" TextWrapping="Wrap" />
+            <TextBlock Margin="0,6,0,0" AutomationProperties.AutomationId="FieldLearningWizard.LearningSourceText" FontWeight="SemiBold" Foreground="{StaticResource ShellPrimaryTextBrush}" Text="{Binding LearningSourceSummaryText}" ToolTip="{Binding SourceName}" />
+            <WrapPanel Margin="0,12,0,0">
+                <Button MinWidth="112" AutomationProperties.AutomationId="FieldLearningWizard.UseCurrentIniButton" Margin="0,0,8,6" Padding="12,5" Click="UseCurrentIni" Content="使用当前 INI" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" ToolTip="从当前编辑器文本生成字段草稿" />
+                <Button MinWidth="112" AutomationProperties.AutomationId="FieldLearningWizard.ParsePastedTextButton" Margin="0,0,8,6" Padding="12,5" Click="ParsePastedText" Content="解析粘贴文本" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" ToolTip="解析下方粘贴的字段说明或 INI 片段" />
+            </WrapPanel>
+        </StackPanel>
+            <Button Grid.Column="1"
+                    AutomationProperties.AutomationId="FieldLearningWizard.CloseButton"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Top"
+                    Content="&#x00D7;"
+                    Click="CloseButton_OnClick"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                    Style="{StaticResource FieldLearningWizardChromeCloseButtonStyle}" />
+        </Grid>
+        <WrapPanel Grid.Row="1" AutomationProperties.AutomationId="FieldLearningWizard.WorkflowStepStrip" Margin="0,8,0,0">
+            <Border Style="{StaticResource FieldLearningWizardStepChipStyle}"><TextBlock FontWeight="SemiBold" Foreground="{DynamicResource UiAccentBrush}" Text="1  来源" /></Border>
+            <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="›" />
+            <Border Style="{StaticResource FieldLearningWizardStepChipStyle}"><TextBlock Text="2  审阅" /></Border>
+            <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="›" />
+            <Border Style="{StaticResource FieldLearningWizardStepChipStyle}"><TextBlock Text="3  计划" /></Border>
+            <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="›" />
+            <Border Style="{StaticResource FieldLearningWizardStepChipStyle}"><TextBlock Text="4  确认 / 结果" /></Border>
+        </WrapPanel>
+        <Border Grid.Row="2" AutomationProperties.AutomationId="FieldLearningWizard.SourceSection" Margin="0,8,0,0" Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="来源名称" />
+                    <TextBox Width="240" DockPanel.Dock="Left" AutomationProperties.AutomationId="FieldLearningWizard.SourceNameTextBox" Text="{Binding SourceName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource IdeFieldRegistryFormInputStyle}" />
+                    <TextBlock AutomationProperties.AutomationId="FieldLearningWizard.SourceSummary" Margin="12,3,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding CurrentIniHarvestStatusText}" TextWrapping="Wrap" />
+                </DockPanel>
+                <Border Grid.Row="1" AutomationProperties.AutomationId="FieldLearningWizard.SourceScrollHost" Margin="0,8,0,0" MaxHeight="130">
+                    <TextBox AutomationProperties.AutomationId="FieldLearningWizard.RawTextBox" MinHeight="96" AcceptsReturn="True" AcceptsTab="True" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Text="{Binding RawText, UpdateSourceTrigger=PropertyChanged}" TextWrapping="NoWrap" Style="{StaticResource IdeFieldRegistryCodeTextBoxStyle}" />
+                </Border>
+            </Grid>
+        </Border>
+        <Border Grid.Row="3" AutomationProperties.AutomationId="FieldLearningWizard.ApplyTargetSection" Margin="0,8,0,0" Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <WrapPanel>
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,12,6" FontWeight="SemiBold" Foreground="{StaticResource ShellPrimaryTextBrush}" Text="应用目标" />
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,6,6" Foreground="{StaticResource ShellMutedTextBrush}" Text="目标" />
+                    <ComboBox Width="150" AutomationProperties.AutomationId="FieldLearningWizard.TargetScopeComboBox" Margin="0,0,12,6" DisplayMemberPath="DisplayName" ItemsSource="{Binding TargetScopeOptions}" SelectedValue="{Binding SelectedTargetScope, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Value" Style="{StaticResource IdeFieldRegistryFormComboBoxStyle}" />
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,6,6" Foreground="{StaticResource ShellMutedTextBrush}" Text="模式" />
+                    <ComboBox Width="150" AutomationProperties.AutomationId="FieldLearningWizard.ApplyModeComboBox" Margin="0,0,12,6" DisplayMemberPath="DisplayName" ItemsSource="{Binding ApplyModeOptions}" SelectedValue="{Binding SelectedApplyMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Value" Style="{StaticResource IdeFieldRegistryFormComboBoxStyle}" />
+                </WrapPanel>
+                <StackPanel Grid.Row="1" AutomationProperties.AutomationId="FieldLearningWizard.TargetModeSummary" Margin="0,6,0,0">
+                    <TextBlock Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding TargetFilePreviewText}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,3,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding ApplySummaryText}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,3,0,0" AutomationProperties.AutomationId="FieldLearningWizard.GeneralizationApplySummaryText" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding GeneralizationApplySummaryText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,3,0,0" AutomationProperties.AutomationId="FieldLearningWizard.GeneralizationWarningSummaryText" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding GeneralizationWarningSummaryText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,3,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding ApplyDisabledReason}" TextWrapping="Wrap" />
+                    <TextBlock Margin="0,3,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding ApplyStatusText}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Grid.Row="4" AutomationProperties.AutomationId="FieldLearningWizard.ReviewScrollHost" Margin="0,10,0,0" MaxHeight="260">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+            <TextBlock AutomationProperties.AutomationId="FieldLearningWizard.EmptyReviewState" Foreground="{StaticResource ShellMutedTextBrush}" Text="预览区保留字段草稿、差异、验证问题和应用计划；空表格不会触发写入。" TextWrapping="Wrap" />
+        <TabControl Grid.Row="1" AutomationProperties.AutomationId="FieldLearningWizard.MainTabs" Margin="0,6,0,0" ItemContainerStyle="{StaticResource IdeFieldRegistryTabItemStyle}" Style="{StaticResource IdeFieldRegistryTabControlStyle}">
+            <TabItem AutomationProperties.AutomationId="FieldLearningWizard.CurrentIniDraftsTab" Header="字段草稿">
+                <DataGrid Style="{StaticResource IdeFieldRegistryDataGridStyle}" AutomationProperties.AutomationId="FieldLearningWizard.CurrentIniDraftsGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" ItemsSource="{Binding CurrentIniDraftRows}">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Width="64" Binding="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="使用" />
+                        <DataGridTextColumn Width="150" Binding="{Binding Key}" Header="Key" IsReadOnly="True" />
+                        <DataGridTextColumn Width="110" Binding="{Binding SectionKind}" Header="Section" IsReadOnly="True" />
+                        <DataGridTextColumn Width="110" Binding="{Binding EditorKind}" Header="字段类型" IsReadOnly="True" />
+                        <DataGridTextColumn Width="110" Binding="{Binding ValueKind}" Header="值类型" IsReadOnly="True" />
+                        <DataGridTextColumn Width="80" Binding="{Binding OccurrenceCount}" Header="次数" IsReadOnly="True" />
+                        <DataGridTextColumn Width="180" Binding="{Binding SampleValueSummary}" Header="样例" IsReadOnly="True" />
+                        <DataGridTextColumn Width="220" Binding="{Binding AllowedValuesText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Header="允许值" />
+                        <DataGridTemplateColumn Width="82" Header="编辑"><DataGridTemplateColumn.CellTemplate><DataTemplate><Button MinWidth="56" Padding="6,2" AutomationProperties.AutomationId="FieldLearningWizard.EditAllowedValuesButton" Click="EditAllowedValues" Content="编辑值" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+                        <DataGridTextColumn Width="*" Binding="{Binding IssueSummary}" Header="问题" IsReadOnly="True" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem AutomationProperties.AutomationId="FieldLearningWizard.PreviewDiffTab" Header="预览差异"><DataGrid Style="{StaticResource IdeFieldRegistryDataGridStyle}" AutomationProperties.AutomationId="FieldLearningWizard.PreviewDiffGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" ItemsSource="{Binding DiffRows}"><DataGrid.Columns><DataGridTextColumn Width="90" Binding="{Binding Kind}" Header="类型" /><DataGridTextColumn Width="150" Binding="{Binding Key}" Header="Key" /><DataGridTextColumn Width="110" Binding="{Binding AppliesTo}" Header="Section" /><DataGridTextColumn Width="120" Binding="{Binding ExistingScope}" Header="已有来源" /><DataGridTextColumn Width="120" Binding="{Binding PreviewEditorKind}" Header="草稿类型" /><DataGridTextColumn Width="*" Binding="{Binding Message}" Header="说明" /></DataGrid.Columns></DataGrid></TabItem>
+            <TabItem AutomationProperties.AutomationId="FieldLearningWizard.ValidationIssuesTab" Header="验证问题">
+                <DataGrid Style="{StaticResource IdeFieldRegistryDataGridStyle}"
+                          AutomationProperties.AutomationId="FieldLearningWizard.ValidationIssuesGrid"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          ItemsSource="{Binding Issues}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="104" Header="级别">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Width="13"
+                                              Height="13"
+                                              Margin="0,0,6,0"
+                                              Fill="Transparent"
+                                              StrokeThickness="1.2"
+                                              Stretch="Uniform">
+                                            <Path.Style>
+                                                <Style TargetType="Path">
+                                                    <Setter Property="Data" Value="{StaticResource IconGeometry.Issue.Info}" />
+                                                    <Setter Property="Stroke" Value="{DynamicResource UiInfoBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Error">
+                                                            <Setter Property="Data" Value="{StaticResource IconGeometry.Issue.Error}" />
+                                                            <Setter Property="Stroke" Value="{DynamicResource UiDangerBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                            <Setter Property="Data" Value="{StaticResource IconGeometry.Issue.Warning}" />
+                                                            <Setter Property="Stroke" Value="{DynamicResource UiWarningBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Path.Style>
+                                        </Path>
+                                        <TextBlock Text="{Binding Severity}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Width="140" Binding="{Binding Key}" Header="Key" />
+                        <DataGridTextColumn Width="90" Binding="{Binding LineNumber}" Header="行" />
+                        <DataGridTextColumn Width="*" Binding="{Binding Message}" Header="消息" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem AutomationProperties.AutomationId="FieldLearningWizard.ApplyPlanTab" Header="应用计划"><DataGrid Style="{StaticResource IdeFieldRegistryDataGridStyle}" AutomationProperties.AutomationId="FieldLearningWizard.ApplyPlanGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True" ItemsSource="{Binding ApplyPlanItems}"><DataGrid.Columns><DataGridTextColumn Width="90" Binding="{Binding Operation}" Header="操作" /><DataGridTextColumn Width="150" Binding="{Binding Key}" Header="Key" /><DataGridTextColumn Width="110" Binding="{Binding AppliesTo}" Header="Section" /><DataGridTextColumn Width="120" Binding="{Binding TargetScope}" Header="目标" /><DataGridTextColumn Width="120" Binding="{Binding ExistingScope}" Header="已有来源" /><DataGridTextColumn Width="*" Binding="{Binding Message}" Header="说明" /></DataGrid.Columns></DataGrid></TabItem>
+        </TabControl>
+        </Grid>
+        </Border>
+        <Border Grid.Row="5" AutomationProperties.AutomationId="FieldLearningWizard.ApplyBoundaryPanel" Margin="0,10,0,0" Style="{StaticResource IdeFieldRegistryWriteBoundaryStyle}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock FontWeight="SemiBold" Foreground="{StaticResource ShellPrimaryTextBrush}" Text="应用边界" />
+                    <TextBlock Margin="0,4,16,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="构建应用计划只生成预览；应用会在确认后写入字段库并保留备份流程。" TextWrapping="Wrap" />
+                </StackPanel>
+                <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                    <Button MinWidth="112" AutomationProperties.AutomationId="FieldLearningWizard.BuildApplyPlanButton" Margin="0,0,8,6" Padding="12,5" Click="BuildApplyPlan" Content="构建应用计划" IsEnabled="{Binding CanBuildApplyPlan}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" ToolTip="根据当前预览结果构建写入计划" />
+                    <Button MinWidth="88" AutomationProperties.AutomationId="FieldLearningWizard.ApplyButton" Margin="0,0,0,6" Padding="12,5" Click="ApplyCurrentPlan" Content="应用" IsEnabled="{Binding CanApply}" Style="{StaticResource IdeFieldRegistryAccentButtonStyle}" ToolTip="确认后写入本地字段库" />
+                </WrapPanel>
+            </DockPanel>
+        </Border>
+        <TextBlock Grid.Row="6" AutomationProperties.AutomationId="FieldLearningWizard.StatusText" Margin="0,10,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding StatusText}" TextWrapping="Wrap" />
+    </Grid>
+    </Border>
+</Window>

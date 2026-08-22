@@ -1,0 +1,176 @@
+<Window x:Class="RA2IniEditor.IDE.Views.FieldEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        AutomationProperties.AutomationId="FieldEditor.Window"
+        Title="编辑字段"
+        WindowStyle="None"
+        Width="960"
+        Height="720"
+        MinWidth="760"
+        MinHeight="620"
+        ResizeMode="CanResize"
+        Background="{DynamicResource UiCanvasBrush}"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome
+            CaptionHeight="52"
+            ResizeBorderThickness="6"
+            CornerRadius="0"
+            GlassFrameThickness="0"
+            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <Style x:Key="FieldEditorChromeCloseButtonStyle" TargetType="Button" BasedOn="{StaticResource UiIconButtonStyle}">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource IdeFieldRegistryFormInputStyle}" />
+        <Style TargetType="ComboBox" BasedOn="{StaticResource IdeFieldRegistryFormComboBoxStyle}" />
+        <Style x:Key="IdeFieldRegistryDataGridStyle"
+               TargetType="DataGrid"
+               BasedOn="{StaticResource IdeFieldRegistryR2DataGridStyle}" />
+        <Style x:Key="IdeFieldRegistryCommandButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource IdeFieldRegistryR2FlatCommandButtonStyle}" />
+    </Window.Resources>
+    <Border AutomationProperties.AutomationId="FieldEditor.CustomChrome" Style="{StaticResource IdeFieldRegistryRootStyle}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" AutomationProperties.AutomationId="FieldEditor.HeaderArea" Margin="0,0,0,10">
+                <TextBlock AutomationProperties.AutomationId="FieldEditor.ChromeTitle" Style="{StaticResource IdeAssistTitleTextStyle}" TextWrapping="Wrap" Text="编辑字段" />
+                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="查看和整理单个字段的适用对象、值类型、说明与可选值。请先生成保存预览，确认后再写入字段库。" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    AutomationProperties.AutomationId="FieldEditor.CloseButton"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Top"
+                    ToolTip="关闭字段编辑器"
+                    Click="CloseButton_OnClick"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                    Style="{StaticResource FieldEditorChromeCloseButtonStyle}">
+                <Path Width="14" Height="14" Data="{StaticResource IconGeometry.Action.Cancel}" Fill="Transparent" Stroke="{DynamicResource UiTextPrimaryBrush}" StrokeThickness="1.2" Stretch="Uniform" />
+            </Button>
+        </Grid>
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,10,0,0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border x:Name="MetadataColumn"
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="FieldEditor.BasicSection"
+                        Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10" FontWeight="SemiBold" Foreground="{StaticResource ShellPrimaryTextBrush}" Text="基本信息" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="字段名" />
+                        <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.KeyTextBox" Margin="0,0,0,8" Padding="6,4" Text="{Binding Key, UpdateSourceTrigger=PropertyChanged}" ToolTip="INI 等号左侧的字段名，例如 Armor、Primary、Prerequisite。" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="适用对象类型" />
+                        <ComboBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.SectionKindComboBox" Margin="0,0,0,8" ItemsSource="{Binding SectionKindOptions}" SelectedItem="{Binding SectionKind, UpdateSourceTrigger=PropertyChanged}" ToolTip="字段适用的对象分类。Unknown 表示通用或暂未分类字段。" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="编辑器类型" />
+                        <ComboBox Grid.Row="3" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.EditorKindComboBox" Margin="0,0,0,8" ItemsSource="{Binding EditorKindOptions}" SelectedItem="{Binding EditorKind, UpdateSourceTrigger=PropertyChanged}" ToolTip="决定字段更适合文本、开关、枚举或多选编辑。" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="值类型" />
+                        <ComboBox Grid.Row="4" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.ValueKindComboBox" Margin="0,0,0,8" ItemsSource="{Binding ValueKindOptions}" SelectedItem="{Binding ValueKind, UpdateSourceTrigger=PropertyChanged}" ToolTip="字段值的数据类型，例如文本、布尔、整数、枚举或枚举列表。" />
+                        <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="布尔值风格" Visibility="{Binding IsBooleanStyleEditable, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <ComboBox Grid.Row="5" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.BooleanStyleComboBox" Margin="0,0,0,8" ItemsSource="{Binding BooleanStyleOptions}" SelectedItem="{Binding BooleanStyle, UpdateSourceTrigger=PropertyChanged}" ToolTip="决定补全时优先使用 yes/no、true/false 等写法。" Visibility="{Binding IsBooleanStyleEditable, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="列表分隔符" Visibility="{Binding IsSeparatorEditable, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <TextBox Grid.Row="6" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.SeparatorTextBox" Margin="0,0,0,8" Padding="6,4" Text="{Binding Separator, UpdateSourceTrigger=PropertyChanged}" ToolTip="用于多个枚举值之间的分隔，例如逗号或竖线。建议 1 到 3 个字符。" Visibility="{Binding IsSeparatorEditable, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <TextBlock Grid.Row="7" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="枚举名称" />
+                        <TextBox Grid.Row="7" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.EnumNameTextBox" Margin="0,0,0,8" Padding="6,4" Text="{Binding EnumName, UpdateSourceTrigger=PropertyChanged}" ToolTip="用于让多个字段复用同一组可选值，例如 Armor、MovementZone。" />
+                        <TextBlock Grid.Row="8" Grid.Column="0" Margin="0,5,12,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="来源" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Margin="0,5,0,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding SourceKind}" />
+                    </Grid>
+                </Border>
+                <Border x:Name="DocumentationColumn"
+                        Grid.Column="1"
+                        AutomationProperties.AutomationId="FieldEditor.DescriptionSection"
+                        Margin="12,0,0,0"
+                        Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,10" FontWeight="SemiBold" Foreground="{StaticResource ShellPrimaryTextBrush}" Text="说明与可选值" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="显示名称" />
+                        <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.DisplayNameTextBox" Margin="0,0,0,8" Padding="6,4" Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}" ToolTip="展示给用户看的字段名称，可留空。" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="别名" />
+                        <TextBox Grid.Row="2" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.AliasesTextBox" Margin="0,0,0,8" Padding="6,4" Text="{Binding AliasesText, UpdateSourceTrigger=PropertyChanged}" ToolTip="字段的其它常见叫法，用逗号或分号分隔。" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,5,12,8" Foreground="{StaticResource ShellMutedTextBrush}" Text="可选值" />
+                        <TextBox Grid.Row="3" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.AllowedValuesTextBox" Margin="0,0,0,8" MinHeight="88" AcceptsReturn="True" Padding="6,4" Text="{Binding AllowedValuesText, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" ToolTip="每一行表示一个可补全值，可写成：值 | 显示名 | 说明。" VerticalScrollBarVisibility="Auto" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,5,12,0" Foreground="{StaticResource ShellMutedTextBrush}" Text="说明" />
+                        <TextBox Grid.Row="4" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.DescriptionTextBox" MinHeight="92" AcceptsReturn="True" Padding="6,4" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" ToolTip="字段说明，会用于字段库浏览和提示。" VerticalScrollBarVisibility="Auto" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+        <Border Grid.Row="2" AutomationProperties.AutomationId="FieldEditor.SavePreviewSection" Margin="0,10,0,0" Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <DockPanel>
+                    <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <Button MinWidth="96" AutomationProperties.AutomationId="FieldEditor.CopyPersistedPreviewButton" Margin="0,0,8,6" Padding="12,5" Click="CopyPersistedPreview" Content="复制 JSON" IsEnabled="{Binding HasPersistedJsonPreview}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                        <Button MinWidth="116" AutomationProperties.AutomationId="FieldEditor.ProjectPreviewButton" Margin="0,0,8,6" Padding="12,5" Click="BuildProjectPreview" Content="预览项目保存" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                        <Button MinWidth="116" AutomationProperties.AutomationId="FieldEditor.GlobalPreviewButton" Margin="0,0,0,6" Padding="12,5" Click="BuildGlobalPreview" Content="预览全局保存" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                    </WrapPanel>
+                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="保存预览" />
+                </DockPanel>
+                <TextBlock Grid.Row="1" AutomationProperties.AutomationId="FieldEditor.PreviewSummaryText" Margin="0,8,0,4" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding PreviewSummary, Mode=OneWay}" TextWrapping="Wrap" />
+                <DataGrid Style="{StaticResource IdeFieldRegistryDataGridStyle}" Grid.Row="2" AutomationProperties.AutomationId="FieldEditor.PreviewIssuesGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" HeadersVisibility="Column" IsReadOnly="True" ItemsSource="{Binding PreviewIssues}" MaxHeight="120">
+                    <DataGrid.Columns><DataGridTextColumn Width="80" Binding="{Binding Severity}" Header="级别" /><DataGridTextColumn Width="90" Binding="{Binding Code}" Header="代码" /><DataGridTextColumn Width="*" Binding="{Binding Message}" Header="说明" /></DataGrid.Columns>
+                </DataGrid>
+                <TextBox Grid.Row="3" AutomationProperties.AutomationId="FieldEditor.PersistedPreviewTextBox" Margin="0,8,0,0" MinHeight="88" MaxHeight="160" IsReadOnly="True" Text="{Binding PersistedJsonPreview, Mode=OneWay}" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Style="{StaticResource IdeFieldRegistryCodeTextBoxStyle}" />
+            </Grid>
+        </Border>
+        <Border Grid.Row="3" AutomationProperties.AutomationId="FieldEditor.ApplyResultPanel" Margin="0,8,0,0" Style="{StaticResource IdeFieldRegistryR2FlatSectionStyle}" Visibility="{Binding HasLastApplyPaths, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="92" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,4,10,6" FontWeight="SemiBold" Text="目标文件" />
+                <TextBox Grid.Row="0" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.TargetPathTextBox" Margin="0,0,8,6" IsReadOnly="True" Text="{Binding LastApplyTargetFilePath, Mode=OneWay}" />
+                <Button Grid.Row="0" Grid.Column="2" AutomationProperties.AutomationId="FieldEditor.CopyTargetPathButton" Margin="0,0,8,6" Padding="10,4" Click="CopyTargetPath" Content="复制" IsEnabled="{Binding HasLastApplyTargetFilePath}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                <Button Grid.Row="0" Grid.Column="3" AutomationProperties.AutomationId="FieldEditor.OpenTargetFolderButton" Margin="0,0,0,6" Padding="10,4" Click="OpenTargetFolder" Content="打开目录" IsEnabled="{Binding HasLastApplyTargetFilePath}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,4,10,0" FontWeight="SemiBold" Text="备份清单" />
+                <TextBox Grid.Row="1" Grid.Column="1" AutomationProperties.AutomationId="FieldEditor.ManifestPathTextBox" Margin="0,0,8,0" IsReadOnly="True" Text="{Binding LastApplyManifestFilePath, Mode=OneWay}" />
+                <Button Grid.Row="1" Grid.Column="2" AutomationProperties.AutomationId="FieldEditor.CopyManifestPathButton" Margin="0,0,8,0" Padding="10,4" Click="CopyManifestPath" Content="复制" IsEnabled="{Binding HasLastApplyManifestFilePath}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                <Button Grid.Row="1" Grid.Column="3" AutomationProperties.AutomationId="FieldEditor.OpenManifestFolderButton" Padding="10,4" Click="OpenManifestFolder" Content="打开目录" IsEnabled="{Binding HasLastApplyManifestFilePath}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+            </Grid>
+        </Border>
+        <Border Grid.Row="4"
+                AutomationProperties.AutomationId="FieldEditor.ActionFooter"
+                Margin="0,8,0,0"
+                Style="{StaticResource IdeFieldRegistryWriteBoundaryStyle}">
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Left" AutomationProperties.AutomationId="FieldEditor.StatusText" VerticalAlignment="Center" Foreground="{StaticResource ShellMutedTextBrush}" Text="{Binding StatusText}" TextWrapping="Wrap" />
+            <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                <Button MinWidth="128" AutomationProperties.AutomationId="FieldEditor.ProjectSaveButton" Margin="0,0,8,6" Padding="12,5" Click="ApplyProjectSave" Content="保存到项目字段库" IsEnabled="{Binding CanSave}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                <Button MinWidth="128" AutomationProperties.AutomationId="FieldEditor.GlobalSaveButton" Margin="0,0,8,6" Padding="12,5" Click="ApplyGlobalSave" Content="保存到全局字段库" IsEnabled="{Binding CanSave}" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+                <Button MinWidth="80" AutomationProperties.AutomationId="FieldEditor.CancelButton" Margin="0,0,0,6" Padding="12,5" Content="取消" IsCancel="True" Style="{StaticResource IdeFieldRegistryCommandButtonStyle}" />
+            </WrapPanel>
+        </DockPanel>
+        </Border>
+    </Grid>
+    </Border>
+</Window>
