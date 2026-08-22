@@ -1562,6 +1562,23 @@ public partial class ShellWindow : Window
         if (result.Succeeded)
         {
             viewModel.MarkApplied(result.Message);
+            if (result.AuthoringResult?.TextToSyncToEditor is { } committedText &&
+                DataContext is ShellViewModel shellViewModel)
+            {
+                try
+                {
+                    shellViewModel.RefreshCurrentFileDiagnostics(
+                        committedText,
+                        _fieldRegistryRuntimeService.CurrentProvider);
+                }
+                catch (Exception exception) when (exception is not OutOfMemoryException and
+                                                  not StackOverflowException and
+                                                  not AccessViolationException)
+                {
+                    // The editor transaction has already committed. Problems refresh is
+                    // presentation follow-up and must not reverse the successful apply.
+                }
+            }
         }
         else if (result.FailureKind == Ra2AiEditProposalFailureKind.RequestContextStale)
         {

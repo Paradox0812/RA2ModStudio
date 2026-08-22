@@ -64,6 +64,38 @@ public sealed class Ra2AuthoringShellTransactionBoundaryTests
     }
 
     [Fact]
+    public void Shell_RefreshesCurrentFileDiagnosticsOnlyAfterSuccessfulAuthoringApply()
+    {
+        string shellCode = ReadShellCode();
+        string applyHandler = ExtractMethod(
+            shellCode,
+            "AiEditProposalView_OnApplyRequested");
+        string transactionMethod = ExtractMethod(
+            shellCode,
+            "ApplyAuthoringPreviewTransaction");
+
+        AssertInOrder(
+            applyHandler,
+            "_aiAuthoringCoordinator.ApplyConfirmed(",
+            "if (result.Succeeded)",
+            "viewModel.MarkApplied(result.Message);",
+            "result.AuthoringResult?.TextToSyncToEditor",
+            "shellViewModel.RefreshCurrentFileDiagnostics(",
+            "_fieldRegistryRuntimeService.CurrentProvider",
+            "else if (result.FailureKind == Ra2AiEditProposalFailureKind.RequestContextStale)",
+            "DetachActiveAiEditProposalView();");
+        Assert.Equal(
+            1,
+            CountOccurrences(applyHandler, "RefreshCurrentFileDiagnostics("));
+        Assert.Contains(
+            "catch (Exception exception) when (exception is not OutOfMemoryException",
+            applyHandler,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("RefreshCurrentFileDiagnostics(", transactionMethod, StringComparison.Ordinal);
+        Assert.DoesNotContain("_saveCurrentFileService", applyHandler, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ShellXaml_HasNoA3UserEntryOrAutomationSurface()
     {
         string root = TestRepositoryRoot.Find();
@@ -134,5 +166,18 @@ public sealed class Ra2AuthoringShellTransactionBoundaryTests
                 $"Expected to find '{fragment}' after index {currentIndex}.");
             currentIndex = nextIndex;
         }
+    }
+
+    private static int CountOccurrences(string source, string fragment)
+    {
+        int count = 0;
+        int index = 0;
+        while ((index = source.IndexOf(fragment, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += fragment.Length;
+        }
+
+        return count;
     }
 }

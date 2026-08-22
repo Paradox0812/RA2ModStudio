@@ -10,8 +10,9 @@
 诊断、保存安全、DeepSeek 流式助手、受限当前文件结构化编辑闭环，以及可由
 `net8.0` 调用方独立消费的 Document Query、Diagnostics 和 Edit Preview 切片。
 
-它还不是最终的自然语言 Mod 生产 Agent：最小进程内 Capability Gateway 和内置 AI consumer
-已实现，但独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
+Minimum HLI-v1 已完成：最小进程内 Capability Gateway、内置 AI consumer、显式 Apply 与
+Apply 后当前文件 Problems 刷新已有端到端证据。它还不是最终的自然语言 Mod 生产 Agent：
+独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
 运行时测试尚未实现。
 
 ## 2. 已完成并有验证证据
@@ -47,6 +48,7 @@
 | HLI-1C Host Boundary | Workspace generation/active slot、Host projection guard、single-use Apply authority | Completed / Verified；Host 53/53、full 2537/2537 |
 | HLI-2A Capability Gateway | 固定四能力 catalog、version/risk/limits、typed Query/Preview façade | Completed / Verified；Gateway 12/12、Application 94/94、full 2537/2537 |
 | HLI-2B IDE/AI Gateway Consumer | 唯一 Host adapter 经 typed Gateway Preview；descriptor 驱动发送前资源门禁 | Completed / Verified；HLI-2B/A4/HLI-1C focused 78/78、Application 94/94、full 2547/2547 |
+| HLI-2C First High-Level Agent Loop | Gateway Query/Validate -> provider structured plan -> Preview -> explicit Apply -> Problems refresh -> re-Validate；不自动 Save | Completed / Verified；Application 94/94、focused 37/37、full 2549/2549、IdeOnly package 1123 |
 
 ## 3. 已实现但仍有验收边界
 
@@ -56,7 +58,7 @@
 | Field Registry 二级界面现代化 | M4-R2 与 Visual Fix 自动化门禁完成 | 八个真实 WPF 状态的最终截图验收仍以人工结果为准 |
 | Search 浮动窗口 UIA | 打开/隐藏/重开宿主 smoke 通过 | AvalonDock child-HWND 仍阻止外部 UIA 穿透内部控件 |
 | 响应式/DPI | 现有 WorkArea、1920/1280 DIP 和主路径自动化证据 | 多显示器混合 DPI 与特定物理设备仍需人工硬件验证 |
-| AI 自然语言编辑 | 明确、受支持的当前文件字段修改可形成真实提案并应用 | 不是任意指令、任意 patch、Section 模板或多文件 Agent |
+| AI 自然语言编辑 | 明确、受支持的当前文件字段修改可形成真实提案并应用；成功后立即刷新当前文件 Problems | 不是任意指令、任意 patch、Section 模板或多文件 Agent |
 
 ## 4. 只有部分 Headless 或宿主内实现，尚未成为完整 Agent 能力
 
@@ -100,21 +102,21 @@
 
 ## 7. 最新可信验证基线
 
-当前最新完整实现证据来自 HLI-2B：
+当前最新完整实现证据来自 HLI-2C：
 
 ```text
 dotnet restore: Passed
 dotnet build Debug: Passed, 0 warnings, 0 errors
 dotnet test RA2IniEditor.Application.Tests: Passed 94/94
-dotnet test HLI-2B/HLI-1C/A4/Shell focused: Passed 78/78
-dotnet test RA2IniEditor.Tests: Passed 2547/2547
-IdeOnly clean package: Passed
-UI / computer control: NotRun because HLI-2B has no XAML or visual behavior change
+dotnet test HLI-2C/HLI-2B/A4/Workspace/Shell focused: Passed 37/37
+dotnet test RA2IniEditor.Tests: Passed 2549/2549
+IdeOnly clean package: Passed, 1123 files
+UI / computer control: NotRun because HLI-2C has no XAML or visual layout change
 ```
 
 不同子系统的历史验证数量不同，应以各自 Stage Ledger 为证据，不把最新全量
 测试数量倒推为所有旧阶段都在同一环境重新验收。
 
-HLI-1A1/1A2/1B 与 HLI-2A/2B 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方及
-内置 AI 经 typed Gateway 消费；仍没有独立 Agent/CLI 或 public Apply/Save，不能据此宣称
-完整 Agent 已可用。
+HLI-1A1/1A2/1B 与 HLI-2A/2B/2C 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方及
+内置 AI 经 typed Gateway 消费，并证明 Host explicit Apply 后可立即刷新 Problems；仍没有独立
+Agent/CLI 或 public Apply/Save，不能据此宣称完整 Agent 已可用。

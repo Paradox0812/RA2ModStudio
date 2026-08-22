@@ -150,7 +150,7 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
     }
 
     [Fact]
-    public async Task Loopback_AuthoringPipelineProducesLocallyValidatedPreview()
+    public async Task Loopback_AuthoringPipelineAppliesOnceAndRevalidatesUpdatedSnapshot()
     {
         const string arguments = """
             {
@@ -170,6 +170,13 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
             await WriteUtf8Async(stream, CreateToolCallSse(arguments), token);
         });
         Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), CreateClient(server));
+        AuthoringFixture fixture = new();
+        Ra2AutomationDocumentSnapshot automationSnapshot = fixture.Snapshot.ToAutomationSnapshot();
+        Ra2AutomationSectionQueryResult sectionBefore = fixture.Gateway.GetSection(
+            automationSnapshot,
+            new Ra2AutomationSectionQuery("E1"));
+        Ra2AutomationDocumentDiagnosticsResult diagnosticsBefore = fixture.Gateway.Validate(
+            automationSnapshot);
 
         Ra2AiAssistantPipelineResult pipelineResult = await pipeline.SendStreamingAsync(
             "把当前文件 [E1] 下的 Strength 修改为 150",
@@ -183,8 +190,13 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
         Assert.Equal(Ra2AiToolChoiceMode.Required, pipelineResult.Request.ToolChoice);
         Assert.True(pipelineResult.Request.HasSeparatedMessages);
         Assert.Equal(Ra2AiResponseKind.ToolCalls, pipelineResult.Response.Kind);
+        Assert.True(sectionBefore.Succeeded, sectionBefore.Message);
+        Assert.Equal("100", Assert.Single(sectionBefore.Section!.Fields).EffectiveValue);
+        Assert.True(diagnosticsBefore.Succeeded, diagnosticsBefore.Message);
+        Assert.Equal(fixture.Snapshot.DocumentId, diagnosticsBefore.DocumentId);
+        Assert.Equal(fixture.Snapshot.EditRevision, diagnosticsBefore.Version);
+        Assert.Equal(fixture.Snapshot.FieldRegistry.Revision, diagnosticsBefore.FieldRegistryRevision);
 
-        AuthoringFixture fixture = new();
         Ra2AiEditProposalResult proposalResult = fixture.Coordinator.PrepareProposal(
             new Ra2AiAuthoringRequestContext(fixture.Snapshot),
             fixture.Snapshot,
@@ -195,6 +207,37 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
         Ra2AiEditProposal proposal = Assert.IsType<Ra2AiEditProposal>(proposalResult.Proposal);
         Assert.Contains("Strength=150", proposal.Preview.CandidateText, StringComparison.Ordinal);
         Assert.Same(proposal, fixture.Coordinator.ActiveProposal);
+
+        Ra2AiEditProposalApplyResult applied = fixture.Coordinator.ApplyConfirmed(proposal);
+        Ra2AiEditProposalApplyResult replay = fixture.Coordinator.ApplyConfirmed(proposal);
+
+        Assert.True(applied.Succeeded, applied.Message);
+        Assert.Equal(Ra2AiEditProposalFailureKind.RequestContextStale, replay.FailureKind);
+        Assert.Null(fixture.Coordinator.ActiveProposal);
+        Assert.Equal(1, fixture.TransactionPort.CallCount);
+        Ra2IniEditApplyResult authoringResult = Assert.IsType<Ra2IniEditApplyResult>(
+            applied.AuthoringResult);
+        Assert.True(authoringResult.IsDirtyAfterApply);
+        Assert.Equal(fixture.Snapshot.EditRevision + 1, authoringResult.UpdatedSession!.EditRevision);
+        Assert.Equal(fixture.OriginalText, authoringResult.UpdatedSession.DocumentState.OriginalText);
+        Assert.Equal(proposal.Preview.CandidateText, authoringResult.TextToSyncToEditor);
+
+        Ra2AuthoringSnapshot updatedSnapshot = fixture.Capture(
+            authoringResult.UpdatedSession,
+            authoringResult.TextToSyncToEditor!);
+        Ra2AutomationDocumentSnapshot updatedAutomationSnapshot = updatedSnapshot.ToAutomationSnapshot();
+        Ra2AutomationSectionQueryResult sectionAfter = fixture.Gateway.GetSection(
+            updatedAutomationSnapshot,
+            new Ra2AutomationSectionQuery("E1"));
+        Ra2AutomationDocumentDiagnosticsResult diagnosticsAfter = fixture.Gateway.Validate(
+            updatedAutomationSnapshot);
+
+        Assert.True(sectionAfter.Succeeded, sectionAfter.Message);
+        Assert.Equal("150", Assert.Single(sectionAfter.Section!.Fields).EffectiveValue);
+        Assert.True(diagnosticsAfter.Succeeded, diagnosticsAfter.Message);
+        Assert.Equal(fixture.Snapshot.DocumentId, diagnosticsAfter.DocumentId);
+        Assert.Equal(fixture.Snapshot.EditRevision + 1, diagnosticsAfter.Version);
+        Assert.Equal(fixture.Snapshot.FieldRegistry.Revision, diagnosticsAfter.FieldRegistryRevision);
     }
 
     [Fact]
@@ -324,13 +367,13 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
     {
         public AuthoringFixture()
         {
-            Ra2EditableDocumentSessionService sessionService = new(
+            SessionService = new Ra2EditableDocumentSessionService(
                 new Ra2IniTextDocumentParser(),
                 new Ra2DirtyStateService());
-            Ra2EditableDocumentSession session = sessionService.StartEditing(
+            Ra2EditableDocumentSession session = SessionService.StartEditing(
                 "rulesmd.ini",
-                "[InfantryTypes]\n1=E1\n\n[E1]\nStrength=100\n");
-            Ra2FieldRegistryProviderSnapshot registry = new(
+                OriginalText);
+            Registry = new Ra2FieldRegistryProviderSnapshot(
                 new BuiltInRa2FieldDefinitionProvider(),
                 revision: 11);
             Snapshot = Assert.IsType<Ra2AuthoringSnapshot>(
@@ -338,26 +381,68 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
                     session,
                     session.DocumentState.CurrentText,
                     string.Empty,
-                    registry).Snapshot);
+                    Registry).Snapshot);
+            Gateway = new Ra2AutomationCapabilityGateway();
+            TransactionPort = new ApplyingTransactionPort(SessionService, session);
             Ra2IniAuthoringWorkspace workspace = new(
-                new Ra2IniEditPreviewService(
-                    new Ra2IniLanguageAnalysisService(),
-                    new Ra2AddPropertyInsertPlanner()),
-                new PreviewOnlyTransactionPort());
+                new Ra2IniEditPreviewService(Gateway),
+                TransactionPort);
             Coordinator = new Ra2AiAuthoringCoordinator(
                 new Ra2AiAuthoringToolAdapter(),
                 workspace);
         }
 
+        public string OriginalText { get; } =
+            "[InfantryTypes]\n1=E1\n\n[E1]\nStrength=100\n";
+
+        public Ra2EditableDocumentSessionService SessionService { get; }
+
+        public Ra2FieldRegistryProviderSnapshot Registry { get; }
+
         public Ra2AuthoringSnapshot Snapshot { get; }
 
+        public IRa2AutomationCapabilityGateway Gateway { get; }
+
+        public ApplyingTransactionPort TransactionPort { get; }
+
         public Ra2AiAuthoringCoordinator Coordinator { get; }
+
+        public Ra2AuthoringSnapshot Capture(
+            Ra2EditableDocumentSession session,
+            string editorText)
+            => Assert.IsType<Ra2AuthoringSnapshot>(
+                Ra2AuthoringSnapshot.Capture(
+                    session,
+                    editorText,
+                    string.Empty,
+                    Registry).Snapshot);
     }
 
-    private sealed class PreviewOnlyTransactionPort : IRa2EditorTransactionPort
+    private sealed class ApplyingTransactionPort : IRa2EditorTransactionPort
     {
+        private readonly Ra2EditableDocumentSessionService _sessionService;
+        private Ra2EditableDocumentSession _session;
+
+        public ApplyingTransactionPort(
+            Ra2EditableDocumentSessionService sessionService,
+            Ra2EditableDocumentSession session)
+        {
+            _sessionService = sessionService;
+            _session = session;
+        }
+
+        public int CallCount { get; private set; }
+
         public Ra2IniEditApplyResult Apply(Ra2IniEditPreview preview)
-            => throw new InvalidOperationException("The integration test does not authorize apply.");
+        {
+            CallCount++;
+            _session = _sessionService.UpdateText(_session, preview.CandidateText!);
+            return Ra2IniEditApplyResult.Applied(
+                preview,
+                _session,
+                undoCaretOffset: 0,
+                redoCaretOffset: preview.CandidateText!.Length);
+        }
     }
 
     private sealed class LoopbackServer : IAsyncDisposable

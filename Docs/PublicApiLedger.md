@@ -17,7 +17,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-1C | None | Verified：Host boundary guards/tests 完成；allowlist 精确保持 29 |
 | HLI-2A | 新增固定目录 + typed Gateway 的精确 6-type allowlist | Implemented / Experimental；allowlist 35，94/94 + 2537/2537 |
 | HLI-2B | None | Verified：IDE consumer 切换与资源门禁完成；allowlist 精确保持 35 |
-| HLI-2C | None (contracted) | 复用 Gateway/Coordinator/Workspace；不新增 Agent façade 或 Apply/Save |
+| HLI-2C | None | Verified：复用 Gateway/Coordinator/Workspace；不新增 Agent façade 或 Apply/Save |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -150,7 +150,7 @@ HLI-2B 实现与完整回归确认 consumer 切换没有新增或修改 public A
 状态：`Completed / Verified`。Application exported allowlist 精确为 35；聚焦回归 78/78、
 Application 94/94、完整 non-UI 2547/2547。证据见 `AUTOMATION-HLI-2B_StageLedger.md`。
 
-## 10. HLI-2C public API 零变更契约
+## 10. HLI-2C public API 零变更确认
 
 HLI-2C 首个高层 Agent 闭环只组合既有 public Gateway facts 与 IDE internal authority：
 
@@ -159,5 +159,6 @@ HLI-2C 首个高层 Agent 闭环只组合既有 public Gateway facts 与 IDE int
 - Apply/Undo/Save、proposal、Workspace 和 transaction 继续 internal/Host-owned；
 - 端到端 trace 只作为测试证据，不成为 production/public DTO。
 
-状态：`Contracted / Not Implemented`。只有 HLI-2C-1..2C-4 通过 reflection、loopback、
-transaction 和完整回归后，才能补记零变更实现证据。
+状态：`Completed / Verified`。reflection、loopback、transaction 和完整回归通过；Application
+exported allowlist 精确为 35，Gateway catalog/五方法 surface 不变。证据见
+`AUTOMATION-HLI-2C_StageLedger.md`。

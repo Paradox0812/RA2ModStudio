@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-2C First High-Level Agent Loop Final Contract
 
 契约日期：2026-08-23
-状态：Final / Awaiting implementation approval
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-2B Completed / Verified
 事实依据：`Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md`
 
@@ -347,7 +347,11 @@ Minimum High-Level INI Capability / HLI-v1
 4. Cameo/Icon、VOX/SliceStack/VXL、SHP 与 Assembly Graph；
 5. RA2TestHost、Runtime Adapter、deterministic Test Runner。
 
-## 19. 当前停止点
+## 19. 完成证据与停止点
 
-HLI-2C-0 审计、基线验证与最终契约已完成；生产实现尚未开始。下一安全入口是用户确认本
-最终契约后连续执行 HLI-2C-1..2C-4。未确认前不得修改生产代码或测试。
+HLI-2C-1..2C-4 已按本契约连续完成。最终结果：build 0 warnings / 0 errors，Application
+94/94，HLI focused 37/37，完整 non-UI 2549/2549，IdeOnly clean package 1123 files；public
+allowlist 保持 35。详细实现与验证证据见 `Docs/AUTOMATION-HLI-2C_StageLedger.md`。
+
+Minimum HLI-v1 在此停止。不得自动进入独立 Agent host、CONTENT-1、Job Runtime 或素材流水线；
+下一安全入口是先完成下一纵向切片的优先级和代码事实审计。

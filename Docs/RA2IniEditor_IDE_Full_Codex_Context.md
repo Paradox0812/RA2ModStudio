@@ -45,7 +45,8 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-2B 完成证据 | `Docs/AUTOMATION-HLI-2B_StageLedger.md` |
 | HLI-2C 事实证据 | `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` |
 | HLI-2C 最终契约 | `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md` |
-| 下一安全入口 | 确认 HLI-2C 最终契约后执行 2C-1..2C-4 |
+| HLI-2C 完成证据 | `Docs/AUTOMATION-HLI-2C_StageLedger.md` |
+| 下一安全入口 | 独立 Agent Host 与 CONTENT-1 的下一纵向切片优先级/代码事实审计 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -83,6 +84,8 @@ Host adapter 消费同一 Gateway，并在 provider 前执行 descriptor-driven 
   allowlist 精确为 35，执行只委托现有 Query/Preview service。
 - HLI-2B：内置 AI 通过唯一 Host adapter 消费 typed Gateway；8 MiB/10k/128 预算统一，超限
   明确编辑在 provider 前本地拒绝，public API 保持 35。
+- HLI-2C：Gateway Query/Validate、provider structured plan、Preview、explicit Apply、Problems
+  refresh 和 updated-snapshot Validate 已形成确定性闭环；public API 保持 35，不自动 Save。
 
 精确边界与证据见 `Docs/CurrentCapabilities.md`。
 
@@ -203,13 +206,13 @@ HLI-2B 已完成：现有唯一 `Ra2IniEditPreviewService` 已改为 typed Gatew
 的明确编辑，advisory 继续使用截断上下文。Application 94/94、聚焦 78/78、完整 non-UI
 2547/2547 与 clean package 通过；public allowlist 保持 35。
 
-HLI-2C-0 已完成：审计确认现有 Gateway、Coordinator、Workspace 与 Shell transaction 已覆盖
-闭环主体；缺口是一个 Query/Validate/Preview/Apply/re-Validate 端到端证据，以及 Apply 后
-Problems 自动刷新。最终契约选择 public API 0 change、单一 Shell success hunk 和 deterministic
-loopback；Gateway 12/12、相关 HLI-2B/A4/Coordinator/Shell 基线 30/30 通过。
+HLI-2C 已完成：确定性 Gateway scenario 与 DeepSeek-compatible loopback 均覆盖
+Query/Validate -> structured plan -> Preview -> explicit single-use Apply -> updated-snapshot Validate；
+Shell 只在成功事务后用 committed text 刷新当前文件 Problems。Application 94/94、聚焦 37/37、
+完整 non-UI 2549/2549、IdeOnly package 1123，public allowlist 保持 35。Minimum HLI-v1 完成。
 
-下一安全入口是确认 `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md` 后执行
-HLI-2C-1..2C-4；不得直接公开 Apply/Save，或跳到 wire、Job/Event/Artifact 和素材流水线实现。
+下一安全入口是对独立 Agent Host 与 CONTENT-1 语义模板层做下一纵向切片优先级和代码事实
+审计；不得直接公开 Apply/Save，或跳到 wire、Job/Event/Artifact 和素材流水线实现。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

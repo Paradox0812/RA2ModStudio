@@ -25,7 +25,7 @@
 | HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Completed / Verified |
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed routing、取消 | Completed / Verified |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Completed / Verified |
-| HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Final contract / awaiting implementation approval |
+| HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Completed / Verified |
 | CONTENT-1 | 语义对象/模板层 | 新 Section、对象模板、跨文件计划、Artifact plan | Deferred |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
 | ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
@@ -68,7 +68,7 @@
   和 required-tool policy。当前采用 public 8 MiB/10k/128 budget；超限明确编辑在 provider
   请求前本地拒绝，advisory 仍可使用截断上下文。
 
-### HLI-2C：近期产品验收点
+### HLI-2C：近期产品验收点（已完成）
 
 用户在 AI 面板表达明确的当前文件修改需求后，Agent 能够：
 
@@ -79,7 +79,8 @@
 5. IDE 重新分析并展示结果；
 6. 不自动保存。
 
-该闭环通过后，高层 INI 接口才可视为近期可用。
+该闭环已通过 94/94、37/37、2549/2549 与 IdeOnly clean package 门禁。Minimum HLI-v1
+可视为完成，但不包含独立 Agent host、模板、多文件、素材或 Runtime Test。
 
 ## 4. 素材路线
 
@@ -133,10 +134,9 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-HLI-2C 首个高层 Agent 闭环的代码事实审计与最终契约
+下一纵向切片优先级与代码事实审计
 ```
 
-HLI-2C 代码事实审计与最终契约已完成，见
-`Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` 与
-`Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`。确认后按 2C-1..2C-4 连续实施；
-不得新增 public Agent façade、Apply/Save、wire 或 Job Runtime。
+HLI-2C 已完成，证据见 `Docs/AUTOMATION-HLI-2C_StageLedger.md`。下一阶段应在“独立 Agent
+Host”和“CONTENT-1 语义模板层”之间先做优先级与代码事实审计；不得直接引入 public
+Apply/Save、wire、Job Runtime 或素材写入。

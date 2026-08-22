@@ -286,9 +286,9 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-2C 复用 Gateway 与现有 Coordinator，不新增 Agent façade
 
-- Status: Proposed / awaiting HLI-2C implementation approval
+- Status: Accepted / implemented and verified
 - Date: 2026-08-23
-- Task(s): AUTOMATION-HLI-2C-0
+- Task(s): AUTOMATION-HLI-2C-0..2C-4
 - Context:
   - public Gateway 已提供 Agent-facing Query/Validate/Preview；internal AI Coordinator 已拥有
     provider proposal、policy 与 explicit Apply lifecycle。
@@ -305,4 +305,5 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - HLI-2C 完成后可关闭 Minimum HLI-v1，但只能宣称当前文件最小闭环。
   - 独立 Agent/CLI、模板、多文件、Job/Artifact、素材与 Runtime Test 仍需独立阶段。
 - Follow-up:
-  - 用户确认 HLI-2C 最终契约后执行 2C-1..2C-4；通过后改为 Accepted。
+  - HLI-2C 已通过 94/94、37/37、2549/2549 和 clean package 1123；下一阶段先审计
+    独立 Agent Host 与 CONTENT-1 的优先级，不自动扩大 Gateway authority。

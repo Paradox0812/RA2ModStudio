@@ -42,6 +42,9 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
   94/94 + 78/78 + 2547/2547 + clean package。
 - AUTOMATION-HLI-2C-0 First High-Level Agent Loop：代码事实审计与最终契约已完成；确认
   当前缺口是端到端闭环证据和 Apply 后 Problems 刷新，不需要新 public Agent façade。
+- AUTOMATION-HLI-2C-1..2C-4 First High-Level Agent Loop：确定性 Gateway 与 provider loopback
+  闭环、显式单次 Apply、更新后 Validate 和 Problems 刷新已完成；public API 0 change，
+  94/94 + 37/37 + 2549/2549 + clean package 1123。
 
 ### Implemented / Acceptance Pending
 
@@ -50,32 +53,30 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-2C-1..2C-4 尚未实施，等待最终契约确认。
 - 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
   均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AUTOMATION-HLI-2B_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-2C_StageLedger.md`
 
 ```text
 Restore: Passed
 Debug build: Passed, 0 warnings, 0 errors
 Application.Tests: Passed 94/94
-HLI-2B/HLI-1C/A4/Shell focused: Passed 78/78
-Non-UI tests: Passed 2547/2547
-IdeOnly clean package: Passed
-Computer control: NotRun; no UI behavior changed
+HLI-2C/HLI-2B/A4/Workspace/Shell focused: Passed 37/37
+Non-UI tests: Passed 2549/2549
+IdeOnly clean package: Passed, 1123 files
+Computer control: NotRun; no XAML or visual layout changed
 ```
 
-HLI-2B 静态证据：production diff 精确限于 4 个批准文件；无 `PreviewForHost`、无第二 adapter、
-Shell 只改批准的 Gateway 注入/资源门禁/本地提示；XAML/project/legacy diff 为 0，Application
-exported allowlist 精确保持 35。
+HLI-2C 静态证据：production diff 精确限于 `AiEditProposalView_OnApplyRequested` 成功分支；
+XAML/project/legacy 和 transaction/Save diff 为 0，Application exported allowlist 精确保持 35。
 
 ## 4. 当前关键边界
 
 - A4-R1 可对明确的当前文件字段编辑请求形成真实本地提案并经用户 Apply。
-- Apply 只改当前内存会话并形成一个 Undo 单元；不会自动保存。
+- Apply 只改当前内存会话并形成一个 Undo 单元；成功后刷新当前文件 Problems；不会自动保存。
 - Custom endpoint 只能 advisory；官方 endpoint 才可进入 required authoring tool。
 - 当前能力不等于任意自然语言编辑、Section 模板、多文件写入或素材生成。
 - 自动重试、模型 fallback、深色主题、项目级替换继续后置。
@@ -98,12 +99,12 @@ exported allowlist 精确保持 35。
 下一安全操作是：
 
 ```text
-确认 AUTOMATION-HLI-2C First High-Level Agent Loop Final Contract，随后执行 2C-1..2C-4
+下一纵向切片优先级与代码事实审计
 ```
 
-HLI-2C 审计与最终契约见 `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` 和
-`Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`。未确认前不得修改 Shell、测试或
-把 Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
+Minimum HLI-v1 已由 HLI-2C 完成，证据见 `Docs/AUTOMATION-HLI-2C_StageLedger.md`。下一阶段
+先在独立 Agent Host 与 CONTENT-1 语义模板层之间做优先级和代码事实审计；不得直接把
+Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
 
 ## 7. 最小继续阅读集
 
@@ -135,6 +136,7 @@ HLI-2C 审计与最终契约见 `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAu
 26. `Docs/AUTOMATION-HLI-2B_StageLedger.md`
 27. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md`
 28. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`
+29. `Docs/AUTOMATION-HLI-2C_StageLedger.md`
 
 旧累积状态已保存在：
 
