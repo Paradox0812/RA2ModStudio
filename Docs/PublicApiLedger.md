@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-22  
-当前阶段：AUTOMATION-HLI-1B Completed / Verified
+当前阶段：AUTOMATION-HLI-1C Final contract / not implemented
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -14,6 +14,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-1A1 | 新增下列精确 15-type allowlist | Additive / Experimental；reflection、headless 和 full regression 已通过 |
 | HLI-1A2 | 扩展 `Validate` + 精确 3-type allowlist | Implemented / Experimental；18-type reflection 与完整回归通过 |
 | HLI-1B | 新增 Edit Preview service + 精确 11-type allowlist | Implemented / Experimental；29-type reflection 与完整回归通过 |
+| HLI-1C | None | Contracted：只增加 Host boundary tests/docs；allowlist 必须保持 29 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -107,6 +108,7 @@ Experimental DTO/service。
 
 ## 7. 下一次台账更新门禁
 
-下一次状态更新门禁是 HLI-1C Host Boundary Confirmation。不得借 HLI-1C 公开 raw
-TextModel/SemanticModel、Apply/Save，或改变已实现 Section/Reference/Validate/Preview
-的失败语义；Gateway/wire 兼容性必须在 HLI-2A 单独冻结。
+HLI-1C 最终契约要求 public API diff 为 0；完成门禁是 Host boundary tests 通过且
+allowlist 仍精确为 29。不得借 HLI-1C 公开 raw TextModel/SemanticModel、Apply/Save，
+或改变已实现 Section/Reference/Validate/Preview 的失败语义；Gateway/wire 兼容性必须
+在 HLI-2A 单独冻结。

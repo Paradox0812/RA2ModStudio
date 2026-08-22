@@ -37,6 +37,9 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
+- HLI-1C Host Boundary Confirmation 已完成只读代码事实回归和最终契约；确认现有
+  Workspace Preview seam 足够，并识别两处 internal binding guard；计划实施限于两处
+  Editing 文件、一个新测试文件和治理文档，等待用户明确确认。
 - Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
@@ -81,16 +84,15 @@ WPF/IDE/Infrastructure/IO forbidden reference 为 0、exported allowlist 精确 
 
 ## 6. 下一安全入口
 
-下一安全操作是先进行只读代码事实回归并形成：
+下一安全操作是等待用户确认最终契约，然后进入：
 
 ```text
-AUTOMATION-HLI-1C Host Boundary Confirmation final contract
+AUTOMATION-HLI-1C-0 Baseline and Exact Surface Freeze
 ```
 
-HLI-1B 事实、契约与完成证据分别见
-`Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`、
-`Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 和
-`Docs/AUTOMATION-HLI-1B_StageLedger.md`。当前停止在 HLI-1B；不得自动实施 HLI-1C。
+HLI-1C 审计与最终契约见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` 和
+`Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`。当前停止在契约门；未经确认
+不新增 HLI-1C tests，也不进入 HLI-2A。
 
 ## 7. 最小继续阅读集
 
@@ -111,6 +113,8 @@ HLI-1B 事实、契约与完成证据分别见
 15. `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`
 16. `Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`
 17. `Docs/AUTOMATION-HLI-1B_StageLedger.md`
+18. `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`
+19. `Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`
 
 旧累积状态已保存在：
 

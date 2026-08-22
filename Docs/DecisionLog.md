@@ -179,6 +179,36 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - HLI-1B 已完成并停止；下一步只允许进入 HLI-1C Host Boundary Confirmation 的
     代码事实回归与最终契约，不自动进入 Gateway 或新增写入通道。
 
+## Decision: HLI-1C 复用 Workspace 包围式 Preview seam，不新增结果注册旁路
+
+- Status: Proposed / final contract awaiting implementation approval
+- Date: 2026-08-22
+- Task(s): AUTOMATION-HLI-1C
+- Context:
+  - HLI-1B 已让 Application 产生 UI-neutral Preview result；未来 Gateway consumer 仍需
+    进入 A3 active slot、显式确认、live currency 和 single-use Apply。
+  - `Ra2IniAuthoringWorkspace.Preview` 已在调用 injected preview service 之前建立 generation，
+    并只接纳当前代次的成功结果。
+- Decision:
+  - 未来 IDE Gateway adapter 实现现有 internal `IRa2IniEditPreviewService`，由 Workspace
+    包围整个 invocation；adapter 只负责 Gateway 调用与 `FromAutomation` Host 投影。
+  - `PreviewId` 只有进入当前 Workspace active slot 后才是一次性 Apply 身份，不是全局
+    proposal handle、能力令牌或持久化键。
+  - HLI-1C 只增加两处 internal Host 完整性 guard、永久边界测试和治理文档；public API
+    diff 为 0，Shell/Gateway/Apply 行为不变。
+- Rejected Alternatives:
+  - 新增 `RegisterPreview/AdoptPreview`：会绕开 invocation-start generation，使旧异步结果
+    可能覆盖新 active slot。
+  - 建立 public/global Preview store：会把 Host 生命周期下移并制造新的状态权威。
+  - 在 Gateway 暴露 Apply：会泄漏 live editor、确认、Undo 和 Save 边界。
+  - HLI-1C 提前实现 Gateway adapter：HLI-2A descriptor/invocation 尚未冻结，会制造临时代码。
+- Consequences:
+  - HLI-2A 只需定义 typed capability routing；HLI-2B 再实现 IDE adapter，不需要改 A3。
+  - 当前 Host unlimited policy 与 public 8M/10k policy 的切换必须在 HLI-2B 明确决策。
+  - 若 HLI-1C tests 暴露两处已批准 guard 之外的生产缺口，必须停止并形成 R3 修订契约。
+- Follow-up:
+  - 用户确认 HLI-1C 最终契约后执行 1C-0..1C-4；完成后停止，不自动进入 HLI-2A。
+
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 
 - Status: Accepted
