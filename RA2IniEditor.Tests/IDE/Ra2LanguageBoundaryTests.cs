@@ -1,4 +1,4 @@
-﻿using Xunit;
+using Xunit;
 
 namespace RA2IniEditor.Tests.IDE;
 
@@ -8,8 +8,13 @@ public sealed class Ra2LanguageBoundaryTests
     public void LanguageService_IsCurrentDocumentOnlyWithoutUiSaveDirtyNetworkOrLegacyProjectServices()
     {
         string root = TestRepositoryRoot.Find();
-        string languageRoot = Path.Combine(root, "RA2IniEditor.IDE", "Language");
-        string languageText = string.Join(Environment.NewLine, Directory.GetFiles(languageRoot, "*.cs").Select(File.ReadAllText));
+        string languageRoot = Path.Combine(root, "RA2IniEditor.Application", "Language");
+        string classificationRoot = Path.Combine(root, "RA2IniEditor.Application", "Classification");
+        string languageText = string.Join(
+            Environment.NewLine,
+            Directory.GetFiles(languageRoot, "*.cs")
+                .Concat(Directory.GetFiles(classificationRoot, "*.cs"))
+                .Select(File.ReadAllText));
 
         Assert.Contains("Ra2DocumentSnapshot", languageText, StringComparison.Ordinal);
         Assert.Contains("Ra2DocumentSemanticModel", languageText, StringComparison.Ordinal);

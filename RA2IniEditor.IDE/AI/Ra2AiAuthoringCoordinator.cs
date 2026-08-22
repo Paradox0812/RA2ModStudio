@@ -1,5 +1,4 @@
 using RA2IniEditor.IDE.Editing;
-using RA2IniEditor.IDE.FieldTrust;
 
 namespace RA2IniEditor.IDE.AI;
 

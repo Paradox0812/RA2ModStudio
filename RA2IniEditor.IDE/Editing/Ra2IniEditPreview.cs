@@ -1,6 +1,5 @@
 using RA2IniEditor.Core;
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.FieldTrust;
 using RA2IniEditor.IDE.Language;
 
 namespace RA2IniEditor.IDE.Editing;

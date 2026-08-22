@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RA2IniEditor.Core\RA2IniEditor.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>RA2IniEditor.IDE</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>RA2IniEditor.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>RA2IniEditor.Application.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>

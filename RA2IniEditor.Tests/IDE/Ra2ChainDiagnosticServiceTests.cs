@@ -13,7 +13,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_ReportsMissingPrimaryWeapon()
     {
-        IdeDiagnosticIssueViewModel issue = Assert.Single(Analyze(
+        Ra2DiagnosticFact issue = Assert.Single(Analyze(
             """
             [InfantryTypes]
             0=E1
@@ -34,7 +34,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_DoesNotReportExistingPrimaryWeapon()
     {
-        IReadOnlyList<IdeDiagnosticIssueViewModel> issues = Analyze(
+        IReadOnlyList<Ra2DiagnosticFact> issues = Analyze(
             """
             [InfantryTypes]
             0=E1
@@ -52,7 +52,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_DoesNotReportReferencesWithInlineSemicolonComments()
     {
-        IReadOnlyList<IdeDiagnosticIssueViewModel> issues = Analyze(
+        IReadOnlyList<Ra2DiagnosticFact> issues = Analyze(
             """
             [InfantryTypes]
             0=MTNK
@@ -89,7 +89,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_StillReportsMissingReference_WhenEffectiveTargetIsMissing()
     {
-        IdeDiagnosticIssueViewModel issue = Assert.Single(Analyze(
+        Ra2DiagnosticFact issue = Assert.Single(Analyze(
             """
             [InfantryTypes]
             0=E1
@@ -109,7 +109,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_ReportsMissingProjectileFromWeapon()
     {
-        IdeDiagnosticIssueViewModel issue = Assert.Single(Analyze(
+        Ra2DiagnosticFact issue = Assert.Single(Analyze(
             """
             [WeaponTypes]
             0=SomeWeapon
@@ -127,7 +127,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_ReportsMissingWarheadFromWeapon()
     {
-        IdeDiagnosticIssueViewModel issue = Assert.Single(Analyze(
+        Ra2DiagnosticFact issue = Assert.Single(Analyze(
             """
             [WeaponTypes]
             0=SomeWeapon
@@ -152,7 +152,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [InlineData("{WeaponMacro}")]
     public void Analyze_SkipsNeutralTokens(string value)
     {
-        IReadOnlyList<IdeDiagnosticIssueViewModel> issues = Analyze(
+        IReadOnlyList<Ra2DiagnosticFact> issues = Analyze(
             $$"""
               [InfantryTypes]
               0=E1
@@ -167,7 +167,7 @@ public sealed class Ra2ChainDiagnosticServiceTests
     [Fact]
     public void Analyze_SkipsUnknownSectionKind()
     {
-        IReadOnlyList<IdeDiagnosticIssueViewModel> issues = Analyze(
+        IReadOnlyList<Ra2DiagnosticFact> issues = Analyze(
             """
             [E1]
             Primary=MissingWeapon
@@ -195,15 +195,14 @@ public sealed class Ra2ChainDiagnosticServiceTests
         Assert.Equal(Ra2ChainDiagnosticService.SourceKind, issue.SourceKind);
     }
 
-    private static IReadOnlyList<IdeDiagnosticIssueViewModel> Analyze(string text, Ra2ReferenceDiagnosticCatalog? catalog = null)
+    private static IReadOnlyList<Ra2DiagnosticFact> Analyze(string text, Ra2ReferenceDiagnosticCatalog? catalog = null)
     {
         CurrentSourceSnapshot snapshot = CreateSnapshot(text);
         LocalRa2FieldDefinitionProvider provider = CreateProvider();
-        Ra2DocumentSemanticModel model = new Ra2DocumentSemanticModelBuilder().Build(
-            new Ra2DocumentSnapshot(snapshot.FilePath, snapshot.Text, snapshot.Version),
-            provider);
+        Ra2DocumentSnapshot documentSnapshot = new(snapshot.FilePath, snapshot.Text, snapshot.Version);
+        Ra2DocumentSemanticModel model = new Ra2DocumentSemanticModelBuilder().Build(documentSnapshot, provider);
         catalog ??= new Ra2ReferenceDiagnosticCatalogBuilder().BuildFromCurrentDocument(snapshot.FilePath, model);
-        return new Ra2ChainDiagnosticService().AnalyzeCurrentDocument(snapshot, model, catalog);
+        return new Ra2ChainDiagnosticService().AnalyzeCurrentDocument(documentSnapshot, model, catalog);
     }
 
     private static CurrentSourceSnapshot CreateSnapshot(string text)

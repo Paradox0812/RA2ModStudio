@@ -28,7 +28,10 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | 高层接口代码事实 | `Docs/AUTOMATION-HLI-0A_ExistingCapabilityMatrix.md` |
 | Headless 最小能力契约 | `Docs/AUTOMATION-HLI-0B_MinimumCapabilityContract.md` |
 | 最新依赖锥证据 | `Docs/AUTOMATION-HLI-1A0_DependencyConeCharacterizationContract.md` |
-| 下一最终契约 | `Docs/AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md` |
+| 最新 Headless 实现证据 | `Docs/AUTOMATION-HLI-1A1_StageLedger.md` |
+| HLI-1A2 事实证据 | `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` |
+| HLI-1A2 最终契约 | `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` |
+| 下一安全入口 | 明确批准后实施 HLI-1A2-0..5 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -36,13 +39,16 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 ```text
 RA2IniEditor.Core              net8.0，INI model/parser/schema/validation primitives
 RA2IniEditor.Infrastructure    net8.0，Field Registry、BuiltIn 数据、IO helpers
-RA2IniEditor.IDE               net8.0-windows，WPF Shell、language/editing/AI/search
-RA2IniEditor.Tests             non-UI tests
+RA2IniEditor.Application       net8.0，Core-only Section/Reference query 与 Experimental API
+RA2IniEditor.IDE               net8.0-windows，WPF Shell、editing/AI/search 和 Application consumer
+RA2IniEditor.Application.Tests net8.0 headless contract tests
+RA2IniEditor.Tests             IDE/non-UI integration tests
 RA2IniEditor.UiAutomationTests opt-in UIA smoke
 ```
 
-未来候选 `RA2IniEditor.Application` 已通过 HLI-0B/HLI-1A0 冻结方向和首个 Query
-闭包，但当前 solution 中仍不存在。
+`RA2IniEditor.Application` 已通过 HLI-1A1 建立并迁入首个 Query 闭包。Diagnostics
+的事实回归和最终契约已完成，但生产代码仍在 IDE；Preview 和 Gateway 仍未进入
+该程序集。
 
 ## 4. 当前已完成能力
 
@@ -55,12 +61,14 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
   Failure Taxonomy、上下文/隐私/资源边界。
 - A1 UI-neutral 只读分析模型、A2 deterministic Preview、A3 host transaction、
   A4-R1 official endpoint structured-edit proposal 和显式 Apply。
+- HLI-1A1 Core-only Application：Section Get、current-document References Find、
+  15-type Experimental API、typed failure/limits/cancellation。
 
 精确边界与证据见 `Docs/CurrentCapabilities.md`。
 
 ## 5. 当前不存在的能力
 
-- 独立 Headless/Application 程序集、Capability Gateway、CLI 或外部 Agent host。
+- Headless Diagnostics/Edit Preview、Capability Gateway、CLI 或外部 Agent host。
 - 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
@@ -147,14 +155,15 @@ powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profi
 
 ## 13. 当前下一入口
 
-HLI-0B 已确认，HLI-1A0 已完成。首个 Query 闭包是 22 个 internal
-Classification/Language 文件；完整 TextModel、Diagnostics 和 Preview 不属于首切片。
-HLI-1A1 最终契约已生成并自审，当前下一入口是用户确认该契约。
+HLI-1A1 已完成：22 个 internal Classification/Language 文件迁入 Application，IDE
+复用同一实现；15-type Experimental allowlist、nullable occurrence、重复 Section
+body-span 隔离、Reference 空成功/无法解析失败、8M chars/10k items 和取消门禁均已
+通过 31 项 headless、54 项迁移和 2526 项完整测试。
 
-契约已冻结：Application/Core 单向引用、新 Application.Tests `net8.0`、精确 IVT、
-project-level global using、15-type Experimental allowlist、nullable occurrence、重复
-Section body-span 隔离、Reference 空成功/无法解析失败、8M chars/10k items 限制，
-以及只搬迁不改写既有双解析语义。
+当前下一入口是对 HLI-1A2 最终契约的明确实施批准。契约仅允许原子迁移唯一
+diagnostic/FieldTrust 闭包、保留 IDE 单向 ViewModel adapter，并把 public allowlist 从 15
+精确扩大到 18。不得直接公开 diagnostic ViewModel，也不得在 HLI-1A2 中实施 Gateway
+或 Preview 迁移。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

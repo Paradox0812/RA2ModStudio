@@ -11,6 +11,9 @@
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
     <PackageReference Include="Dirkster.AvalonDock" Version="4.74.1" />
+    <ProjectReference Include="..\RA2IniEditor.Application\RA2IniEditor.Application.csproj">
+      <Aliases>Ra2Application</Aliases>
+    </ProjectReference>
     <ProjectReference Include="..\RA2IniEditor.Core\RA2IniEditor.Core.csproj" />
     <ProjectReference Include="..\RA2IniEditor.Infrastructure\RA2IniEditor.Infrastructure.csproj" />
   </ItemGroup>

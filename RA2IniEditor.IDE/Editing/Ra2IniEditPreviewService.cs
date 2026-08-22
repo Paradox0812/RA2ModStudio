@@ -1,6 +1,5 @@
 using System.IO;
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.FieldTrust;
 using RA2IniEditor.IDE.Language;
 using RA2IniEditor.IDE.TextModel;
 

@@ -45,6 +45,6 @@ public sealed class Ra2IniTextDocumentLineSpanTests
         Assert.Equal("  Key=Value", Slice(text, document.Lines[1].Span));
     }
 
-    private static string Slice(string text, RA2IniEditor.IDE.Language.Ra2TextSpan span)
+    private static string Slice(string text, RA2IniEditor.Application.Language.Ra2TextSpan span)
         => text.Substring(span.Start, span.Length);
 }

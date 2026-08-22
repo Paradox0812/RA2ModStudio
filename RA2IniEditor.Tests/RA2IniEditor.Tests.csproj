@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RA2IniEditor.Application\RA2IniEditor.Application.csproj" />
     <ProjectReference Include="..\RA2IniEditor.Core\RA2IniEditor.Core.csproj" />
     <ProjectReference Include="..\RA2IniEditor.IDE\RA2IniEditor.IDE.csproj" />
     <ProjectReference Include="..\RA2IniEditor.Infrastructure\RA2IniEditor.Infrastructure.csproj" />

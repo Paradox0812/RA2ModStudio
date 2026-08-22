@@ -12,7 +12,7 @@ public sealed class Ra2IniLanguageAnalysisBoundaryTests
         [
             Path.Combine(root, "RA2IniEditor.IDE", "Services", "Ra2FieldRegistryProviderSnapshot.cs"),
             Path.Combine(root, "RA2IniEditor.IDE", "Language", "Ra2LanguageAnalysisRequest.cs"),
-            Path.Combine(root, "RA2IniEditor.IDE", "Language", "Ra2DiagnosticFact.cs"),
+            Path.Combine(root, "RA2IniEditor.Application", "Diagnostics", "Ra2DiagnosticFact.cs"),
             Path.Combine(root, "RA2IniEditor.IDE", "Language", "Ra2IniLanguageAnalysisResult.cs"),
             Path.Combine(root, "RA2IniEditor.IDE", "Language", "IRa2IniLanguageAnalysisService.cs")
         ];

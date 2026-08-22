@@ -1,5 +1,4 @@
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.FieldTrust;
 using RA2IniEditor.Infrastructure.FieldRegistry;
 using RA2IniEditor.Infrastructure.FieldRegistry.BuiltIn;
 using Xunit;

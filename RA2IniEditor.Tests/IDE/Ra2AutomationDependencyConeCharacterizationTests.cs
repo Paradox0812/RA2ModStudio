@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.Language;
+using RA2IniEditor.Application.Language;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,28 +18,28 @@ public sealed class Ra2AutomationDependencyConeCharacterizationTests
 
     private static readonly string[] QueryFoundationSources =
     [
-        Path.Combine("RA2IniEditor.IDE", "Classification", "IRa2SectionClassifier.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Classification", "Ra2SectionClassificationResult.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Classification", "Ra2SectionClassificationWarning.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Classification", "Ra2SectionClassifier.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "IRa2CaretContextService.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "IRa2DocumentSemanticModelBuilder.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "IRa2ReferenceFinder.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2CaretContext.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2CaretContextService.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2CaretRegion.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2DocumentSemanticModel.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2DocumentSemanticModelBuilder.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2DocumentSnapshot.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2IniLineParser.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2KeyValueSymbol.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2ReferenceFinder.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2ReferenceItem.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2ReferenceResult.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2SectionSymbol.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2TextSpan.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2ValueReferenceKind.cs"),
-        Path.Combine("RA2IniEditor.IDE", "Language", "Ra2ValueReferenceSymbol.cs")
+        Path.Combine("RA2IniEditor.Application", "Classification", "IRa2SectionClassifier.cs"),
+        Path.Combine("RA2IniEditor.Application", "Classification", "Ra2SectionClassificationResult.cs"),
+        Path.Combine("RA2IniEditor.Application", "Classification", "Ra2SectionClassificationWarning.cs"),
+        Path.Combine("RA2IniEditor.Application", "Classification", "Ra2SectionClassifier.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "IRa2CaretContextService.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "IRa2DocumentSemanticModelBuilder.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "IRa2ReferenceFinder.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2CaretContext.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2CaretContextService.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2CaretRegion.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2DocumentSemanticModel.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2DocumentSemanticModelBuilder.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2DocumentSnapshot.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2IniLineParser.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2KeyValueSymbol.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2ReferenceFinder.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2ReferenceItem.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2ReferenceResult.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2SectionSymbol.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2TextSpan.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2ValueReferenceKind.cs"),
+        Path.Combine("RA2IniEditor.Application", "Language", "Ra2ValueReferenceSymbol.cs")
     ];
 
     [Fact]

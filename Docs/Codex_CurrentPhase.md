@@ -26,6 +26,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-0A 现有能力审计与矩阵。
 - AUTOMATION-HLI-0B 最小能力契约已确认并完成契约阶段。
 - AUTOMATION-HLI-1A0 Query 依赖锥特征化与门禁测试（7/7）。
+- AUTOMATION-HLI-1A1 Headless Document Query（Application、15-type Experimental API、31/31 + 2526/2526）。
 
 ### Implemented / Acceptance Pending
 
@@ -34,28 +35,26 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-1A1 Document Query Slice 最终契约已生成并自审，生产迁移尚未获得确认。
-- `RA2IniEditor.Application`、Capability Gateway、独立 Agent/CLI、Job/Event/
+- HLI-1A2 Headless Diagnostics 已完成代码事实回归与最终契约；生产迁移尚未批准/实施。
+- Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AGENT-AUTHORING-1-R1_A4_R1_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-1A1_StageLedger.md`
 
 ```text
 Restore: Passed
-Debug build: Passed, 0 warnings, 0 errors
-Non-UI tests: Passed 2519/2519
-IdeOnly clean package: Passed, 1049 files
-Computer control / live provider: NotRun by A4-R1 scope
+Debug build: Passed, 0 errors, one pre-existing CS8602 warning
+Application.Tests: Passed 31/31
+Query dependency regression: Passed 54/54
+Non-UI tests: Passed 2526/2526
+IdeOnly clean package: Passed, 1086 files, 10.29 MiB
+Computer control: NotRun; no UI behavior changed
 ```
 
-HLI-1A0 另有本轮直接证据：characterization tests 7/7，通过 1/4/7 MiB 两次构建
-一致性样本。该阶段没有生产代码变更；完整 2519 测试和 clean package 未重跑。
-
-HLI-1A1 契约阶段最新直接证据：API allowlist 15/15、迁移源清单 22/22、残留
-Classification using 3/3、Query dependency regression 54/54、Debug build 0 warnings /
-0 errors。该证据只验证契约基线，不代表 Application 已实现。
+HLI-1A1 静态证据：22/22 新路径、旧路径 0、逐行迁移等价 failures 0、Application
+Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精确 15。
 
 ## 4. 当前关键边界
 
@@ -70,7 +69,8 @@ Classification using 3/3、Query dependency regression 54/54、Debug build 0 war
 
 | ID/Area | 状态 | 影响 |
 |---|---|---|
-| HLI-TD-001/002 | Open / controlled | UI-neutral algorithms 和 diagnostic presentation coupling 仍位于 IDE assembly |
+| HLI-TD-001 | Partially repaid | Section/Reference 已迁 Application；Diagnostics/Preview 后续切片仍待处理 |
+| HLI-TD-002 | Open / controlled | diagnostic presentation coupling 仍位于 IDE assembly |
 | AGENT-AUTHORING-A1-TD-001 | Open / controlled | SemanticModel 可能重复构建，只影响潜在性能 |
 | SEARCH-UIA-001 | Open | AvalonDock 浮动 child-HWND 阻止外部 UIA 穿透 Search 内容 |
 | Mixed-DPI visual coverage | Manual | 特定多屏硬件状态未由自动化覆盖 |
@@ -78,15 +78,16 @@ Classification using 3/3、Query dependency regression 54/54、Debug build 0 war
 
 ## 6. 下一安全入口
 
-下一阶段只应先确认：
+下一安全操作是审批并实施：
 
 ```text
-AUTOMATION-HLI-1A1 Document Query Slice Final Contract
+AUTOMATION-HLI-1A2 Headless Diagnostics Final Contract (HLI-1A2-0..5)
 ```
 
-契约：`Docs/AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md`。
-HLI-1A1 是 R3 生产迁移并包含 R2 Experimental public API。未确认前不得创建
-Application/Application.Tests、移动 22 个生产文件或修改 solution/project references。
+事实审计与最终契约已分别完成，见
+`Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` 和
+`Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md`。未获明确实施确认前不移动
+Diagnostics；实施后也必须停止在 HLI-1A2，不自动进入 HLI-1B。
 
 ## 7. 最小继续阅读集
 
@@ -100,6 +101,9 @@ Application/Application.Tests、移动 22 个生产文件或修改 solution/proj
 8. `Docs/AUTOMATION-HLI-1A0_DependencyConeCharacterizationContract.md`
 9. `Docs/PublicApiLedger.md`
 10. `Docs/AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md`
+11. `Docs/AUTOMATION-HLI-1A1_StageLedger.md`
+12. `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md`
+13. `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md`
 
 旧累积状态已保存在：
 

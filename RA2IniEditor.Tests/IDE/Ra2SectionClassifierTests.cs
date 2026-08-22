@@ -1,5 +1,5 @@
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.Classification;
+using RA2IniEditor.Application.Classification;
 using Xunit;
 
 namespace RA2IniEditor.Tests.IDE;

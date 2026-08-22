@@ -1,6 +1,8 @@
+extern alias Ra2Application;
+
 using System.IO;
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.Classification;
+using Ra2Application::RA2IniEditor.Application.Classification;
 
 namespace RA2IniEditor.IDE.Services;
 

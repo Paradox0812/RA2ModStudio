@@ -81,7 +81,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-1A1 只公开 Experimental 高层查询事实
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-1A1
 - Context:
@@ -107,8 +107,42 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 实施为 R3/R2，必须用 reflection allowlist、Headless tests 和完整 IDE regression 门禁。
   - 首版每次调用重建 invocation-local SemanticModel；不引入隐藏 cache/session。
 - Follow-up:
-  - 用户确认 `AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md` 后实施 1A1-0..1A1-5；
-    完成后停止，Diagnostics 留给 HLI-1A2。
+  - HLI-1A1 已完成并通过 headless/full/package 门禁；Diagnostics 继续留给 HLI-1A2，
+    需先做只读依赖回归和最终契约。
+
+## Decision: HLI-1A2 扩展现有 Document Query service 并保留 IDE 单向适配
+
+- Status: Proposed / Awaiting implementation approval
+- Date: 2026-08-22
+- Task(s): AUTOMATION-HLI-1A2
+- Context:
+  - 当前 structure/field/reference/chain 规则无盘读，但位于 IDE 且直接构造
+    `IdeDiagnosticIssueViewModel`。
+  - HLI-0B 已将 document diagnostics 定位为 Query service 的第三个能力；HLI-1A1
+    已建立可复用 document/registry snapshot。
+- Decision:
+  - 原子迁移 9 个 Diagnostics/FieldTrust/neutral-fact internal 文件到 Application，
+    建立唯一 neutral diagnostic core。
+  - 在现有 `IRa2AutomationDocumentQueryService` 上增加 `Validate`，只新增
+    result/failure/fact 3 个 Experimental public types，不新建 service/request DTO。
+  - IDE `CurrentFileReadonlyDiagnosticService` 保留 public 兼容入口，但只负责
+    Host snapshot、legacy failure 和 ViewModel 投影。
+  - project I/O、Problems UI、Save Preflight 和 Apply/Save 权威继续留在 IDE。
+- Rejected Alternatives:
+  - 新建 `IRa2AutomationDiagnosticsQueryService`；会违背 HLI-0B 的最小 service 边界并增加
+    Gateway 注册膨胀。
+  - 公开 `IdeDiagnosticIssueViewModel` 或 raw SemanticModel/catalog；会把 presentation/internal
+    结构固化为外部契约。
+  - 在 Application 重写一套诊断规则；会产生双权威和长期漂移。
+- Consequences:
+  - 实施是 R3/R2，必须保持 149 项现有行为回归，增加 headless tests 和精确
+    18-type reflection allowlist。
+  - 对 Experimental interface 加方法对未知自定义 implementer 有兼容风险；仓库内
+    只有唯一生产实现。
+  - A1 的完整 TextModel orchestration 和双解析性能债务不在迁移中顺手改写。
+- Follow-up:
+  - 用户确认 `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` 后才实施；
+    完成后停止，HLI-1B 另行契约。
 
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 

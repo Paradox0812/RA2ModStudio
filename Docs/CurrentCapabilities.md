@@ -7,11 +7,12 @@
 ## 1. 总结
 
 当前产品已经是可运行的 source-first INI IDE，并具备真实搜索、字段智能、
-诊断、保存安全、DeepSeek 流式助手和受限的当前文件结构化编辑闭环。
+诊断、保存安全、DeepSeek 流式助手、受限当前文件结构化编辑闭环，以及首个可由
+`net8.0` 调用方独立消费的 Document Section/Reference 查询切片。
 
-它还不是最终的自然语言 Mod 生产 Agent：独立 Headless/Application 层、
-Capability Gateway、素材/图标生成、SHP/VXL 流水线、Job Runtime 和运行时测试
-尚未实现。
+它还不是最终的自然语言 Mod 生产 Agent：Headless Diagnostics/Edit Preview、
+Capability Gateway、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
+运行时测试尚未实现。
 
 ## 2. 已完成并有验证证据
 
@@ -40,6 +41,7 @@ Capability Gateway、素材/图标生成、SHP/VXL 流水线、Job Runtime 和�
 | A4-R1 AI 编辑提案 | 官方 endpoint、明确编辑请求、required tool、本地 Preview、提案卡、显式 Apply | Completed / Verified；A4-R1 build 0/0、tests 2519/2519、IdeOnly package 1049 files |
 | HLI-0B 最小 Headless 契约 | 冻结四项能力、Host-only 写入边界和最小纵向迁移方向 | Confirmed / contract completed；未改变运行时 |
 | HLI-1A0 依赖锥特征化 | 冻结 Query 22 文件闭包、调用方影响、重复 Section/Reference 语义和迁移门禁 | Completed / Verified；characterization tests 7/7 |
+| HLI-1A1 Headless Document Query | Core-only `RA2IniEditor.Application`、Section Get、current-document References Find、typed failure/limits/cancellation | Completed / Verified；Application.Tests 31/31、full 2526/2526、IdeOnly package 1086 |
 
 ## 3. 已实现但仍有验收边界
 
@@ -51,22 +53,22 @@ Capability Gateway、素材/图标生成、SHP/VXL 流水线、Job Runtime 和�
 | 响应式/DPI | 现有 WorkArea、1920/1280 DIP 和主路径自动化证据 | 多显示器混合 DPI 与特定物理设备仍需人工硬件验证 |
 | AI 自然语言编辑 | 明确、受支持的当前文件字段修改可形成真实提案并应用 | 不是任意指令、任意 patch、Section 模板或多文件 Agent |
 
-## 4. 只有算法或宿主内实现，尚未成为独立 Agent 能力
+## 4. 只有部分 Headless 或宿主内实现，尚未成为完整 Agent 能力
 
 | 能力 | 代码事实 | 状态 |
 |---|---|---|
-| 单文档 Section/Reference/Diagnostics query | 算法大多无 UI 行为依赖，但位于 `net8.0-windows` IDE assembly | Partial / not independently headless-consumable |
+| 单文档 Section/Reference query | 已位于 Core-only `RA2IniEditor.Application`，有 Experimental typed API | Headless slice completed；尚未接 Gateway |
+| 单文档 Diagnostics query | 算法仍与 IDE presentation/ViewModel 耦合 | Partial / not independently headless-consumable |
 | 语义 Edit Preview | A2 已完成，但类型和实现位于 IDE assembly | Partial / not an external capability |
 | Apply/Undo | A3 在 IDE host 内完整 | Host-only by design |
 | Save/Backup/Rollback | 现有服务完整 | Host/user-owned；不是 Agent capability |
 | A4 proposal | 当前 WPF 内置 AI 可消费 | 尚未通过 Capability Gateway 提供给独立 Agent/CLI |
 
 审计证据：`Docs/AUTOMATION-HLI-0A_ExistingCapabilityMatrix.md`。
-迁移证据：`Docs/AUTOMATION-HLI-1A0_DependencyConeCharacterizationContract.md`。
+迁移证据：`Docs/AUTOMATION-HLI-1A1_StageLedger.md`。
 
 ## 5. 尚未实现
 
-- 独立 `RA2IniEditor.Application` (`net8.0`) 程序集。
 - Versioned Capability Registry / Gateway。
 - 独立 Agent、CLI (`ra2tool`) 或进程外协议。
 - 通用语义模板和完整 Section/对象创建。
@@ -92,19 +94,20 @@ Capability Gateway、素材/图标生成、SHP/VXL 流水线、Job Runtime 和�
 
 ## 7. 最新可信验证基线
 
-当前最新完整实现证据来自 A4-R1：
+当前最新完整实现证据来自 HLI-1A1：
 
 ```text
 dotnet restore: Passed
-dotnet build Debug: Passed, 0 warnings, 0 errors
-dotnet test RA2IniEditor.Tests: Passed 2519/2519
-IdeOnly clean package: Passed, 1049 files
-Live provider / computer control: NotRun for A4-R1 by explicit scope
+dotnet build Debug: Passed, 0 errors, 1 pre-existing CS8602 warning
+dotnet test RA2IniEditor.Application.Tests: Passed 31/31
+dotnet test Query dependency regression: Passed 54/54
+dotnet test RA2IniEditor.Tests: Passed 2526/2526
+IdeOnly clean package: Passed, 1086 files, 10.29 MiB
+UI / computer control: NotRun because HLI-1A1 has no UI behavior change
 ```
 
 不同子系统的历史验证数量不同，应以各自 Stage Ledger 为证据，不把最新全量
 测试数量倒推为所有旧阶段都在同一环境重新验收。
 
-HLI-1A0 没有生产代码变更；其新增特征测试最新结果为 7/7，通过并记录 1/4/7 MiB
-确定性构建样本。Application/Application.Tests 仍未创建，不能将该证据表述为
-Headless 能力已经可供外部 Agent 使用。
+HLI-1A1 只使两个 Document Query 能力可由普通 `net8.0` 调用方消费；尚无 Gateway、
+独立 Agent/CLI、Diagnostics 或 Edit Preview 对外能力，不能据此宣称完整 Agent 已可用。

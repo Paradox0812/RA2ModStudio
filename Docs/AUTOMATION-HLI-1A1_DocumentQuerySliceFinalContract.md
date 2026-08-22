@@ -1,6 +1,6 @@
 # AUTOMATION-HLI-1A1 Document Query Slice Final Contract
 
-状态：Final / Self-reviewed / Awaiting implementation confirmation  
+状态：Implemented / Verified
 日期：2026-08-22  
 父契约：`Docs/AUTOMATION-HLI-0B_MinimumCapabilityContract.md`  
 前置证据：`Docs/AUTOMATION-HLI-1A0_DependencyConeCharacterizationContract.md`  
@@ -637,3 +637,11 @@ serialization、Gateway、factory、cache/session 或 file-system adapter public
 
 用户确认本最终契约后，可连续执行 1A1-0 至 1A1-5；每卡自审、门禁通过后继续，
 无需逐卡等待批准。整个 HLI-1A1 完成后必须停止，不自动进入 HLI-1A2 Diagnostics。
+
+## 22. 实施记录
+
+HLI-1A1-0 至 HLI-1A1-5 已于 2026-08-22 完成并停止。最终实现保持 22 个 internal
+基础文件的算法等价，公开面精确为 15 个 Experimental 类型。直接证据、AgentPilot
+执行记录、兼容漏项修复、Verification Matrix 和 clean package 结果见：
+
+`Docs/AUTOMATION-HLI-1A1_StageLedger.md`

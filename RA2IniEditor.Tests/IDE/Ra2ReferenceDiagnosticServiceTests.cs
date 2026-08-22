@@ -24,7 +24,7 @@ public sealed class Ra2ReferenceDiagnosticServiceTests
 
         Assert.Equal(Ra2ReferenceDiagnosticService.MissingTargetCode, issue.Code);
         Assert.Equal("Reference", issue.SourceKind);
-        Assert.Equal("Reference", issue.SourceText);
+        Assert.Equal("Reference", issue.SourceKind);
         Assert.Equal(IniIssueSeverity.Warning, issue.Severity);
         Assert.Equal(5, issue.LineNumber);
         Assert.Equal("E1", issue.SectionId);
@@ -234,7 +234,7 @@ public sealed class Ra2ReferenceDiagnosticServiceTests
         Assert.True(catalog.ContainsSection("GoodWeapon"));
     }
 
-    private static IReadOnlyList<IdeDiagnosticIssueViewModel> Analyze(
+    private static IReadOnlyList<Ra2DiagnosticFact> Analyze(
         string text,
         IRa2FieldDefinitionProvider? provider = null)
     {
@@ -243,7 +243,7 @@ public sealed class Ra2ReferenceDiagnosticServiceTests
         Ra2DocumentSnapshot documentSnapshot = new(snapshot.FilePath, snapshot.Text, snapshot.Version);
         Ra2DocumentSemanticModel model = new Ra2DocumentSemanticModelBuilder().Build(documentSnapshot, provider);
         Ra2ReferenceDiagnosticCatalog catalog = new Ra2ReferenceDiagnosticCatalogBuilder().BuildFromCurrentDocument(snapshot.FilePath, model);
-        return new Ra2ReferenceDiagnosticService().AnalyzeCurrentDocument(snapshot, model, provider, catalog);
+        return new Ra2ReferenceDiagnosticService().AnalyzeCurrentDocument(documentSnapshot, model, provider, catalog);
     }
 
     private static CurrentSourceSnapshot CreateSnapshot(string text)

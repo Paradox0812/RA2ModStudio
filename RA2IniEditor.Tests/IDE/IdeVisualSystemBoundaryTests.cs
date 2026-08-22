@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using Xunit;
+using WpfApplication = System.Windows.Application;
 
 namespace RA2IniEditor.Tests.IDE;
 
@@ -814,7 +815,7 @@ public sealed class IdeVisualSystemBoundaryTests
     {
         RunInSta(() =>
         {
-            Application application = Application.Current ?? new Application();
+            WpfApplication application = WpfApplication.Current ?? new WpfApplication();
             ResourceDictionary previousResources = application.Resources;
             ResourceDictionary applicationResources = new();
             application.Resources = applicationResources;

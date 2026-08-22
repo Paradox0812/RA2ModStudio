@@ -1,5 +1,4 @@
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.FieldTrust;
 using Xunit;
 
 namespace RA2IniEditor.Tests.IDE;

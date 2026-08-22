@@ -62,6 +62,7 @@ public sealed class IdeShellBoundaryTests
         Assert.Contains("<TargetFramework>net8.0-windows</TargetFramework>", projectText);
         Assert.Contains("<UseWPF>true</UseWPF>", projectText);
         Assert.Contains("<PackageReference Include=\"AvalonEdit\" Version=\"6.3.0.90\" />", projectText);
+        Assert.Contains("..\\RA2IniEditor.Application\\RA2IniEditor.Application.csproj", projectText);
         Assert.Contains("..\\RA2IniEditor.Core\\RA2IniEditor.Core.csproj", projectText);
         Assert.Contains("..\\RA2IniEditor.Infrastructure\\RA2IniEditor.Infrastructure.csproj", projectText);
         Assert.DoesNotContain("..\\RA2IniEditor.csproj", projectText, StringComparison.OrdinalIgnoreCase);
@@ -76,6 +77,7 @@ public sealed class IdeShellBoundaryTests
         Assert.Equal(
             new[]
             {
+                "..\\RA2IniEditor.Application\\RA2IniEditor.Application.csproj",
                 "..\\RA2IniEditor.Core\\RA2IniEditor.Core.csproj",
                 "..\\RA2IniEditor.Infrastructure\\RA2IniEditor.Infrastructure.csproj"
             },
@@ -1047,7 +1049,7 @@ public sealed class IdeShellBoundaryTests
     public void IdeSectionClassification_IsCurrentDocumentOnlyAndSharedByHighlighterAndProjectExplorer()
     {
         string root = TestRepositoryRoot.Find();
-        string classifierDirectory = Path.Combine(root, "RA2IniEditor.IDE", "Classification");
+        string classifierDirectory = Path.Combine(root, "RA2IniEditor.Application", "Classification");
         string classifierText = string.Join(Environment.NewLine, Directory.GetFiles(classifierDirectory, "*.cs").Select(File.ReadAllText));
         string tokenizerText = File.ReadAllText(Path.Combine(root, "RA2IniEditor.IDE", "Highlighting", "ReadonlyIniHighlightTokenizer.cs"));
         string explorerText = File.ReadAllText(Path.Combine(root, "RA2IniEditor.IDE", "Services", "ReadonlyProjectExplorerGroupingService.cs"));
