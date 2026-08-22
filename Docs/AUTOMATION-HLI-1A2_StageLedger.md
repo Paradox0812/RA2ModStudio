@@ -20,8 +20,8 @@ Application exported allowlist 从 15 精确扩大到 18。
 | 1A2-0 Baseline | Passed | 149/149 基线 | Yes |
 | 1A2-1 Neutral Core | Passed | 9 文件迁移；63/63 direct tests；旧路径 0 | Yes |
 | 1A2-2 IDE Compatibility | Passed | build 0 errors；149/149 | Yes |
-| 1A2-3 Validate API | Passed | 3 public types；16/16 targeted；18-type allowlist | Yes |
-| 1A2-4 Integration | Passed | Application 42/42；dependency 149/149；full 2526/2526 | Yes |
+| 1A2-3 Validate API | Passed | 3 public types；21/21 targeted；18-type allowlist | Yes |
+| 1A2-4 Integration | Passed | Application 47/47；dependency 149/149；full 2526/2526 | Yes |
 | 1A2-5 Governance/Package | Passed | ledger/status/API/decision 更新；IdeOnly clean package | Stop |
 
 ## 3. Public API 与行为
@@ -41,7 +41,7 @@ Application exported allowlist 从 15 精确扩大到 18。
 | Restore | Passed | IDE-only solution，所有项目已是最新 |
 | Debug build | Passed | 0 errors；1 个既有 CS8602 warning |
 | Direct diagnostics | Passed | 63/63 |
-| Application.Tests | Passed | 42/42 |
+| Application.Tests | Passed | 47/47 |
 | Diagnostics/A1/FieldTrust | Passed | 149/149 |
 | Full non-UI tests | Passed | 2526/2526 |
 | Application boundary | Passed | net8.0/Core-only；forbidden token 0 |

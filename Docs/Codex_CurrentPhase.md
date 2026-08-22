@@ -27,7 +27,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-0B 最小能力契约已确认并完成契约阶段。
 - AUTOMATION-HLI-1A0 Query 依赖锥特征化与门禁测试（7/7）。
 - AUTOMATION-HLI-1A1 Headless Document Query（Application、15-type Experimental API、31/31 + 2526/2526）。
-- AUTOMATION-HLI-1A2 Headless Diagnostics（唯一 neutral core、IDE adapter、18-type Experimental API、42/42 + 149/149 + 2526/2526）。
+- AUTOMATION-HLI-1A2 Headless Diagnostics（唯一 neutral core、IDE adapter、18-type Experimental API、47/47 + 149/149 + 2526/2526）。
 
 ### Implemented / Acceptance Pending
 
@@ -47,7 +47,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 ```text
 Restore: Passed
 Debug build: Passed, 0 errors, one pre-existing CS8602 warning
-Application.Tests: Passed 42/42
+Application.Tests: Passed 47/47
 Diagnostics/A1/FieldTrust regression: Passed 149/149
 Non-UI tests: Passed 2526/2526
 IdeOnly clean package: Passed, final package rerun after governance flush
