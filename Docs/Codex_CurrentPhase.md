@@ -40,6 +40,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-2B-1..2B-4 IDE/AI Gateway Consumer：唯一 adapter 已切换 typed Gateway，
   删除 unlimited bypass，descriptor-driven preflight 已在 provider 前生效；public API 0 change，
   94/94 + 78/78 + 2547/2547 + clean package。
+- AUTOMATION-HLI-2C-0 First High-Level Agent Loop：代码事实审计与最终契约已完成；确认
+  当前缺口是端到端闭环证据和 Apply 后 Problems 刷新，不需要新 public Agent façade。
 
 ### Implemented / Acceptance Pending
 
@@ -48,6 +50,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
+- HLI-2C-1..2C-4 尚未实施，等待最终契约确认。
 - 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
   均未实现。
 
@@ -95,12 +98,12 @@ exported allowlist 精确保持 35。
 下一安全操作是：
 
 ```text
-HLI-2C 首个高层 Agent 闭环的代码事实审计与最终契约
+确认 AUTOMATION-HLI-2C First High-Level Agent Loop Final Contract，随后执行 2C-1..2C-4
 ```
 
-HLI-2B 已完成，证据见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 和
-`Docs/AUTOMATION-HLI-2B_StageLedger.md`。下一阶段不得直接扩大到 public Apply/Save、wire、
-Job/Event/Artifact 或素材流水线；先审计 HLI-2C 的最小真实闭环。
+HLI-2C 审计与最终契约见 `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` 和
+`Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`。未确认前不得修改 Shell、测试或
+把 Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
 
 ## 7. 最小继续阅读集
 
@@ -130,6 +133,8 @@ Job/Event/Artifact 或素材流水线；先审计 HLI-2C 的最小真实闭环�
 24. `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md`
 25. `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`
 26. `Docs/AUTOMATION-HLI-2B_StageLedger.md`
+27. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md`
+28. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`
 
 旧累积状态已保存在：
 

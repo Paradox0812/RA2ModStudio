@@ -25,7 +25,7 @@
 | HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Completed / Verified |
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed routing、取消 | Completed / Verified |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Completed / Verified |
-| HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Not started |
+| HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Final contract / awaiting implementation approval |
 | CONTENT-1 | 语义对象/模板层 | 新 Section、对象模板、跨文件计划、Artifact plan | Deferred |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
 | ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
@@ -136,6 +136,7 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 HLI-2C 首个高层 Agent 闭环的代码事实审计与最终契约
 ```
 
-HLI-2B 已实现并通过完整门禁，见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`
-与 `Docs/AUTOMATION-HLI-2B_StageLedger.md`。HLI-2C 必须先审计真实调用链、用户确认边界和
-是否需要新的高层 host；不得直接公开 Apply/Save 或引入 wire/Job Runtime。
+HLI-2C 代码事实审计与最终契约已完成，见
+`Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` 与
+`Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`。确认后按 2C-1..2C-4 连续实施；
+不得新增 public Agent façade、Apply/Save、wire 或 Job Runtime。

@@ -283,3 +283,26 @@ CurrentPhase 和对应 Stage Ledger 负责。
 - Follow-up:
   - HLI-2B-1..2B-4 已完成；94/94、78/78、2547/2547 与 clean package 门禁通过。
   - 下一阶段 HLI-2C 先审计首个高层 Agent 闭环，不在本阶段扩大 public Apply/Save。
+
+## Decision: HLI-2C 复用 Gateway 与现有 Coordinator，不新增 Agent façade
+
+- Status: Proposed / awaiting HLI-2C implementation approval
+- Date: 2026-08-23
+- Task(s): AUTOMATION-HLI-2C-0
+- Context:
+  - public Gateway 已提供 Agent-facing Query/Validate/Preview；internal AI Coordinator 已拥有
+    provider proposal、policy 与 explicit Apply lifecycle。
+  - 当前缺少完整闭环证据，且成功 Apply 后 Problems 不会立即刷新。
+- Decision:
+  - HLI-2C 只补 Query/Validate -> provider plan -> Gateway Preview -> explicit Apply -> post-apply
+    diagnostics 的确定性 scenario，以及一个 Shell success-branch refresh。
+  - public API 保持 35；不新增 Agent/Workflow/Session/Trace façade。
+- Rejected Alternatives:
+  - 立即公开 `IAgent` 或 `AgentWorkflow`：外部 host 的 permission/session/wire 尚未冻结。
+  - 把 Apply/Save 放入 Gateway：会泄漏 live editor、Undo、backup/rollback authority。
+  - 为制造 caller 强制重写 Prompt/Problems/Language UI：不增加 Agent 能力且扩大回归面。
+- Consequences:
+  - HLI-2C 完成后可关闭 Minimum HLI-v1，但只能宣称当前文件最小闭环。
+  - 独立 Agent/CLI、模板、多文件、Job/Artifact、素材与 Runtime Test 仍需独立阶段。
+- Follow-up:
+  - 用户确认 HLI-2C 最终契约后执行 2C-1..2C-4；通过后改为 Accepted。
