@@ -1,6 +1,6 @@
-using RA2IniEditor.IDE.Language;
+using RA2IniEditor.Application.Language;
 
-namespace RA2IniEditor.IDE.Editing;
+namespace RA2IniEditor.Application.Editing;
 
 internal sealed class Ra2TextChange
 {
@@ -14,8 +14,6 @@ internal sealed class Ra2TextChange
     }
 
     public Ra2TextSpan Span { get; }
-
     public string NewText { get; }
-
     public string Reason { get; }
 }

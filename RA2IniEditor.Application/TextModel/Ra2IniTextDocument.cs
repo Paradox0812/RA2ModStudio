@@ -1,4 +1,4 @@
-namespace RA2IniEditor.IDE.TextModel;
+namespace RA2IniEditor.Application.TextModel;
 
 internal sealed class Ra2IniTextDocument
 {
@@ -13,14 +13,10 @@ internal sealed class Ra2IniTextDocument
     }
 
     public string Text { get; }
-
     public IReadOnlyList<Ra2IniDocumentLine> Lines { get; }
-
     public Ra2IniNewLineKind NewLineKind { get; }
-
     public IEnumerable<Ra2IniDocumentLine> SectionHeaders
         => Lines.Where(line => line.Kind == Ra2IniDocumentLineKind.SectionHeader);
-
     public IEnumerable<Ra2IniDocumentLine> KeyValues
         => Lines.Where(line => line.Kind == Ra2IniDocumentLineKind.KeyValue);
 }

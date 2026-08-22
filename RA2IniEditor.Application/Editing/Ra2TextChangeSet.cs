@@ -1,4 +1,4 @@
-namespace RA2IniEditor.IDE.Editing;
+namespace RA2IniEditor.Application.Editing;
 
 internal sealed class Ra2TextChangeSet
 {
@@ -31,9 +31,7 @@ internal sealed class Ra2TextChangeSet
                 change.Span.Start > sourceText.Length ||
                 change.Span.Start + change.Span.Length > sourceText.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sourceText),
-                    "A text change span is outside the source text.");
+                throw new ArgumentOutOfRangeException(nameof(sourceText), "A text change span is outside the source text.");
             }
 
             result = result

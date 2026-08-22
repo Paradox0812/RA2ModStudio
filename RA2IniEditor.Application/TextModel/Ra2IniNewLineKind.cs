@@ -1,4 +1,4 @@
-namespace RA2IniEditor.IDE.TextModel;
+namespace RA2IniEditor.Application.TextModel;
 
 internal enum Ra2IniNewLineKind
 {

@@ -12,7 +12,7 @@ internal sealed class Ra2SaveCurrentFileService : IRa2SaveCurrentFileService
             new Ra2SaveCurrentFileOrchestrator(),
             new Ra2TextFirstFileWriter(),
             new Ra2EditableDocumentSessionService(
-                new TextModel.Ra2IniTextDocumentParser(),
+                new Ra2IniTextDocumentParser(),
                 new Ra2DirtyStateService()),
             new Ra2SaveRollbackService())
     {

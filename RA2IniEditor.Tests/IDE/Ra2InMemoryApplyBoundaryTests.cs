@@ -9,10 +9,11 @@ public sealed class Ra2InMemoryApplyBoundaryTests
     {
         string root = TestRepositoryRoot.Find();
         string editingRoot = Path.Combine(root, "RA2IniEditor.IDE", "Editing");
+        string applicationEditingRoot = Path.Combine(root, "RA2IniEditor.Application", "Editing");
         string[] inMemoryApplyFiles =
         [
             Path.Combine(editingRoot, "IRa2TextChangeApplier.cs"),
-            Path.Combine(editingRoot, "Ra2TextChange.cs"),
+            Path.Combine(applicationEditingRoot, "Ra2TextChange.cs"),
             Path.Combine(editingRoot, "Ra2TextChangeApplier.cs"),
             Path.Combine(editingRoot, "Ra2TextChangeApplyResult.cs"),
             Path.Combine(editingRoot, "IRa2CompletionCommitCoordinator.cs"),

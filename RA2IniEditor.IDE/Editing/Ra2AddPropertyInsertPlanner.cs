@@ -18,34 +18,31 @@ internal sealed class Ra2AddPropertyInsertPlanner
 
         string key = NormalizeOption(option);
         string lineText = $"{key}={value ?? string.Empty}";
-        string newLine = ResolveNewLine(document);
         int normalizedCaret = Math.Clamp(caretOffset, 0, document.Text.Length);
         IReadOnlyList<string> warnings = BuildWarnings(document, normalizedCaret, key);
         if (document.Lines.Count == 0)
         {
+            (Ra2TextChange change, int resultCaret) = Ra2LineInsertionPrimitive.PlanAfterAnchor(
+                document,
+                anchor: null,
+                lineText,
+                AddPropertyReason);
             return new Ra2AddPropertyInsertPlan(
-                new Ra2TextChange(new Ra2TextSpan(0, 0), lineText, AddPropertyReason),
-                lineText.Length,
+                change,
+                resultCaret,
                 warnings);
         }
 
         Ra2IniDocumentLine currentLine = FindCurrentLine(document, normalizedCaret);
-        int insertOffset;
-        string insertText;
-        if (!string.IsNullOrEmpty(currentLine.LineBreak))
-        {
-            insertOffset = currentLine.Span.End + currentLine.LineBreak.Length;
-            insertText = lineText + currentLine.LineBreak;
-        }
-        else
-        {
-            insertOffset = currentLine.Span.End;
-            insertText = newLine + lineText;
-        }
+        (Ra2TextChange insertChange, int insertCaret) = Ra2LineInsertionPrimitive.PlanAfterAnchor(
+            document,
+            currentLine,
+            lineText,
+            AddPropertyReason);
 
         return new Ra2AddPropertyInsertPlan(
-            new Ra2TextChange(new Ra2TextSpan(insertOffset, 0), insertText, AddPropertyReason),
-            insertOffset + insertText.Length - (insertText.EndsWith(lineText, StringComparison.Ordinal) ? 0 : currentLine.LineBreak.Length),
+            insertChange,
+            insertCaret,
             warnings);
     }
 
@@ -81,16 +78,6 @@ internal sealed class Ra2AddPropertyInsertPlanner
             throw new ArgumentException("Option cannot contain '='.", nameof(option));
 
         return key;
-    }
-
-    private static string ResolveNewLine(Ra2IniTextDocument document)
-    {
-        return document.NewLineKind switch
-        {
-            Ra2IniNewLineKind.CrLf => "\r\n",
-            Ra2IniNewLineKind.Cr => "\r",
-            _ => "\n"
-        };
     }
 
     private static Ra2IniDocumentLine FindCurrentLine(Ra2IniTextDocument document, int caretOffset)

@@ -26,7 +26,18 @@ public sealed class Ra2AutomationBoundaryTests
         "Ra2AutomationReferenceFact",
         "Ra2AutomationDocumentDiagnosticsFailureKind",
         "Ra2AutomationDocumentDiagnosticsResult",
-        "Ra2AutomationDiagnosticFact"
+        "Ra2AutomationDiagnosticFact",
+        "IRa2AutomationEditPreviewService",
+        "Ra2AutomationEditPreviewService",
+        "Ra2AutomationEditOperationKind",
+        "Ra2AutomationEditOperation",
+        "Ra2AutomationEditPlan",
+        "Ra2AutomationEditPreviewFailureKind",
+        "Ra2AutomationEditOperationOutcomeKind",
+        "Ra2AutomationFieldTrustLevel",
+        "Ra2AutomationTextChange",
+        "Ra2AutomationEditOperationPreview",
+        "Ra2AutomationEditPreviewResult"
     ];
 
     [Fact]

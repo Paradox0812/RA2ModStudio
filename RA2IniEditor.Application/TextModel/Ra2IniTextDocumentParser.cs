@@ -1,6 +1,6 @@
-using RA2IniEditor.IDE.Language;
+using RA2IniEditor.Application.Language;
 
-namespace RA2IniEditor.IDE.TextModel;
+namespace RA2IniEditor.Application.TextModel;
 
 internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
 {
@@ -19,21 +19,12 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
             if (!string.IsNullOrEmpty(lineBreak))
                 newlineKinds.Add(GetNewLineKind(lineBreak));
 
-            lines.Add(ParseLine(
-                text,
-                lineStart,
-                lineEnd,
-                lineBreak,
-                lineNumber));
-
+            lines.Add(ParseLine(text, lineStart, lineEnd, lineBreak, lineNumber));
             lineStart = lineEnd + lineBreak.Length;
             lineNumber++;
         }
 
-        return new Ra2IniTextDocument(
-            text,
-            lines,
-            DetectDocumentNewLineKind(newlineKinds));
+        return new Ra2IniTextDocument(text, lines, DetectDocumentNewLineKind(newlineKinds));
     }
 
     private static Ra2IniDocumentLine ParseLine(
@@ -51,9 +42,7 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
 
         int firstNonWhite = FindFirstNonWhite(text, lineStart, lineEnd);
         if (firstNonWhite < lineEnd && text[firstNonWhite] is ';' or '#')
-        {
             return new Ra2IniDocumentLine(lineNumber, lineSpan, lineText, lineBreak, Ra2IniDocumentLineKind.Comment);
-        }
 
         if (Ra2IniLineParser.TryParseSectionHeader(
             text,
@@ -101,7 +90,6 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
     {
         if (lineEnd >= text.Length)
             return string.Empty;
-
         if (text[lineEnd] == '\r' && lineEnd + 1 < text.Length && text[lineEnd + 1] == '\n')
             return "\r\n";
 
@@ -114,21 +102,17 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
             return Ra2IniNewLineKind.Unknown;
 
         Ra2IniNewLineKind first = newlineKinds[0];
-        return newlineKinds.All(kind => kind == first)
-            ? first
-            : Ra2IniNewLineKind.Mixed;
+        return newlineKinds.All(kind => kind == first) ? first : Ra2IniNewLineKind.Mixed;
     }
 
     private static Ra2IniNewLineKind GetNewLineKind(string lineBreak)
-    {
-        return lineBreak switch
+        => lineBreak switch
         {
             "\n" => Ra2IniNewLineKind.Lf,
             "\r\n" => Ra2IniNewLineKind.CrLf,
             "\r" => Ra2IniNewLineKind.Cr,
             _ => Ra2IniNewLineKind.Unknown
         };
-    }
 
     private static Ra2TextSpan ResolveSectionNameSpan(string text, Ra2TextSpan headerSpan)
     {
@@ -169,19 +153,13 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
     }
 
     private static bool IsInlineCommentStart(string text, int valueStart, int markerIndex)
-    {
-        if (markerIndex <= valueStart)
-            return true;
-
-        return char.IsWhiteSpace(text[markerIndex - 1]);
-    }
+        => markerIndex <= valueStart || char.IsWhiteSpace(text[markerIndex - 1]);
 
     private static int FindFirstNonWhite(string text, int start, int end)
     {
         int index = start;
         while (index < end && char.IsWhiteSpace(text[index]))
             index++;
-
         return index;
     }
 
@@ -190,7 +168,6 @@ internal sealed class Ra2IniTextDocumentParser : IRa2IniTextDocumentParser
         int index = end;
         while (index > start && char.IsWhiteSpace(text[index - 1]))
             index--;
-
         return index;
     }
 

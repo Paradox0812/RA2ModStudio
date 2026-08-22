@@ -1,6 +1,6 @@
-using RA2IniEditor.IDE.Language;
+using RA2IniEditor.Application.Language;
 
-namespace RA2IniEditor.IDE.TextModel;
+namespace RA2IniEditor.Application.TextModel;
 
 internal sealed class Ra2IniDocumentLine
 {
@@ -22,28 +22,16 @@ internal sealed class Ra2IniDocumentLine
     }
 
     public int LineNumber { get; }
-
     public Ra2TextSpan Span { get; }
-
     public string Text { get; }
-
     public string LineBreak { get; }
-
     public Ra2IniDocumentLineKind Kind { get; }
-
     public string? SectionName { get; init; }
-
     public Ra2TextSpan? SectionNameSpan { get; init; }
-
     public string? Key { get; init; }
-
     public Ra2TextSpan? KeySpan { get; init; }
-
     public string? Value { get; init; }
-
     public Ra2TextSpan? ValueSpan { get; init; }
-
     public string? InlineComment { get; init; }
-
     public Ra2TextSpan? InlineCommentSpan { get; init; }
 }
