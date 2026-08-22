@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
-更新时间：2026-08-22  
-当前阶段：AUTOMATION-HLI-2A Completed / Verified
+更新时间：2026-08-23
+当前阶段：AUTOMATION-HLI-2B Completed / Verified
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -16,6 +16,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-1B | 新增 Edit Preview service + 精确 11-type allowlist | Implemented / Experimental；29-type reflection 与完整回归通过 |
 | HLI-1C | None | Verified：Host boundary guards/tests 完成；allowlist 精确保持 29 |
 | HLI-2A | 新增固定目录 + typed Gateway 的精确 6-type allowlist | Implemented / Experimental；allowlist 35，94/94 + 2537/2537 |
+| HLI-2B | None | Verified：IDE consumer 切换与资源门禁完成；allowlist 精确保持 35 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -135,14 +136,15 @@ Application tests、11 项 HLI-1C boundary 和 2537 项完整非 UI 回归均通
 和完成证据见 `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` 与
 `AUTOMATION-HLI-2A_StageLedger.md`。
 
-## 9. HLI-2B public API 零变更契约
+## 9. HLI-2B public API 零变更确认
 
-HLI-2B-0 审计确认 consumer 切换无需新增或修改 public API：
+HLI-2B 实现与完整回归确认 consumer 切换没有新增或修改 public API：
 
 - Application exported allowlist 必须保持精确 35；
 - 复用 `IRa2AutomationCapabilityGateway.Preview`、既有 snapshot/plan/result/failure；
-- `Ra2AiEditAvailabilityKind.ResourceLimitExceeded` 仅是拟新增的 IDE internal 状态；
+- `Ra2AiEditAvailabilityKind.ResourceLimitExceeded` 仅是 IDE internal 状态；
 - 删除 internal `PreviewForHost` 不影响 public surface；
 - 不增加 Host budget overload、Apply/Save、unified Gateway failure 或 wire DTO。
 
-状态：`Contracted / Not Implemented`。实现证据在 HLI-2B-1..2B-4 完成前不得补记。
+状态：`Completed / Verified`。Application exported allowlist 精确为 35；聚焦回归 78/78、
+Application 94/94、完整 non-UI 2547/2547。证据见 `AUTOMATION-HLI-2B_StageLedger.md`。

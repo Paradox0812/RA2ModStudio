@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE — Current Phase
 
-更新时间：2026-08-22  
+更新时间：2026-08-23
 状态类型：CurrentStatus / concise index
 
 ## 1. 当前产品目标
@@ -36,7 +36,10 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-2A-1..2A-4 最小 Capability Gateway：固定四能力目录、6 个新增
   Experimental public 类型、allowlist 35、12/12 + 94/94 + 2537/2537。
 - AUTOMATION-HLI-2B-0 IDE/AI Gateway Consumer 代码事实审计与最终契约：已冻结唯一
-  adapter、public budget、发送前成本门禁和 Host authority；生产实现尚未开始。
+  adapter、public budget、发送前成本门禁和 Host authority。
+- AUTOMATION-HLI-2B-1..2B-4 IDE/AI Gateway Consumer：唯一 adapter 已切换 typed Gateway，
+  删除 unlimited bypass，descriptor-driven preflight 已在 provider 前生效；public API 0 change，
+  94/94 + 78/78 + 2547/2547 + clean package。
 
 ### Implemented / Acceptance Pending
 
@@ -45,27 +48,26 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-2B-1..2B-4 Gateway consumer 尚未实施，等待最终契约确认。
 - 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
   均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AUTOMATION-HLI-2A_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-2B_StageLedger.md`
 
 ```text
 Restore: Passed
-Debug build: Passed, 0 errors; 1 existing warning in untouched test file
+Debug build: Passed, 0 warnings, 0 errors
 Application.Tests: Passed 94/94
-Gateway focused: Passed 12/12
-HLI-1C boundary regression: Passed 11/11
-Non-UI tests: Passed 2537/2537
-IdeOnly clean package: Passed, 1115 files
+HLI-2B/HLI-1C/A4/Shell focused: Passed 78/78
+Non-UI tests: Passed 2547/2547
+IdeOnly clean package: Passed
 Computer control: NotRun; no UI behavior changed
 ```
 
-HLI-2A 静态证据：production diff 精确为 3 个新 Application Gateway 文件；现有算法、Core、
-Infrastructure、IDE/Shell/XAML/project/legacy diff 为 0；Application exported allowlist 精确 35。
+HLI-2B 静态证据：production diff 精确限于 4 个批准文件；无 `PreviewForHost`、无第二 adapter、
+Shell 只改批准的 Gateway 注入/资源门禁/本地提示；XAML/project/legacy diff 为 0，Application
+exported allowlist 精确保持 35。
 
 ## 4. 当前关键边界
 
@@ -80,9 +82,9 @@ Infrastructure、IDE/Shell/XAML/project/legacy diff 为 0；Application exported
 
 | ID/Area | 状态 | 影响 |
 |---|---|---|
-| HLI-TD-001 | Repaid through HLI-2A | Section/Reference/Diagnostics/Preview 唯一权威与 typed Gateway 均在 Application；IDE consumer 属 HLI-2B |
+| HLI-TD-001 | Repaid through HLI-2B | Section/Reference/Diagnostics/Preview 唯一权威与 typed Gateway 均在 Application；IDE consumer 已接入 |
 | HLI-TD-002 | Repaid | diagnostic core 已 neutral；IDE 只保留单向 ViewModel adapter |
-| HLI-2B budget transition | Contracted / not implemented | 计划统一为 public 8 MiB/10k，并在 provider 调用前 fail closed |
+| HLI-2B budget transition | Closed / verified | 已统一为 public 8 MiB/10k/128，并在 provider 调用前 fail closed |
 | AGENT-AUTHORING-A1-TD-001 | Open / controlled | SemanticModel 可能重复构建，只影响潜在性能 |
 | SEARCH-UIA-001 | Open | AvalonDock 浮动 child-HWND 阻止外部 UIA 穿透 Search 内容 |
 | Mixed-DPI visual coverage | Manual | 特定多屏硬件状态未由自动化覆盖 |
@@ -93,12 +95,12 @@ Infrastructure、IDE/Shell/XAML/project/legacy diff 为 0；Application exported
 下一安全操作是：
 
 ```text
-确认 AUTOMATION-HLI-2B IDE/AI Gateway Consumer Final Contract，随后执行 HLI-2B-1..2B-4
+HLI-2C 首个高层 Agent 闭环的代码事实审计与最终契约
 ```
 
-HLI-2B 审计与最终契约见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` 和
-`Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`。当前只完成契约阶段；未确认前
-不得切换 consumer、删除 `PreviewForHost` 或修改 Shell 请求门禁。
+HLI-2B 已完成，证据见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 和
+`Docs/AUTOMATION-HLI-2B_StageLedger.md`。下一阶段不得直接扩大到 public Apply/Save、wire、
+Job/Event/Artifact 或素材流水线；先审计 HLI-2C 的最小真实闭环。
 
 ## 7. 最小继续阅读集
 
@@ -127,6 +129,7 @@ HLI-2B 审计与最终契约见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactA
 23. `Docs/AUTOMATION-HLI-2A_StageLedger.md`
 24. `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md`
 25. `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`
+26. `Docs/AUTOMATION-HLI-2B_StageLedger.md`
 
 旧累积状态已保存在：
 

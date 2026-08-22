@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE 当前能力矩阵
 
-更新时间：2026-08-22  
+更新时间：2026-08-23
 本页只记录有源码、阶段台账和验证证据支持的当前能力。未来目标见
 `Docs/ProductVisionAndRequirements.md`。
 
@@ -10,8 +10,8 @@
 诊断、保存安全、DeepSeek 流式助手、受限当前文件结构化编辑闭环，以及可由
 `net8.0` 调用方独立消费的 Document Query、Diagnostics 和 Edit Preview 切片。
 
-它还不是最终的自然语言 Mod 生产 Agent：最小进程内 Capability Gateway 已实现，但内置
-AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
+它还不是最终的自然语言 Mod 生产 Agent：最小进程内 Capability Gateway 和内置 AI consumer
+已实现，但独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
 运行时测试尚未实现。
 
 ## 2. 已完成并有验证证据
@@ -46,6 +46,7 @@ AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runti
 | HLI-1B Headless Edit Preview | 受限字段 Upsert/Replace、candidate text、ordered changes、operation evidence、diagnostic delta、typed failure/limits/cancellation | Completed / Verified；Application.Tests 82/82、A2/A3/A4 88/88、TextModel 390/390、full 2526/2526 |
 | HLI-1C Host Boundary | Workspace generation/active slot、Host projection guard、single-use Apply authority | Completed / Verified；Host 53/53、full 2537/2537 |
 | HLI-2A Capability Gateway | 固定四能力 catalog、version/risk/limits、typed Query/Preview façade | Completed / Verified；Gateway 12/12、Application 94/94、full 2537/2537 |
+| HLI-2B IDE/AI Gateway Consumer | 唯一 Host adapter 经 typed Gateway Preview；descriptor 驱动发送前资源门禁 | Completed / Verified；HLI-2B/A4/HLI-1C focused 78/78、Application 94/94、full 2547/2547 |
 
 ## 3. 已实现但仍有验收边界
 
@@ -66,7 +67,7 @@ AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runti
 | 语义 Edit Preview | 唯一 engine 位于 Core-only Application，由 typed Gateway 暴露 | Gateway available；只预览，不 Apply/Save |
 | Apply/Undo | A3 在 IDE host 内完整 | Host-only by design |
 | Save/Backup/Rollback | 现有服务完整 | Host/user-owned；不是 Agent capability |
-| A4 proposal | 当前 WPF 内置 AI 可消费 | 尚未通过 Capability Gateway 提供给独立 Agent/CLI |
+| A4 proposal | 当前 WPF 内置 AI 已通过 typed Gateway 生成 semantic Preview | 尚未提供给独立 Agent/CLI；Apply/Save 仍为 Host-only |
 
 审计证据：`Docs/AUTOMATION-HLI-0A_ExistingCapabilityMatrix.md`。
 迁移证据：`Docs/AUTOMATION-HLI-1A1_StageLedger.md`。
@@ -91,6 +92,7 @@ AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runti
 - Search 不递归发现 Project Explorer 之外的文件；大于 8 MiB 的延迟文件会跳过并报告。
 - Replace All 只限当前文件，不自动保存。
 - AI 结构化编辑只支持当前文件的受限字段 Upsert/Replace。
+- 超过 8,388,608 UTF-16 字符的当前文件不能进入 AI 结构化编辑；明确编辑请求会在模型发送前本地拒绝，普通咨询仍可发送截断上下文。
 - Custom endpoint 仅允许 advisory，不获得编辑 tool 权限。
 - 自动重试和模型 fallback 未实现。
 - 仓库没有真实 `.ini` corpus，字段隔离后的真实项目 Unknown Key 增量未知。
@@ -98,22 +100,21 @@ AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runti
 
 ## 7. 最新可信验证基线
 
-当前最新完整实现证据来自 HLI-2A：
+当前最新完整实现证据来自 HLI-2B：
 
 ```text
 dotnet restore: Passed
-dotnet build Debug: Passed, 0 errors; 1 existing warning in untouched test file
+dotnet build Debug: Passed, 0 warnings, 0 errors
 dotnet test RA2IniEditor.Application.Tests: Passed 94/94
-dotnet test Gateway focused: Passed 12/12
-dotnet test HLI-1C boundary: Passed 11/11
-dotnet test RA2IniEditor.Tests: Passed 2537/2537
-IdeOnly clean package: Passed, 1115 files
-UI / computer control: NotRun because HLI-2A has no UI behavior change
+dotnet test HLI-2B/HLI-1C/A4/Shell focused: Passed 78/78
+dotnet test RA2IniEditor.Tests: Passed 2547/2547
+IdeOnly clean package: Passed
+UI / computer control: NotRun because HLI-2B has no XAML or visual behavior change
 ```
 
 不同子系统的历史验证数量不同，应以各自 Stage Ledger 为证据，不把最新全量
 测试数量倒推为所有旧阶段都在同一环境重新验收。
 
-HLI-1A1/1A2/1B 与 HLI-2A 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方经
-typed Gateway 消费；内置 AI 尚未切换为 Gateway consumer，也没有独立 Agent/CLI 或 public
-Apply/Save，不能据此宣称完整 Agent 已可用。
+HLI-1A1/1A2/1B 与 HLI-2A/2B 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方及
+内置 AI 经 typed Gateway 消费；仍没有独立 Agent/CLI 或 public Apply/Save，不能据此宣称
+完整 Agent 已可用。

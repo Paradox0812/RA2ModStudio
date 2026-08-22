@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-2B IDE/AI Gateway Consumer Final Contract
 
 契约日期：2026-08-22  
-状态：Final / Awaiting implementation approval  
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-2A Completed / Verified  
 事实依据：`Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md`
 
@@ -360,7 +360,9 @@ non-UI regression 验证。
 改动限制在一个既有 adapter、一个 internal route 状态、一个 Shell preflight 与测试。最容易
 导致返工的第二 adapter、Host fallback、事后超限失败和 A4 下移均被明确禁止。
 
-## 19. 当前停止点
+## 19. 完成状态
 
-HLI-2B-0 代码事实审计、基线验证与最终契约已完成；生产实现尚未开始。下一安全入口是用户
-确认本最终契约后连续执行 HLI-2B-1..2B-4。未确认前不得修改生产代码或测试。
+HLI-2B-1..2B-4 已按本契约连续完成。唯一 IDE Host adapter 已切换为 typed Gateway consumer，
+`PreviewForHost` 已删除，Shell 已使用同一 Gateway descriptor 在 provider 请求前执行资源门禁。
+Application exported allowlist 精确保持 35；完整证据见
+`Docs/AUTOMATION-HLI-2B_StageLedger.md`。当前停止点为 HLI-2B 完成，不自动进入 HLI-2C。

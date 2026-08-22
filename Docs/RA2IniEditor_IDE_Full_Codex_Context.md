@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE — Compact Codex Context
 
-更新时间：2026-08-22  
+更新时间：2026-08-23
 用途：为新任务恢复足够但不重复历史的工程上下文。历史阶段细节应读取对应
 Contract/Stage Ledger，不再追加到本文件。
 
@@ -42,7 +42,8 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-2A 完成证据 | `Docs/AUTOMATION-HLI-2A_StageLedger.md` |
 | HLI-2B 事实证据 | `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` |
 | HLI-2B 最终契约 | `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` |
-| 下一安全入口 | 确认 HLI-2B 最终契约后执行 HLI-2B-1..2B-4 |
+| HLI-2B 完成证据 | `Docs/AUTOMATION-HLI-2B_StageLedger.md` |
+| 下一安全入口 | HLI-2C 首个高层 Agent 闭环代码事实审计与最终契约 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -58,8 +59,8 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
 ```
 
 `RA2IniEditor.Application` 已通过 HLI-1A1/1A2/1B 迁入 Query、Diagnostics 与 Preview
-唯一闭包。HLI-2A 已增加固定四能力目录和 typed Gateway；IDE 仍通过既有单向 adapter
-消费 neutral facts，尚未切换为 Gateway consumer。
+唯一闭包。HLI-2A 已增加固定四能力目录和 typed Gateway；HLI-2B 已让 IDE 内置 AI 的唯一
+Host adapter 消费同一 Gateway，并在 provider 前执行 descriptor-driven 资源门禁。
 
 ## 4. 当前已完成能力
 
@@ -78,12 +79,14 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
   Preview；public allowlist 精确为 29，Preview 不修改 Host 或磁盘。
 - HLI-2A：同一 Application 提供固定四能力 immutable catalog 与 typed Gateway；public
   allowlist 精确为 35，执行只委托现有 Query/Preview service。
+- HLI-2B：内置 AI 通过唯一 Host adapter 消费 typed Gateway；8 MiB/10k/128 预算统一，超限
+  明确编辑在 provider 前本地拒绝，public API 保持 35。
 
 精确边界与证据见 `Docs/CurrentCapabilities.md`。
 
 ## 5. 当前不存在的能力
 
-- IDE/AI Gateway consumer、CLI 或外部 Agent host。
+- CLI 或外部 Agent host。
 - 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
@@ -193,13 +196,13 @@ façade 已实现；新增精确 6 个 Experimental public 类型，allowlist 29
 两个 canonical service，无 generic dispatcher、wire schema、Apply/Save 或 Job/Event/Artifact。
 12/12、Application 94/94、HLI-1C 11/11 和完整非 UI 2537/2537 均通过。
 
-HLI-2B-0 已完成：审计确认唯一改造点是现有 `Ra2IniEditPreviewService`，最终契约选择
-Gateway public 8M/10k/128 budget，并要求超限明确编辑在 provider 调用前由 descriptor-driven
-门禁本地拒绝；advisory 仍可使用截断上下文。Application 94/94、相关 Host/AI 48/48 基线通过。
-生产实现、`PreviewForHost` 删除和 Shell preflight 尚未开始。
+HLI-2B 已完成：现有唯一 `Ra2IniEditPreviewService` 已改为 typed Gateway consumer，unlimited
+`PreviewForHost` 已删除；Shell 使用同一 Gateway descriptor 在 provider 请求前拒绝超 8 MiB
+的明确编辑，advisory 继续使用截断上下文。Application 94/94、聚焦 78/78、完整 non-UI
+2547/2547 与 clean package 通过；public allowlist 保持 35。
 
-下一安全入口是确认 `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 后连续执行
-HLI-2B-1..2B-4；不得在未确认时切换 consumer 或修改 public Apply/Save。
+下一安全入口是 HLI-2C 首个高层 Agent 闭环的代码事实审计与最终契约；不得直接公开
+Apply/Save，或跳到 wire、Job/Event/Artifact 和素材流水线实现。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

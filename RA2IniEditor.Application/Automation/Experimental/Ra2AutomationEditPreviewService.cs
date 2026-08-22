@@ -22,15 +22,4 @@ public sealed class Ra2AutomationEditPreviewService : IRa2AutomationEditPreviewS
             MaximumDiagnosticItems,
             cancellationToken);
     }
-
-    internal Ra2AutomationEditPreviewResult PreviewForHost(
-        Ra2AutomationDocumentSnapshot snapshot,
-        Ra2AutomationEditPlan plan,
-        CancellationToken cancellationToken = default)
-        => new Ra2AutomationEditPreviewEngine().Preview(
-            snapshot,
-            plan,
-            int.MaxValue,
-            int.MaxValue,
-            cancellationToken);
 }

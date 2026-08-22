@@ -7,20 +7,20 @@ namespace RA2IniEditor.IDE.Editing;
 /// </summary>
 internal sealed class Ra2IniEditPreviewService : IRa2IniEditPreviewService
 {
-    private readonly Ra2AutomationEditPreviewService _automationService;
+    private readonly IRa2AutomationCapabilityGateway _gateway;
 
     public Ra2IniEditPreviewService(
         IRa2IniLanguageAnalysisService languageAnalysisService,
         Ra2AddPropertyInsertPlanner insertPlanner)
+        : this(new Ra2AutomationCapabilityGateway())
     {
         ArgumentNullException.ThrowIfNull(languageAnalysisService);
         ArgumentNullException.ThrowIfNull(insertPlanner);
-        _automationService = new Ra2AutomationEditPreviewService();
     }
 
-    internal Ra2IniEditPreviewService(Ra2AutomationEditPreviewService automationService)
+    internal Ra2IniEditPreviewService(IRa2AutomationCapabilityGateway gateway)
     {
-        _automationService = automationService ?? throw new ArgumentNullException(nameof(automationService));
+        _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     }
 
     public Ra2IniEditPreview Preview(
@@ -31,7 +31,7 @@ internal sealed class Ra2IniEditPreviewService : IRa2IniEditPreviewService
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(plan);
 
-        Ra2AutomationEditPreviewResult result = _automationService.PreviewForHost(
+        Ra2AutomationEditPreviewResult result = _gateway.Preview(
             snapshot.ToAutomationSnapshot(),
             plan,
             cancellationToken);

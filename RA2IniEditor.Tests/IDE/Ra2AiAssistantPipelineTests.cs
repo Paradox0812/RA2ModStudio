@@ -18,6 +18,8 @@ public sealed class Ra2AiAssistantPipelineTests
     [InlineData("优化一下这个单位", (int)Ra2AiEditAvailabilityKind.Available, (int)Ra2AiInteractionRouteKind.EditAmbiguous)]
     [InlineData("把当前文件 Strength 修改为 150", (int)Ra2AiEditAvailabilityKind.NoEditableDocument, (int)Ra2AiInteractionRouteKind.EditUnavailable)]
     [InlineData("把当前文件 Strength 修改为 150", (int)Ra2AiEditAvailabilityKind.UnsupportedEndpoint, (int)Ra2AiInteractionRouteKind.EditUnavailable)]
+    [InlineData("把当前文件 Strength 修改为 150", (int)Ra2AiEditAvailabilityKind.ResourceLimitExceeded, (int)Ra2AiInteractionRouteKind.EditUnavailable)]
+    [InlineData("只解释当前文件 Strength", (int)Ra2AiEditAvailabilityKind.ResourceLimitExceeded, (int)Ra2AiInteractionRouteKind.Advisory)]
     public void InteractionRouter_UsesConservativeDeterministicAuthority(
         string prompt,
         int availability,

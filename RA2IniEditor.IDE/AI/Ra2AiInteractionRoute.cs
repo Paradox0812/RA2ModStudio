@@ -9,7 +9,8 @@ internal enum Ra2AiEditAvailabilityKind
     MissingConfiguration,
     UnsupportedEndpoint,
     NoEditableDocument,
-    SnapshotUnavailable
+    SnapshotUnavailable,
+    ResourceLimitExceeded
 }
 
 internal enum Ra2AiInteractionRouteKind

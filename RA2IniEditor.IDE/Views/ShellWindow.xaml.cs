@@ -159,6 +159,8 @@ public partial class ShellWindow : Window
         new(new ReadonlyIniContentService(new IniFileStore()));
     private readonly Ra2CurrentFileReplacePlanner _currentFileReplacePlanner = new();
     private readonly IRa2EditorSessionController _editorSessionController;
+    private readonly IRa2AutomationCapabilityGateway _automationCapabilityGateway =
+        new Ra2AutomationCapabilityGateway();
     private readonly IRa2IniAuthoringWorkspace _authoringWorkspace;
     private readonly Ra2AiAuthoringCoordinator _aiAuthoringCoordinator;
     private readonly Ra2AiProposalPreparationRunner _aiProposalPreparationRunner;
@@ -243,9 +245,7 @@ public partial class ShellWindow : Window
         _editorSessionController = new Ra2EditorSessionController(_editableSessionService);
         InitializeComponent();
         _authoringWorkspace = new Ra2IniAuthoringWorkspace(
-            new Ra2IniEditPreviewService(
-                new Ra2IniLanguageAnalysisService(),
-                new Ra2AddPropertyInsertPlanner()),
+            new Ra2IniEditPreviewService(_automationCapabilityGateway),
             new ShellEditorTransactionPort(this));
         _aiAuthoringCoordinator = new Ra2AiAuthoringCoordinator(
             new Ra2AiAuthoringToolAdapter(),
@@ -863,8 +863,34 @@ public partial class ShellWindow : Window
             Ra2AuthoringSnapshotCaptureResult capture = CaptureCurrentAuthoringSnapshot();
             if (capture.Succeeded && capture.Snapshot is not null)
             {
-                authoringRequestContext = new Ra2AiAuthoringRequestContext(capture.Snapshot);
-                editAvailability = Ra2AiEditAvailabilityKind.Available;
+                Ra2AutomationCapabilityDescriptor[] editPreviewCapabilities =
+                    _automationCapabilityGateway.GetCapabilities()
+                        .Where(capability => string.Equals(
+                            capability.Id,
+                            Ra2AutomationCapabilityIds.DocumentEditPreview,
+                            StringComparison.Ordinal))
+                        .ToArray();
+                Ra2AutomationCapabilityDescriptor? editPreviewCapability =
+                    editPreviewCapabilities.Length == 1 &&
+                    editPreviewCapabilities[0].Version == Ra2AutomationCapabilityIds.CurrentVersion &&
+                    editPreviewCapabilities[0].Risk == Ra2AutomationCapabilityRisk.Edit &&
+                    editPreviewCapabilities[0].MaximumDocumentCharacters > 0 &&
+                    editPreviewCapabilities[0].MaximumOperations == Ra2IniEditPlan.MaximumOperationCount
+                        ? editPreviewCapabilities[0]
+                        : null;
+                if (editPreviewCapability is null)
+                {
+                    editAvailability = Ra2AiEditAvailabilityKind.SnapshotUnavailable;
+                }
+                else if (capture.Snapshot.Text.Length > editPreviewCapability.MaximumDocumentCharacters)
+                {
+                    editAvailability = Ra2AiEditAvailabilityKind.ResourceLimitExceeded;
+                }
+                else
+                {
+                    authoringRequestContext = new Ra2AiAuthoringRequestContext(capture.Snapshot);
+                    editAvailability = Ra2AiEditAvailabilityKind.Available;
+                }
             }
             else
             {
@@ -2281,6 +2307,8 @@ public partial class ShellWindow : Window
                 "自定义端点仅支持普通问答，无法生成编辑预览；输入内容已保留，尚未发送。",
             Ra2AiEditAvailabilityKind.NoEditableDocument =>
                 "当前没有可编辑文档，无法生成编辑预览；输入内容已保留，尚未发送。",
+            Ra2AiEditAvailabilityKind.ResourceLimitExceeded =>
+                "当前文档超过 AI 结构化编辑 8 MiB 资源上限；输入内容已保留，尚未发送。",
             _ => "当前文档快照不可用，无法生成编辑预览；输入内容已保留，尚未发送。"
         };
 

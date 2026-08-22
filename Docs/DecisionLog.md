@@ -258,7 +258,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-2B 统一采用 Gateway public budget，并在 provider 前 fail closed
 
-- Status: Proposed / awaiting HLI-2B implementation approval
+- Status: Accepted / implemented and verified
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-2B-0
 - Context:
@@ -281,5 +281,5 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - Application public API 保持 35 个 exported types；不增加新的 failure/DTO。
   - Shell 需要一处经最终契约精确批准的 code-behind preflight，但 XAML/transaction/Save 零 diff。
 - Follow-up:
-  - 用户确认 `AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 后连续执行 2B-1..2B-4；
-    实现和完整回归通过后将本决策改为 Accepted。
+  - HLI-2B-1..2B-4 已完成；94/94、78/78、2547/2547 与 clean package 门禁通过。
+  - 下一阶段 HLI-2C 先审计首个高层 Agent 闭环，不在本阶段扩大 public Apply/Save。
