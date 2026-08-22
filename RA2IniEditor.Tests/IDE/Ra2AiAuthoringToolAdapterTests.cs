@@ -45,7 +45,7 @@ public sealed class Ra2AiAuthoringToolAdapterTests
         Assert.True(result.Succeeded);
         Ra2IniEditPlan plan = Assert.IsType<Ra2IniEditPlan>(result.Plan);
         Assert.Equal(snapshot.DocumentId, plan.ExpectedDocumentId);
-        Assert.Equal(snapshot.EditRevision, plan.ExpectedEditRevision);
+        Assert.Equal(snapshot.EditRevision, plan.ExpectedVersion);
         Assert.Equal(snapshot.FieldRegistry.Revision, plan.ExpectedFieldRegistryRevision);
         Assert.Equal(Ra2AiAuthoringToolCatalog.TrustedPlanOrigin, plan.Origin);
         Assert.Equal("Update unit", plan.Summary);

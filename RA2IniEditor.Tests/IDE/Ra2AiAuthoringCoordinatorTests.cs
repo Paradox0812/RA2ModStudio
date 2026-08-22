@@ -273,9 +273,9 @@ public sealed class Ra2AiAuthoringCoordinatorTests
             if (!preview.Succeeded)
                 return preview;
 
-            Ra2IniLanguageAnalysisResult candidate = preview.CandidateAnalysis!;
-            List<Ra2DiagnosticFact> diagnostics = candidate.Diagnostics.ToList();
-            diagnostics.Add(new Ra2DiagnosticFact(
+            Ra2AutomationEditPreviewResult automation = preview.AutomationResult;
+            List<Ra2AutomationDiagnosticFact> diagnostics = automation.AddedDiagnostics.ToList();
+            diagnostics.Add(new Ra2AutomationDiagnosticFact(
                 "A4_TEST_ERROR",
                 "Test",
                 IniIssueSeverity.Error,
@@ -285,22 +285,22 @@ public sealed class Ra2AiAuthoringCoordinatorTests
                 1,
                 "E1",
                 "Strength",
-                candidate.Request.AnalysisVersion));
-            Ra2IniLanguageAnalysisResult candidateWithError = new(
-                candidate.Request,
-                Ra2LanguageAnalysisFailureKind.None,
-                null,
-                candidate.TextDocument,
-                candidate.SemanticModel,
-                diagnostics);
+                snapshot.EditRevision));
+            Ra2AutomationEditPreviewResult candidateWithError = new(
+                snapshot.ToAutomationSnapshot(),
+                plan,
+                Ra2AutomationEditPreviewFailureKind.None,
+                automation.Message,
+                automation.PreviewId,
+                automation.CandidateText,
+                automation.Changes,
+                automation.OperationPreviews,
+                diagnostics,
+                automation.RemovedDiagnostics);
 
-            return Ra2IniEditPreview.FromSuccess(
+            return Ra2IniEditPreview.FromAutomation(
                 snapshot,
                 plan,
-                preview.ChangeSet!,
-                preview.CandidateText!,
-                preview.OperationPreviews,
-                preview.CurrentAnalysis!,
                 candidateWithError);
         }
     }

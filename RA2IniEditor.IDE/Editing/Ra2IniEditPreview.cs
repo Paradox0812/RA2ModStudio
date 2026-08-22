@@ -1,38 +1,10 @@
 using RA2IniEditor.Core;
 using RA2IniEditor.Core.Schema;
-using RA2IniEditor.IDE.Language;
 
 namespace RA2IniEditor.IDE.Editing;
 
-internal enum Ra2IniEditPreviewFailureKind
-{
-    None = 0,
-    InvalidPlan,
-    StalePlanTarget,
-    ReadOnly,
-    UnsupportedOperation,
-    InvalidSection,
-    SectionNotFound,
-    AmbiguousSection,
-    FieldNotFound,
-    AmbiguousField,
-    ConflictingOperations,
-    OverlappingChanges,
-    NoChanges,
-    Canceled,
-    CurrentAnalysisFailed,
-    CandidateAnalysisFailed,
-    UnexpectedFailure
-}
-
-internal enum Ra2IniEditOperationOutcomeKind
-{
-    Inserted = 0,
-    Replaced
-}
-
 /// <summary>
-/// 表示单个结构化操作在当前快照上的解析证据。
+/// 表示单个结构化操作在 Host 当前快照上的展示证据。
 /// </summary>
 internal sealed class Ra2IniEditOperationPreview
 {
@@ -68,157 +40,120 @@ internal sealed class Ra2IniEditOperationPreview
     }
 
     public int OperationIndex { get; }
-
     public Ra2IniEditOperation Operation { get; }
-
     public Ra2IniEditOperationOutcomeKind OutcomeKind { get; }
-
     public Ra2SectionKind ResolvedSectionKind { get; }
-
     public bool IsKnownField { get; }
-
     public Ra2FieldTrustLevel FieldTrustLevel { get; }
-
     public Ra2TextSpan AffectedOriginalSpan { get; }
-
     public string Summary { get; }
 }
 
 /// <summary>
-/// 表示由 IDE 生成、不可直接应用的单文档编辑预览。
+/// 保留 A3/A4 Host 所需的活动快照、计划和展示投影；不包含语义规划算法。
 /// </summary>
 internal sealed class Ra2IniEditPreview
 {
     private Ra2IniEditPreview(
         Ra2AuthoringSnapshot snapshot,
         Ra2IniEditPlan plan,
-        Ra2IniEditPreviewFailureKind failureKind,
+        Ra2AutomationEditPreviewResult automationResult,
         string message,
-        Guid previewId,
         Ra2TextChangeSet? changeSet,
-        string? candidateText,
         IReadOnlyList<Ra2IniEditOperationPreview> operationPreviews,
-        Ra2IniLanguageAnalysisResult? currentAnalysis,
-        Ra2IniLanguageAnalysisResult? candidateAnalysis,
         IReadOnlyList<Ra2DiagnosticFact> addedDiagnostics,
         IReadOnlyList<Ra2DiagnosticFact> removedDiagnostics)
     {
         Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
         Plan = plan ?? throw new ArgumentNullException(nameof(plan));
-        FailureKind = failureKind;
+        AutomationResult = automationResult ?? throw new ArgumentNullException(nameof(automationResult));
         Message = string.IsNullOrWhiteSpace(message)
             ? throw new ArgumentException("Preview message cannot be empty.", nameof(message))
             : message;
 
-        bool succeeded = failureKind == Ra2IniEditPreviewFailureKind.None;
-        if (succeeded)
+        bool succeeded = automationResult.Succeeded;
+        if (succeeded != (changeSet is not null) ||
+            succeeded != (automationResult.CandidateText is not null) ||
+            (!succeeded && (operationPreviews.Count != 0 || addedDiagnostics.Count != 0 || removedDiagnostics.Count != 0)))
         {
-            if (previewId == Guid.Empty || changeSet is null || candidateText is null ||
-                currentAnalysis is null || candidateAnalysis is null)
-            {
-                throw new ArgumentException("Successful preview evidence is incomplete.");
-            }
-        }
-        else if (previewId != Guid.Empty || changeSet is not null || candidateText is not null ||
-                 currentAnalysis is not null || candidateAnalysis is not null ||
-                 operationPreviews.Count != 0 || addedDiagnostics.Count != 0 ||
-                 removedDiagnostics.Count != 0)
-        {
-            throw new ArgumentException("Failed previews cannot carry applicable evidence.");
+            throw new ArgumentException("Host preview projection state is inconsistent.");
         }
 
-        PreviewId = previewId;
         ChangeSet = changeSet;
-        CandidateText = candidateText;
         OperationPreviews = Array.AsReadOnly(operationPreviews.ToArray());
-        CurrentAnalysis = currentAnalysis;
-        CandidateAnalysis = candidateAnalysis;
         AddedDiagnostics = Array.AsReadOnly(addedDiagnostics.ToArray());
         RemovedDiagnostics = Array.AsReadOnly(removedDiagnostics.ToArray());
     }
 
-    public bool Succeeded => FailureKind == Ra2IniEditPreviewFailureKind.None;
-
+    public bool Succeeded => AutomationResult.Succeeded;
     public Ra2AuthoringSnapshot Snapshot { get; }
-
     public Ra2IniEditPlan Plan { get; }
-
-    public Ra2IniEditPreviewFailureKind FailureKind { get; }
-
+    public Ra2IniEditPreviewFailureKind FailureKind => AutomationResult.FailureKind;
     public string Message { get; }
-
-    public Guid PreviewId { get; }
-
+    public Guid PreviewId => AutomationResult.PreviewId;
     public Ra2TextChangeSet? ChangeSet { get; }
-
-    public string? CandidateText { get; }
-
+    public string? CandidateText => AutomationResult.CandidateText;
     public IReadOnlyList<Ra2IniEditOperationPreview> OperationPreviews { get; }
-
-    public Ra2IniLanguageAnalysisResult? CurrentAnalysis { get; }
-
-    public Ra2IniLanguageAnalysisResult? CandidateAnalysis { get; }
-
     public IReadOnlyList<Ra2DiagnosticFact> AddedDiagnostics { get; }
-
     public IReadOnlyList<Ra2DiagnosticFact> RemovedDiagnostics { get; }
+    public int AddedErrorCount => AutomationResult.AddedErrorCount;
+    public int AddedWarningCount => AutomationResult.AddedWarningCount;
+    public bool RequiresExplicitConfirmation => AutomationResult.RequiresExplicitConfirmation;
+    internal Ra2AutomationEditPreviewResult AutomationResult { get; }
 
-    public int AddedErrorCount
-        => AddedDiagnostics.Count(diagnostic => diagnostic.Severity == IniIssueSeverity.Error);
-
-    public int AddedWarningCount
-        => AddedDiagnostics.Count(diagnostic => diagnostic.Severity == IniIssueSeverity.Warning);
-
-    public bool RequiresExplicitConfirmation => Succeeded;
-
-    public static Ra2IniEditPreview FromSuccess(
+    public static Ra2IniEditPreview FromAutomation(
         Ra2AuthoringSnapshot snapshot,
         Ra2IniEditPlan plan,
-        Ra2TextChangeSet changeSet,
-        string candidateText,
-        IReadOnlyList<Ra2IniEditOperationPreview> operationPreviews,
-        Ra2IniLanguageAnalysisResult currentAnalysis,
-        Ra2IniLanguageAnalysisResult candidateAnalysis)
+        Ra2AutomationEditPreviewResult result)
     {
-        ArgumentNullException.ThrowIfNull(currentAnalysis);
-        ArgumentNullException.ThrowIfNull(candidateAnalysis);
-        ArgumentNullException.ThrowIfNull(operationPreviews);
-        ArgumentNullException.ThrowIfNull(changeSet);
-        ArgumentNullException.ThrowIfNull(candidateText);
-        if (!currentAnalysis.Succeeded || !candidateAnalysis.Succeeded)
-            throw new ArgumentException("Successful previews require two successful analyses.");
-        if (changeSet.Changes.Count == 0 ||
-            string.Equals(snapshot.Text, candidateText, StringComparison.Ordinal))
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.DocumentId != snapshot.DocumentId ||
+            result.Version != snapshot.EditRevision ||
+            result.FieldRegistryRevision != snapshot.FieldRegistry.Revision ||
+            result.PlanId != plan.PlanId ||
+            !string.Equals(result.FilePath, snapshot.FilePath, StringComparison.Ordinal))
         {
-            throw new ArgumentException("Successful previews require an effective text change.");
+            throw new ArgumentException("Automation preview identity does not match the Host snapshot and plan.", nameof(result));
         }
 
-        if (operationPreviews.Count != plan.Operations.Count)
-            throw new ArgumentException("Every plan operation requires preview evidence.", nameof(operationPreviews));
-        if (currentAnalysis.FieldRegistryRevision != snapshot.FieldRegistry.Revision ||
-            candidateAnalysis.FieldRegistryRevision != snapshot.FieldRegistry.Revision ||
-            !string.Equals(currentAnalysis.Request.Text, snapshot.Text, StringComparison.Ordinal) ||
-            !string.Equals(candidateAnalysis.Request.Text, candidateText, StringComparison.Ordinal))
+        if (!result.Succeeded)
         {
-            throw new ArgumentException("Preview analyses are not bound to the expected snapshot and candidate.");
+            return new Ra2IniEditPreview(
+                snapshot,
+                plan,
+                result,
+                LocalizeFailure(result.FailureKind),
+                null,
+                [],
+                [],
+                []);
         }
 
-        (IReadOnlyList<Ra2DiagnosticFact> added, IReadOnlyList<Ra2DiagnosticFact> removed) =
-            CompareDiagnostics(currentAnalysis.Diagnostics, candidateAnalysis.Diagnostics);
+        Ra2TextChangeSet changeSet = new(result.Changes.Select(change => new Ra2TextChange(
+            new Ra2TextSpan(change.Span.Start, change.Span.Length),
+            change.NewText,
+            change.Reason)));
+        IReadOnlyList<Ra2IniEditOperationPreview> operationPreviews = result.OperationPreviews
+            .Select(MapOperationPreview)
+            .ToArray();
+        IReadOnlyList<Ra2DiagnosticFact> addedDiagnostics = result.AddedDiagnostics
+            .Select(MapDiagnostic)
+            .ToArray();
+        IReadOnlyList<Ra2DiagnosticFact> removedDiagnostics = result.RemovedDiagnostics
+            .Select(MapDiagnostic)
+            .ToArray();
 
         return new Ra2IniEditPreview(
             snapshot,
             plan,
-            Ra2IniEditPreviewFailureKind.None,
+            result,
             $"已生成 {operationPreviews.Count} 项结构化编辑预览，尚未修改文档。",
-            Guid.NewGuid(),
             changeSet,
-            candidateText,
             operationPreviews,
-            currentAnalysis,
-            candidateAnalysis,
-            added,
-            removed);
+            addedDiagnostics,
+            removedDiagnostics);
     }
 
     public static Ra2IniEditPreview Failed(
@@ -229,93 +164,86 @@ internal sealed class Ra2IniEditPreview
     {
         if (failureKind == Ra2IniEditPreviewFailureKind.None)
             throw new ArgumentOutOfRangeException(nameof(failureKind));
+        if (string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Preview message cannot be empty.", nameof(message));
 
-        return new Ra2IniEditPreview(
-            snapshot,
+        Ra2AutomationEditPreviewResult result = new(
+            snapshot.ToAutomationSnapshot(),
             plan,
             failureKind,
             message,
             Guid.Empty,
             null,
-            null,
             [],
-            null,
-            null,
+            [],
             [],
             []);
+        return new Ra2IniEditPreview(snapshot, plan, result, message, null, [], [], []);
     }
 
-    internal static (
-        IReadOnlyList<Ra2DiagnosticFact> Added,
-        IReadOnlyList<Ra2DiagnosticFact> Removed)
-        CompareDiagnostics(
-            IReadOnlyList<Ra2DiagnosticFact> current,
-            IReadOnlyList<Ra2DiagnosticFact> candidate)
+    private static Ra2IniEditOperationPreview MapOperationPreview(
+        Ra2AutomationEditOperationPreview preview)
     {
-        ArgumentNullException.ThrowIfNull(current);
-        ArgumentNullException.ThrowIfNull(candidate);
-
-        Dictionary<DiagnosticFingerprint, int> currentCounts = BuildCounts(current);
-        List<Ra2DiagnosticFact> added = [];
-        foreach (Ra2DiagnosticFact diagnostic in candidate)
+        Ra2FieldTrustLevel trustLevel = preview.FieldTrustLevel switch
         {
-            DiagnosticFingerprint key = DiagnosticFingerprint.From(diagnostic);
-            if (!TryConsume(currentCounts, key))
-                added.Add(diagnostic);
-        }
+            Ra2AutomationFieldTrustLevel.Verified => Ra2FieldTrustLevel.Verified,
+            Ra2AutomationFieldTrustLevel.VerifiedGuardrail => Ra2FieldTrustLevel.VerifiedGuardrail,
+            Ra2AutomationFieldTrustLevel.Inferred => Ra2FieldTrustLevel.Inferred,
+            Ra2AutomationFieldTrustLevel.ManualCurated => Ra2FieldTrustLevel.ManualCurated,
+            Ra2AutomationFieldTrustLevel.AutoExtracted => Ra2FieldTrustLevel.AutoExtracted,
+            Ra2AutomationFieldTrustLevel.Obsolete => Ra2FieldTrustLevel.Obsolete,
+            Ra2AutomationFieldTrustLevel.NonExistent => Ra2FieldTrustLevel.NonExistent,
+            Ra2AutomationFieldTrustLevel.PseudoField => Ra2FieldTrustLevel.PseudoField,
+            _ => Ra2FieldTrustLevel.Unknown
+        };
+        string summary = preview.OutcomeKind == Ra2IniEditOperationOutcomeKind.Inserted
+            ? $"将在 [{preview.Operation.SectionName}] 插入 {preview.Operation.Key}。"
+            : $"将替换 [{preview.Operation.SectionName}] {preview.Operation.Key} 的值。";
 
-        Dictionary<DiagnosticFingerprint, int> candidateCounts = BuildCounts(candidate);
-        List<Ra2DiagnosticFact> removed = [];
-        foreach (Ra2DiagnosticFact diagnostic in current)
+        return new Ra2IniEditOperationPreview(
+            preview.OperationIndex,
+            preview.Operation,
+            preview.OutcomeKind,
+            preview.ResolvedSectionKind,
+            preview.IsKnownField,
+            trustLevel,
+            new Ra2TextSpan(preview.AffectedOriginalSpan.Start, preview.AffectedOriginalSpan.Length),
+            summary);
+    }
+
+    private static Ra2DiagnosticFact MapDiagnostic(Ra2AutomationDiagnosticFact diagnostic)
+        => new(
+            diagnostic.Code,
+            diagnostic.SourceKind,
+            diagnostic.Severity,
+            diagnostic.Message,
+            diagnostic.FilePath,
+            diagnostic.LineNumber,
+            diagnostic.ColumnNumber,
+            diagnostic.SectionId,
+            diagnostic.Key,
+            diagnostic.AnalysisVersion);
+
+    private static string LocalizeFailure(Ra2IniEditPreviewFailureKind failureKind)
+        => failureKind switch
         {
-            DiagnosticFingerprint key = DiagnosticFingerprint.From(diagnostic);
-            if (!TryConsume(candidateCounts, key))
-                removed.Add(diagnostic);
-        }
-
-        return (Array.AsReadOnly(added.ToArray()), Array.AsReadOnly(removed.ToArray()));
-    }
-
-    private static Dictionary<DiagnosticFingerprint, int> BuildCounts(
-        IEnumerable<Ra2DiagnosticFact> diagnostics)
-    {
-        Dictionary<DiagnosticFingerprint, int> counts = [];
-        foreach (Ra2DiagnosticFact diagnostic in diagnostics)
-        {
-            DiagnosticFingerprint key = DiagnosticFingerprint.From(diagnostic);
-            counts.TryGetValue(key, out int count);
-            counts[key] = count + 1;
-        }
-
-        return counts;
-    }
-
-    private static bool TryConsume(
-        IDictionary<DiagnosticFingerprint, int> counts,
-        DiagnosticFingerprint key)
-    {
-        if (!counts.TryGetValue(key, out int count) || count == 0)
-            return false;
-
-        counts[key] = count - 1;
-        return true;
-    }
-
-    private readonly record struct DiagnosticFingerprint(
-        string Code,
-        string SourceKind,
-        IniIssueSeverity Severity,
-        string Message,
-        string? SectionId,
-        string? Key)
-    {
-        public static DiagnosticFingerprint From(Ra2DiagnosticFact fact)
-            => new(
-                fact.Code,
-                fact.SourceKind,
-                fact.Severity,
-                fact.Message,
-                fact.SectionId,
-                fact.Key);
-    }
+            Ra2IniEditPreviewFailureKind.InvalidPlan => "编辑计划无效，未生成预览。",
+            Ra2IniEditPreviewFailureKind.StalePlanTarget => "编辑计划与当前文档或字段库版本不一致。",
+            Ra2IniEditPreviewFailureKind.ReadOnly => "当前文档不可编辑。",
+            Ra2IniEditPreviewFailureKind.UnsupportedOperation => "编辑计划包含不支持的操作。",
+            Ra2IniEditPreviewFailureKind.InvalidSection => "目标 Section 无效。",
+            Ra2IniEditPreviewFailureKind.SectionNotFound => "未找到目标 Section。",
+            Ra2IniEditPreviewFailureKind.AmbiguousSection => "目标 Section 存在重复定义。",
+            Ra2IniEditPreviewFailureKind.FieldNotFound => "未找到要替换的字段。",
+            Ra2IniEditPreviewFailureKind.AmbiguousField => "目标字段存在重复定义。",
+            Ra2IniEditPreviewFailureKind.ConflictingOperations => "编辑计划多次修改同一字段。",
+            Ra2IniEditPreviewFailureKind.OverlappingChanges => "结构化操作生成了重叠或越界的文本变更。",
+            Ra2IniEditPreviewFailureKind.NoChanges => "编辑计划不会改变当前文档。",
+            Ra2IniEditPreviewFailureKind.Canceled => "编辑预览已取消。",
+            Ra2IniEditPreviewFailureKind.CurrentAnalysisFailed => "无法分析当前文档，未生成编辑预览。",
+            Ra2IniEditPreviewFailureKind.CandidateAnalysisFailed => "无法分析候选文档，未生成可确认的编辑预览。",
+            Ra2IniEditPreviewFailureKind.DocumentTooLarge => "文档超过结构化编辑预览的资源上限。",
+            Ra2IniEditPreviewFailureKind.ResultLimitExceeded => "诊断结果超过结构化编辑预览的资源上限。",
+            _ => "生成结构化编辑预览时发生意外错误。"
+        };
 }

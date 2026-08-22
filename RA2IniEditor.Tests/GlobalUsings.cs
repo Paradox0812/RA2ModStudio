@@ -1,6 +1,12 @@
 global using RA2IniEditor.Application.Classification;
+global using RA2IniEditor.Application.Automation.Experimental;
 global using RA2IniEditor.Application.Diagnostics;
 global using RA2IniEditor.Application.FieldTrust;
 global using RA2IniEditor.Application.Language;
 global using RA2IniEditor.Application.Editing;
 global using RA2IniEditor.Application.TextModel;
+global using Ra2IniEditOperationKind = RA2IniEditor.Application.Automation.Experimental.Ra2AutomationEditOperationKind;
+global using Ra2IniEditOperation = RA2IniEditor.Application.Automation.Experimental.Ra2AutomationEditOperation;
+global using Ra2IniEditPlan = RA2IniEditor.Application.Automation.Experimental.Ra2AutomationEditPlan;
+global using Ra2IniEditPreviewFailureKind = RA2IniEditor.Application.Automation.Experimental.Ra2AutomationEditPreviewFailureKind;
+global using Ra2IniEditOperationOutcomeKind = RA2IniEditor.Application.Automation.Experimental.Ra2AutomationEditOperationOutcomeKind;

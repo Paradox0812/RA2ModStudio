@@ -52,6 +52,15 @@ internal sealed class Ra2AuthoringSnapshot
 
     public Ra2FieldRegistryProviderSnapshot FieldRegistry { get; }
 
+    public Ra2AutomationDocumentSnapshot ToAutomationSnapshot()
+        => new(
+            DocumentId,
+            EditRevision,
+            FilePath,
+            Text,
+            IsEditable,
+            new Ra2AutomationFieldRegistrySnapshot(FieldRegistry.Provider, FieldRegistry.Revision));
+
     public static Ra2AuthoringSnapshotCaptureResult Capture(
         Ra2EditableDocumentSession? session,
         string? editorText,

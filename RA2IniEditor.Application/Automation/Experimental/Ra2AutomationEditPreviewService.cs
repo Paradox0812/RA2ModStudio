@@ -1,3 +1,5 @@
+using RA2IniEditor.Application.Editing;
+
 namespace RA2IniEditor.Application.Automation.Experimental;
 
 public sealed class Ra2AutomationEditPreviewService : IRa2AutomationEditPreviewService
@@ -13,24 +15,22 @@ public sealed class Ra2AutomationEditPreviewService : IRa2AutomationEditPreviewS
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(plan);
 
-        // HLI-1B-3 replaces this buildable contract skeleton with the canonical semantic engine.
-        Ra2AutomationEditPreviewFailureKind failureKind = cancellationToken.IsCancellationRequested
-            ? Ra2AutomationEditPreviewFailureKind.Canceled
-            : Ra2AutomationEditPreviewFailureKind.UnexpectedFailure;
-        string message = cancellationToken.IsCancellationRequested
-            ? "The edit preview was canceled."
-            : "The edit preview engine is not available in this stage.";
-
-        return new Ra2AutomationEditPreviewResult(
+        return new Ra2AutomationEditPreviewEngine().Preview(
             snapshot,
             plan,
-            failureKind,
-            message,
-            Guid.Empty,
-            candidateText: null,
-            changes: [],
-            operationPreviews: [],
-            addedDiagnostics: [],
-            removedDiagnostics: []);
+            MaximumDocumentCharacters,
+            MaximumDiagnosticItems,
+            cancellationToken);
     }
+
+    internal Ra2AutomationEditPreviewResult PreviewForHost(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationEditPlan plan,
+        CancellationToken cancellationToken = default)
+        => new Ra2AutomationEditPreviewEngine().Preview(
+            snapshot,
+            plan,
+            int.MaxValue,
+            int.MaxValue,
+            cancellationToken);
 }

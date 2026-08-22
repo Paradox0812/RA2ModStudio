@@ -1,4 +1,5 @@
 using RA2IniEditor.Application.Automation.Experimental;
+using RA2IniEditor.Core.Schema;
 using Xunit;
 
 namespace RA2IniEditor.Application.Tests;
@@ -109,9 +110,17 @@ public sealed class Ra2AutomationEditContractTests
     }
 
     [Fact]
-    public void ServiceSkeleton_FailureCarriesNoApplicablePayload()
+    public void Service_ProducesSemanticPreviewInsteadOfTemporarySkeleton()
     {
-        Ra2AutomationDocumentSnapshot snapshot = AutomationTestSupport.Snapshot("[E1]\nStrength=100\n");
+        Ra2AutomationDocumentSnapshot snapshot = new(
+            Guid.NewGuid(),
+            1,
+            "rulesmd.ini",
+            "[E1]\nStrength=100\n",
+            isEditable: true,
+            new Ra2AutomationFieldRegistrySnapshot(
+                new AutomationTestSupport.EmptyFieldDefinitionProvider(),
+                7));
         Ra2AutomationEditPlan plan = new(
             Guid.NewGuid(),
             snapshot.DocumentId,
@@ -123,13 +132,78 @@ public sealed class Ra2AutomationEditContractTests
 
         Ra2AutomationEditPreviewResult result = new Ra2AutomationEditPreviewService().Preview(snapshot, plan);
 
-        Assert.False(result.Succeeded);
-        Assert.Equal(Guid.Empty, result.PreviewId);
-        Assert.Null(result.CandidateText);
-        Assert.Empty(result.Changes);
-        Assert.Empty(result.OperationPreviews);
-        Assert.Empty(result.AddedDiagnostics);
-        Assert.Empty(result.RemovedDiagnostics);
-        Assert.False(result.RequiresExplicitConfirmation);
+        Assert.True(result.Succeeded);
+        Assert.Equal("[E1]\nStrength=150\n", result.CandidateText);
+        Assert.NotEqual(Guid.Empty, result.PreviewId);
+        Assert.Single(result.Changes);
+        Assert.Single(result.OperationPreviews);
+        Assert.True(result.RequiresExplicitConfirmation);
+    }
+
+    [Fact]
+    public void PreviewResult_DefensivelyCopiesListsAndRejectsFailurePayload()
+    {
+        Ra2AutomationDocumentSnapshot snapshot = new(
+            Guid.NewGuid(),
+            1,
+            "rulesmd.ini",
+            "[E1]\nStrength=100\n",
+            isEditable: true,
+            new Ra2AutomationFieldRegistrySnapshot(
+                new AutomationTestSupport.EmptyFieldDefinitionProvider(),
+                7));
+        Ra2AutomationEditOperation operation = new(
+            Ra2AutomationEditOperationKind.ReplaceFieldValue,
+            "E1",
+            "Strength",
+            "150");
+        Ra2AutomationEditPlan plan = new(
+            Guid.NewGuid(), snapshot.DocumentId, snapshot.Version, 7,
+            [operation], "Set Strength", "test");
+        List<Ra2AutomationTextChange> changes =
+        [
+            new(new Ra2AutomationTextSpan(14, 3), "150", "test")
+        ];
+        List<Ra2AutomationEditOperationPreview> operations =
+        [
+            new(
+                0,
+                operation,
+                Ra2AutomationEditOperationOutcomeKind.Replaced,
+                Ra2SectionKind.Unknown,
+                false,
+                Ra2AutomationFieldTrustLevel.Unknown,
+                new Ra2AutomationTextSpan(14, 3),
+                "Replace Strength")
+        ];
+        List<Ra2AutomationDiagnosticFact> diagnostics = [];
+
+        Ra2AutomationEditPreviewResult success = new(
+            snapshot,
+            plan,
+            Ra2AutomationEditPreviewFailureKind.None,
+            "Success",
+            Guid.NewGuid(),
+            "[E1]\nStrength=150\n",
+            changes,
+            operations,
+            diagnostics,
+            diagnostics);
+        changes.Clear();
+        operations.Clear();
+
+        Assert.Single(success.Changes);
+        Assert.Single(success.OperationPreviews);
+        Assert.Throws<ArgumentException>(() => new Ra2AutomationEditPreviewResult(
+            snapshot,
+            plan,
+            Ra2AutomationEditPreviewFailureKind.UnexpectedFailure,
+            "Failure",
+            Guid.Empty,
+            "partial",
+            [],
+            [],
+            [],
+            []));
     }
 }

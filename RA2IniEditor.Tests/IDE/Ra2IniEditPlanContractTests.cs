@@ -81,7 +81,7 @@ public sealed class Ra2IniEditPlanContractTests
         => new(
             Guid.NewGuid(),
             Guid.NewGuid(),
-            expectedEditRevision: 2,
+            expectedVersion: 2,
             expectedFieldRegistryRevision: 3,
             operations,
             summary,

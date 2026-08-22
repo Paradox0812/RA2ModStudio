@@ -32,8 +32,8 @@ public sealed class Ra2IniEditPreviewServiceTests
         Assert.True(preview.Succeeded);
         Assert.Equal("[E1]\nStrength = 125 ; keep", preview.CandidateText);
         Assert.Equal(snapshot.Text, preview.Snapshot.Text);
-        Assert.Equal(snapshot.FieldRegistry.Revision, preview.CurrentAnalysis!.FieldRegistryRevision);
-        Assert.Equal(snapshot.FieldRegistry.Revision, preview.CandidateAnalysis!.FieldRegistryRevision);
+        Assert.Equal(snapshot.FieldRegistry.Revision, preview.AutomationResult.FieldRegistryRevision);
+        Assert.Equal(snapshot.EditRevision, preview.AutomationResult.Version);
         Assert.Equal(Ra2IniEditOperationOutcomeKind.Replaced, Assert.Single(preview.OperationPreviews).OutcomeKind);
     }
 

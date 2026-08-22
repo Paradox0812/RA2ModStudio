@@ -23,18 +23,19 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
     public void AuthoringSources_DoNotReferenceUiShellAiWriterOrFileMutation()
     {
         string root = TestRepositoryRoot.Find();
-        string[] fileNames =
+        string[] relativePaths =
         [
-            "Ra2AuthoringSnapshot.cs",
-            "Ra2IniEditOperation.cs",
-            "Ra2IniEditPlan.cs",
-            "Ra2IniEditPreview.cs",
-            "IRa2IniEditPreviewService.cs",
-            "Ra2IniEditPreviewService.cs",
-            "Ra2IniEditPreviewCurrency.cs",
-            "Ra2IniEditApplyResult.cs",
-            "IRa2EditorTransactionPort.cs",
-            "Ra2IniAuthoringWorkspace.cs"
+            "RA2IniEditor.IDE/Editing/Ra2AuthoringSnapshot.cs",
+            "RA2IniEditor.IDE/Editing/Ra2IniEditPreview.cs",
+            "RA2IniEditor.IDE/Editing/IRa2IniEditPreviewService.cs",
+            "RA2IniEditor.IDE/Editing/Ra2IniEditPreviewService.cs",
+            "RA2IniEditor.IDE/Editing/Ra2IniEditPreviewCurrency.cs",
+            "RA2IniEditor.IDE/Editing/Ra2IniEditApplyResult.cs",
+            "RA2IniEditor.IDE/Editing/IRa2EditorTransactionPort.cs",
+            "RA2IniEditor.IDE/Editing/Ra2IniAuthoringWorkspace.cs",
+            "RA2IniEditor.Application/Automation/Experimental/Ra2AutomationEditContracts.cs",
+            "RA2IniEditor.Application/Automation/Experimental/Ra2AutomationEditPreviewService.cs",
+            "RA2IniEditor.Application/Editing/Ra2AutomationEditPreviewEngine.cs"
         ];
         string[] forbiddenTokens =
         [
@@ -51,13 +52,9 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
             "FieldRegistryRuntimeService"
         ];
 
-        foreach (string fileName in fileNames)
+        foreach (string relativePath in relativePaths)
         {
-            string source = File.ReadAllText(Path.Combine(
-                root,
-                "RA2IniEditor.IDE",
-                "Editing",
-                fileName));
+            string source = File.ReadAllText(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
             foreach (string token in forbiddenTokens)
                 Assert.DoesNotContain(token, source, StringComparison.Ordinal);
         }
@@ -72,14 +69,15 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
     }
 
     [Fact]
-    public void Preview_CancellationAfterCurrentAnalysisStopsBeforeCandidateAnalysis()
+    public void Preview_CancellationDuringCurrentAnalysisReturnsTypedFailure()
     {
         using CancellationTokenSource cancellation = new();
-        CancelAfterFirstAnalysisService analysis = new(
+        Ra2IniEditPreviewService service = new(
             new Ra2IniLanguageAnalysisService(),
-            cancellation);
-        Ra2IniEditPreviewService service = new(analysis, new Ra2AddPropertyInsertPlanner());
-        Ra2AuthoringSnapshot snapshot = Snapshot("[E1]\nStrength=100");
+            new Ra2AddPropertyInsertPlanner());
+        Ra2AuthoringSnapshot snapshot = Snapshot(
+            "[E1]\nStrength=100",
+            new CancelingProvider(cancellation));
 
         Ra2IniEditPreview preview = service.Preview(
             snapshot,
@@ -87,7 +85,7 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
             cancellation.Token);
 
         Assert.Equal(Ra2IniEditPreviewFailureKind.Canceled, preview.FailureKind);
-        Assert.Equal(1, analysis.CallCount);
+        Assert.Null(preview.CandidateText);
     }
 
     [Theory]
@@ -130,14 +128,16 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
         return builder.ToString();
     }
 
-    private static Ra2AuthoringSnapshot Snapshot(string text)
+    private static Ra2AuthoringSnapshot Snapshot(
+        string text,
+        IRa2FieldDefinitionProvider? provider = null)
     {
         Ra2EditableDocumentSessionService sessionService = new(
             new Ra2IniTextDocumentParser(),
             new Ra2DirtyStateService());
         Ra2EditableDocumentSession session = sessionService.StartEditing("rulesmd.ini", text);
         Ra2FieldRegistryProviderSnapshot registry = new(
-            new BuiltInRa2FieldDefinitionProvider(),
+            provider ?? new BuiltInRa2FieldDefinitionProvider(),
             revision: 1);
         return Assert.IsType<Ra2AuthoringSnapshot>(
             Ra2AuthoringSnapshot.Capture(session, text, string.Empty, registry).Snapshot);
@@ -157,29 +157,24 @@ public sealed class Ra2IniEditPreviewBoundaryAndPerformanceTests
             "Large document preview",
             "Tests");
 
-    private sealed class CancelAfterFirstAnalysisService : IRa2IniLanguageAnalysisService
+    private sealed class CancelingProvider : IRa2FieldDefinitionProvider
     {
-        private readonly IRa2IniLanguageAnalysisService _inner;
         private readonly CancellationTokenSource _cancellation;
 
-        public CancelAfterFirstAnalysisService(
-            IRa2IniLanguageAnalysisService inner,
-            CancellationTokenSource cancellation)
+        public CancelingProvider(CancellationTokenSource cancellation)
+            => _cancellation = cancellation;
+
+        public bool TryGetField(Ra2SectionKind sectionKind, string key, out Ra2FieldDefinition definition)
         {
-            _inner = inner;
-            _cancellation = cancellation;
+            _cancellation.Cancel();
+            definition = null!;
+            return false;
         }
 
-        public int CallCount { get; private set; }
+        public IReadOnlyList<Ra2FieldDefinition> GetFields(Ra2SectionKind sectionKind)
+            => [];
 
-        public Ra2IniLanguageAnalysisResult Analyze(Ra2LanguageAnalysisRequest request)
-        {
-            CallCount++;
-            Ra2IniLanguageAnalysisResult result = _inner.Analyze(request);
-            if (CallCount == 1)
-                _cancellation.Cancel();
-
-            return result;
-        }
+        public bool IsKnownField(Ra2SectionKind sectionKind, string key)
+            => false;
     }
 }
