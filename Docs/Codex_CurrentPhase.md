@@ -29,6 +29,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-1A1 Headless Document Query（Application、15-type Experimental API、31/31 + 2526/2526）。
 - AUTOMATION-HLI-1A2 Headless Diagnostics（唯一 neutral core、IDE adapter、18-type Experimental API、47/47 + 149/149 + 2526/2526）。
 - AUTOMATION-HLI-1B Headless Edit Preview（唯一 semantic engine、IDE thin adapter、29-type Experimental API、82/82 + 88/88 + 390/390 + 2526/2526）。
+- AUTOMATION-HLI-1C Host Boundary Confirmation（两处 internal admission/projection guard、
+  11 个新契约测试、public API 0 change、82/82 + 53/53 + 2537/2537）。
 
 ### Implemented / Acceptance Pending
 
@@ -37,30 +39,25 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-1C Host Boundary Confirmation 已完成只读代码事实回归和最终契约；确认现有
-  Workspace Preview seam 足够，并识别两处 internal binding guard；计划实施限于两处
-  Editing 文件、一个新测试文件和治理文档，等待用户明确确认。
 - Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AUTOMATION-HLI-1B_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-1C_StageLedger.md`
 
 ```text
 Restore: Passed
-Debug build: Passed, 0 warnings, 0 errors
+Debug build: Passed, 0 warnings, 0 errors on final build
 Application.Tests: Passed 82/82
-A2/A3/A4 regression: Passed 88/88
-TextModel/AddProperty/Search/Completion/Save regression: Passed 390/390
-Non-UI tests: Passed 2526/2526
-IdeOnly clean package: Passed after governance flush
+Host lifecycle/contract regression: Passed 53/53
+Non-UI tests: Passed 2537/2537
+IdeOnly clean package: Passed, 1108 files
 Computer control: NotRun; no UI behavior changed
 ```
 
-HLI-1B 静态证据：8 个旧 TextModel/change 路径及 2 个旧 IDE plan 路径为 0、IDE
-Preview service 为 thin adapter、Application Core-only、HLI-1B Application 变更文件的
-WPF/IDE/Infrastructure/IO forbidden reference 为 0、exported allowlist 精确 29。
+HLI-1C 静态证据：production diff 精确为两个 internal Editing guard；Application、Core、
+Infrastructure、Shell/XAML/project/legacy diff 为 0；Application exported allowlist 精确 29。
 
 ## 4. 当前关键边界
 
@@ -84,15 +81,15 @@ WPF/IDE/Infrastructure/IO forbidden reference 为 0、exported allowlist 精确 
 
 ## 6. 下一安全入口
 
-下一安全操作是等待用户确认最终契约，然后进入：
+下一安全操作是进入：
 
 ```text
-AUTOMATION-HLI-1C-0 Baseline and Exact Surface Freeze
+AUTOMATION-HLI-2A Capability Gateway code-fact audit and final contract
 ```
 
-HLI-1C 审计与最终契约见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` 和
-`Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`。当前停止在契约门；未经确认
-不新增 HLI-1C tests，也不进入 HLI-2A。
+HLI-1C 审计、契约和完成证据见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`、
+`Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md` 与
+`Docs/AUTOMATION-HLI-1C_StageLedger.md`。HLI-2A 必须先审计/冻结契约，不自动实施 Gateway。
 
 ## 7. 最小继续阅读集
 
@@ -115,6 +112,7 @@ HLI-1C 审计与最终契约见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudi
 17. `Docs/AUTOMATION-HLI-1B_StageLedger.md`
 18. `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`
 19. `Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`
+20. `Docs/AUTOMATION-HLI-1C_StageLedger.md`
 
 旧累积状态已保存在：
 

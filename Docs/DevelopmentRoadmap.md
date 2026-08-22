@@ -22,7 +22,7 @@
 | HLI-1A1 | Headless Document Query 首切片 | Application/Application.Tests、Section、单文档 Reference | Completed / Verified |
 | HLI-1A2 | Headless Diagnostics | neutral 唯一核心、IDE adapter、Validate Experimental API | Completed / Verified |
 | HLI-1B | Headless Edit Preview | A2 等价 snapshot/plan/preview/change set | Completed / Verified |
-| HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Final contract / awaiting implementation approval |
+| HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Completed / Verified |
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed failure、取消 | Not started |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 保留 A4-R1 policy，不再直接依赖 IDE internal 服务 | Not started |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Not started |
@@ -52,6 +52,8 @@
 - Diagnostics 唯一核心、IDE adapter 与 public Validate 已完成。
 - HLI-1B 已完成：TextModel/change 与唯一 semantic Preview engine 位于 Application，
   IDE 保留 thin Host adapter；新增 11 个 Experimental public types，allowlist 精确为 29。
+- HLI-1C 已完成：Host projection 校验 operation/span/candidate-change 闭合，Workspace
+  admission 校验 invocation wrapper 实例绑定；public API 0 change，Shell/Apply/Save 不变。
 - 每个能力必须有 snapshot、version、limits、cancellation 和 typed failure。
 - 不移动 A3 Apply、Save、Shell、WPF 或 Registry runtime singleton。
 
@@ -126,11 +128,9 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-User approval -> AUTOMATION-HLI-1C-0 Baseline and Exact Surface Freeze
+AUTOMATION-HLI-2A Capability Gateway code-fact audit and final contract
 ```
 
-HLI-1C 事实与最终契约见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` 和
-`Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`。审计确认无需新增 adapter、handle
-或 store；现有 Workspace 包围式 Preview seam 已足够。实施只加固两处 internal Host
-binding 并增加边界测试/治理文档。不得新增结果注册旁路、public Apply/Save 或自动写盘，
-也不得自动进入 HLI-2A。
+HLI-1C 完成证据见 `Docs/AUTOMATION-HLI-1C_StageLedger.md`。下一阶段先冻结 Gateway 的
+descriptor、版本、typed failure、取消、资源限制和 Host/consumer 边界；不得直接添加
+public Apply/Save、任意命令/文件访问、Preview store，或自动进入 HLI-2B consumer 实现。

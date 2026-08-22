@@ -52,6 +52,16 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
         try
         {
             preview = _previewService.Preview(snapshot, plan, cancellationToken);
+            if (preview is null ||
+                !ReferenceEquals(preview.Snapshot, snapshot) ||
+                !ReferenceEquals(preview.Plan, plan))
+            {
+                preview = Ra2IniEditPreview.Failed(
+                    snapshot,
+                    plan,
+                    Ra2IniEditPreviewFailureKind.UnexpectedFailure,
+                    "结构化编辑预览未绑定本次 Host 请求。");
+            }
         }
         catch (Exception exception) when (!IsFatal(exception))
         {

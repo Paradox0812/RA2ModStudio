@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-1C Host Boundary Confirmation Final Contract
 
 契约日期：2026-08-22
-状态：Final / Awaiting user implementation approval
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-1B Completed / Verified
 事实依据：`Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`
 
@@ -334,7 +334,11 @@ powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profi
 同时避免最可能导致返工的 `RegisterPreview` 和过早 Gateway adapter。剩余未知仅是新增
 测试是否会揭示两处 guard 之外的真实缺口；该情况已有强制停止规则。
 
-## 17. 批准门
+## 17. 完成状态
 
-当前停止在 HLI-1C 最终契约。未经用户明确确认，不新增测试、不运行完整包级收口、
-不修改生产代码，也不进入 HLI-2A。
+用户已确认并授权连续执行。HLI-1C-0..1C-4 已完成，生产改动精确限于两处 internal
+Host guard；11 个新契约测试、Application 82/82、Host 定向 53/53 和完整非 UI
+2537/2537 均通过。完成证据见 `Docs/AUTOMATION-HLI-1C_StageLedger.md`。
+
+本阶段停止，不进入 HLI-2A 实现。下一安全入口是 HLI-2A Capability Gateway 的
+代码事实审计与最终契约。

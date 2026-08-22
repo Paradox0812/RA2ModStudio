@@ -181,7 +181,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-1C 复用 Workspace 包围式 Preview seam，不新增结果注册旁路
 
-- Status: Proposed / final contract awaiting implementation approval
+- Status: Accepted
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-1C
 - Context:
@@ -207,7 +207,8 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 当前 Host unlimited policy 与 public 8M/10k policy 的切换必须在 HLI-2B 明确决策。
   - 若 HLI-1C tests 暴露两处已批准 guard 之外的生产缺口，必须停止并形成 R3 修订契约。
 - Follow-up:
-  - 用户确认 HLI-1C 最终契约后执行 1C-0..1C-4；完成后停止，不自动进入 HLI-2A。
+  - HLI-1C-0..1C-4 已完成并通过 82/82、53/53、2537/2537；下一步只进入 HLI-2A
+    Capability Gateway 的代码事实审计与最终契约，不自动实现 Gateway。
 
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 

@@ -131,10 +131,32 @@ internal sealed class Ra2IniEditPreview
                 []);
         }
 
+        ValidateOperationEvidence(snapshot, plan, result);
+
         Ra2TextChangeSet changeSet = new(result.Changes.Select(change => new Ra2TextChange(
             new Ra2TextSpan(change.Span.Start, change.Span.Length),
             change.NewText,
             change.Reason)));
+        string projectedText;
+        try
+        {
+            projectedText = changeSet.Apply(snapshot.Text);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new ArgumentException(
+                "Automation preview changes are outside the Host snapshot.",
+                nameof(result),
+                exception);
+        }
+
+        if (!string.Equals(projectedText, result.CandidateText, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "Automation preview changes do not reproduce the candidate text.",
+                nameof(result));
+        }
+
         IReadOnlyList<Ra2IniEditOperationPreview> operationPreviews = result.OperationPreviews
             .Select(MapOperationPreview)
             .ToArray();
@@ -154,6 +176,43 @@ internal sealed class Ra2IniEditPreview
             operationPreviews,
             addedDiagnostics,
             removedDiagnostics);
+    }
+
+    private static void ValidateOperationEvidence(
+        Ra2AuthoringSnapshot snapshot,
+        Ra2IniEditPlan plan,
+        Ra2AutomationEditPreviewResult result)
+    {
+        if (result.OperationPreviews.Count != plan.Operations.Count)
+        {
+            throw new ArgumentException(
+                "Automation preview operation evidence does not match the Host plan.",
+                nameof(result));
+        }
+
+        for (int index = 0; index < plan.Operations.Count; index++)
+        {
+            Ra2IniEditOperation expected = plan.Operations[index];
+            Ra2AutomationEditOperationPreview actual = result.OperationPreviews[index];
+            if (actual.OperationIndex != index ||
+                actual.Operation.Kind != expected.Kind ||
+                !string.Equals(actual.Operation.SectionName, expected.SectionName, StringComparison.Ordinal) ||
+                !string.Equals(actual.Operation.Key, expected.Key, StringComparison.Ordinal) ||
+                !string.Equals(actual.Operation.Value, expected.Value, StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    "Automation preview operation evidence does not match the Host plan.",
+                    nameof(result));
+            }
+
+            if (actual.AffectedOriginalSpan.Start > snapshot.Text.Length ||
+                actual.AffectedOriginalSpan.End > snapshot.Text.Length)
+            {
+                throw new ArgumentException(
+                    "Automation preview operation evidence is outside the Host snapshot.",
+                    nameof(result));
+            }
+        }
     }
 
     public static Ra2IniEditPreview Failed(

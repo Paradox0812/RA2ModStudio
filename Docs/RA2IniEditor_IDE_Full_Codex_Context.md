@@ -36,7 +36,8 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-1B 完成证据 | `Docs/AUTOMATION-HLI-1B_StageLedger.md` |
 | HLI-1C 事实证据 | `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` |
 | HLI-1C 最终契约 | `Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md` |
-| 下一安全入口 | 用户确认后进入 HLI-1C-0 Baseline and Exact Surface Freeze |
+| HLI-1C 完成证据 | `Docs/AUTOMATION-HLI-1C_StageLedger.md` |
+| 下一安全入口 | HLI-2A Capability Gateway 代码事实审计与最终契约 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -173,12 +174,14 @@ HLI-1B 已完成：6 个 TextModel + 2 个 TextChange 已原子迁入 Applicatio
 唯一 semantic preview engine 与 11 个新增 Experimental public types 已实现，IDE 保留
 thin Host adapter，allowlist 精确为 29。82/82、88/88、390/390 和 2526/2526 均通过。
 
-HLI-1C 事实回归与最终契约已完成：现有 `IRa2IniEditPreviewService` 是正确的 Host
-admission seam，Workspace 包围 invocation 并拥有 generation/active slot；无需新增
-`RegisterPreview`、proposal handle store、public Apply 或 Gateway adapter。审计同时发现
-Host projection 的 operation/candidate-change 校验和 Workspace wrapper binding 需要两处
-internal guard；计划实施严格限于这两处和边界 tests/docs。当前等待用户确认 HLI-1C-0，
-不进入 Gateway。
+HLI-1C 已完成：现有 `IRa2IniEditPreviewService` 继续是唯一 Host admission seam；
+`FromAutomation` 现验证 operation evidence、span 与 candidate/change 闭合，Workspace 在
+active-slot admission 前验证返回 wrapper 与 invocation snapshot/plan 的实例绑定。无需新增
+`RegisterPreview`、proposal handle store、public Apply 或 Gateway adapter。Application
+allowlist 保持 29；82/82、Host 53/53 和完整非 UI 2537/2537 通过。
+
+下一安全入口是 HLI-2A Capability Gateway 的代码事实审计与最终契约；不得直接实现
+Gateway、HLI-2B consumer 或公开 Apply/Save。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。
