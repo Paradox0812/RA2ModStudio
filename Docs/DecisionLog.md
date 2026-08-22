@@ -144,6 +144,41 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - HLI-1A2 已完成并通过 headless、149 项依赖集、完整回归和 clean package 门禁；
     当前停止，HLI-1B 另行事实回归和契约。
 
+## Decision: HLI-1B 迁移唯一 Preview 权威并保留 Host Apply 所有权
+
+- Status: Proposed / final contract awaiting implementation approval
+- Date: 2026-08-22
+- Task(s): AUTOMATION-HLI-1B
+- Context:
+  - A2 已有纯内存、单文档结构化预览，但算法、TextModel 和 ChangeSet 位于 WPF IDE
+    assembly，独立 Agent 无法引用。
+  - A3/A4 已正确拥有 active Preview、显式确认、live currency、Apply/Undo 和用户展示；
+    这些职责不应因 Headless 抽离而下移。
+  - HLI-1A1/1A2 已提供 neutral SemanticModel、Diagnostics、FieldTrust 和 common snapshot。
+- Decision:
+  - 6 个 TextModel 和 2 个 TextChange 文件原子迁入 Application internal，旧路径删除；
+    line insertion 抽为唯一 internal primitive，供 IDE AddProperty 与 Preview 共用。
+  - A2 semantic planner 和 diagnostic delta 迁入 Application 唯一 engine；IDE 只保留 Host
+    snapshot 投影、中文 presentation 和 A3/A4 compatibility wrapper。
+  - 新增精确 11 个 Experimental public types，allowlist 从 18 变为 29；public service
+    只有 Preview，无 Apply/Save/store。
+  - public Preview 使用 8,388,608 chars、10,000 diagnostics、typed cancellation/limit；
+    IDE compatibility path 复用同一 engine 但不静默改变既有 Host budget。
+- Rejected Alternatives:
+  - 在 Application 复制一套 A2 planner/TextModel；会形成第二语义权威。
+  - 把 raw TextModel/SemanticModel 或 Host Preview 直接 public；会固化内部生命周期。
+  - 同时迁移 A3/A4/Save；会混淆 Preview 与提交权威并扩大 R3 风险。
+  - 为减少 adapter 直接让 Gateway 调用 EditorTransactionPort；会绕过用户确认和 live currency。
+- Consequences:
+  - 实施为 R3/R2，必须保持 Application 47/47 和 A2/A3/A4 84/84 迁移前基线，增加
+    headless parity/limits/reflection tests，并运行完整非 UI suite。
+  - TextModel 移动影响 Save/Search/Completion 的编译依赖，需 global using 和受影响回归；
+    不授权行为重构。
+  - HLI-1C 只确认 Host adapter 与 A3/A4 生命周期，不再设计第二套 Preview 数据模型。
+- Follow-up:
+  - 用户确认 `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 后，从 HLI-1B-0
+    baseline/rollback 开始连续实施；完成后停止，不自动进入 HLI-1C。
+
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 
 - Status: Accepted

@@ -31,7 +31,9 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | 最新 Headless 实现证据 | `Docs/AUTOMATION-HLI-1A1_StageLedger.md` |
 | HLI-1A2 事实证据 | `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` |
 | HLI-1A2 最终契约 | `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` |
-| 下一安全入口 | 只读回归并契约 HLI-1B Headless Edit Preview |
+| HLI-1B 事实证据 | `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` |
+| HLI-1B 最终契约 | `Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` |
+| 下一安全入口 | 用户确认后进入 HLI-1B-0 Baseline Guard and Rollback |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -160,8 +162,12 @@ body-span 隔离、Reference 空成功/无法解析失败、8M chars/10k items �
 通过 31 项 headless、54 项迁移和 2526 项完整测试。
 
 HLI-1A2 已完成：diagnostic/FieldTrust 唯一闭包位于 Application，IDE 保留单向
-ViewModel adapter，public allowlist 精确为 18。当前下一入口是 HLI-1B 的只读
-TextModel/Preview 依赖回归和最终契约；不得直接公开 raw model 或进入 Gateway。
+ViewModel adapter，public allowlist 精确为 18。
+
+HLI-1B 事实审计和最终契约已完成但未实施：冻结 6 个 TextModel + 2 个 TextChange
+文件原子迁移、唯一 semantic preview engine、IDE Host thin adapter、11 个新增
+Experimental public types（实施后 allowlist 29）以及 1B-0..1B-6 连续门禁。当前等待
+用户确认；不得提前修改生产代码或进入 Gateway。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

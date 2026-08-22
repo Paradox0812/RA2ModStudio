@@ -36,7 +36,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-1B Headless Edit Preview 尚未完成代码事实回归或最终契约。
+- HLI-1B Headless Edit Preview 已完成代码事实回归和最终契约；生产代码尚未实施，
+  等待用户明确确认。
 - Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
@@ -79,14 +80,16 @@ Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精�
 
 ## 6. 下一安全入口
 
-下一安全操作是先只读审计并制定：
+下一安全操作是等待用户确认最终契约，然后从：
 
 ```text
-AUTOMATION-HLI-1B Headless Edit Preview code-fact audit and final contract
+AUTOMATION-HLI-1B-0 Baseline Guard and Rollback
 ```
 
-HLI-1A2 已完成，见 `Docs/AUTOMATION-HLI-1A2_StageLedger.md`。当前必须停止在
-HLI-1A2；未经新的事实审计、最终契约和用户确认，不迁移 HLI-1B Preview。
+事实审计：`Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`。
+
+最终契约：`Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`。
+当前必须停止在契约门；未经用户确认，不迁移 HLI-1B Preview。
 
 ## 7. 最小继续阅读集
 
@@ -104,6 +107,8 @@ HLI-1A2；未经新的事实审计、最终契约和用户确认，不迁移 HLI
 12. `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md`
 13. `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md`
 14. `Docs/AUTOMATION-HLI-1A2_StageLedger.md`
+15. `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`
+16. `Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`
 
 旧累积状态已保存在：
 

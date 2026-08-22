@@ -21,7 +21,7 @@
 | HLI-1A0 | 依赖锥精确特征化 | 22 文件 Query 闭包、调用方影响、语义与等价测试门禁 | Completed / Verified 7/7 |
 | HLI-1A1 | Headless Document Query 首切片 | Application/Application.Tests、Section、单文档 Reference | Completed / Verified |
 | HLI-1A2 | Headless Diagnostics | neutral 唯一核心、IDE adapter、Validate Experimental API | Completed / Verified |
-| HLI-1B | Headless Edit Preview | A2 等价 snapshot/plan/preview/change set | Not started |
+| HLI-1B | Headless Edit Preview | A2 等价 snapshot/plan/preview/change set | Final contract / awaiting implementation approval |
 | HLI-1C | IDE Host Apply adapter | Gateway proposal handle -> 现有 A3 Apply/Undo | Not started |
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed failure、取消 | Not started |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 保留 A4-R1 policy，不再直接依赖 IDE internal 服务 | Not started |
@@ -50,6 +50,8 @@
 
 - `RA2IniEditor.Application` 和首个 Section/Reference 切片已按 R3/R2 契约完成。
 - Diagnostics 唯一核心、IDE adapter 与 public Validate 已完成；下一切片再迁 Preview。
+- HLI-1B 事实审计和最终契约已完成：冻结 11-type public Preview 面、TextModel/change
+  原子迁移、IDE thin adapter 和 1B-0..1B-6 连续门禁；尚未实施。
 - 每个能力必须有 snapshot、version、limits、cancellation 和 typed failure。
 - 不移动 A3 Apply、Save、Shell、WPF 或 Registry runtime singleton。
 
@@ -124,8 +126,9 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-Read-only audit and contract HLI-1B Headless Edit Preview
+User approval -> AUTOMATION-HLI-1B-0 Baseline Guard and Rollback
 ```
 
-HLI-1A2 完成证据见 `Docs/AUTOMATION-HLI-1A2_StageLedger.md`。HLI-1B 开始前必须
-先回归 A2 TextModel/plan/preview 闭包、消费者和等价门禁；不得直接迁移或扩张 public API。
+HLI-1B 事实依据与最终边界见 `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` 和
+`Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`。未经用户明确确认，不进入
+生产实施；确认后仍必须先跑 47/47、84/84 基线并建立回滚锚点。
