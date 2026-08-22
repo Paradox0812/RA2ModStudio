@@ -229,7 +229,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-2A 采用固定目录与强类型 Gateway，而非动态 dispatcher
 
-- Status: Proposed / awaiting implementation approval
+- Status: Accepted / implemented and verified
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-2A-0
 - Context:
@@ -253,4 +253,5 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 新增 public 类型候选精确为 6，allowlist 预期 29 -> 35。
   - HLI-2B 仍需单独决定 public 8M/10k budget 与现有 Host budget 的产品兼容策略。
 - Follow-up:
-  - 用户确认 HLI-2A 最终契约后执行 HLI-2A-1..2A-4；完成证据通过后将本决策改为 Accepted。
+  - HLI-2A-1..2A-4 已完成并通过 94/94、2537/2537 与 clean package 门禁；HLI-2B 先审计
+    IDE consumer 和 public/Host budget 差异，不自动修改 A4 policy。

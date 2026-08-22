@@ -37,7 +37,13 @@ public sealed class Ra2AutomationBoundaryTests
         "Ra2AutomationFieldTrustLevel",
         "Ra2AutomationTextChange",
         "Ra2AutomationEditOperationPreview",
-        "Ra2AutomationEditPreviewResult"
+        "Ra2AutomationEditPreviewResult",
+        "IRa2AutomationCapabilityGateway",
+        "Ra2AutomationCapabilityGateway",
+        "Ra2AutomationCapabilityDescriptor",
+        "Ra2AutomationCapabilityIds",
+        "Ra2AutomationCapabilityRisk",
+        "Ra2AutomationCapabilityStability"
     ];
 
     [Fact]

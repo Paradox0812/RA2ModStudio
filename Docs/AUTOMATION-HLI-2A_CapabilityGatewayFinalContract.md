@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-2A Capability Gateway Final Contract
 
 契约日期：2026-08-22
-状态：Final / Awaiting user implementation approval
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-1C Completed / Verified
 事实依据：`Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md`
 
@@ -28,7 +28,7 @@ Current contract/docs change: R0 runtime / R3 architecture decision
 Future implementation: R2 public API + R3 routing boundary
 Persistence/wire risk: None in HLI-2A
 UI/Shell risk: None
-Governance: Immediate contract/public API/decision ledger update
+Governance: Deferred during HLI-2A-1..2A-3; flushed at HLI-2A-4 stop
 ```
 
 如果实现需要更改 Apply/Save 权威、程序集依赖方向、序列化格式、持久化、provider schema
@@ -214,6 +214,7 @@ RA2IniEditor.Application/Automation/Experimental/IRa2AutomationCapabilityGateway
 RA2IniEditor.Application/Automation/Experimental/Ra2AutomationCapabilityGateway.cs (new)
 RA2IniEditor.Application.Tests/Ra2AutomationCapabilityGatewayTests.cs (new)
 RA2IniEditor.Application.Tests/Ra2AutomationBoundaryTests.cs
+RA2IniEditor.Tests/IDE/Ra2Hli1CHostBoundaryContractTests.cs (HLI-2A-R1: count only)
 ```
 
 阶段完成时允许更新：
@@ -240,7 +241,7 @@ RA2IniEditor.Application internal parser/semantic/diagnostic/edit algorithms
 RA2IniEditor.Core/**
 RA2IniEditor.Infrastructure/**
 RA2IniEditor.IDE/**
-RA2IniEditor.Tests/**
+RA2IniEditor.Tests/** except the approved HLI-2A-R1 count-only assertion above
 RA2IniEditor.UiAutomationTests/**
 all XAML / Shell / Dock / AutomationIds
 *.csproj / *.sln / package tooling
@@ -322,7 +323,8 @@ HLI-2A 不修改 Host 行为，因此不要求电脑控制或 UI 烟测。
 ## 15. 静态门禁
 
 - production diff 精确为 3 个新 Application Experimental 文件；不改现有算法文件。
-- test diff 精确为 1 个新 Gateway test 文件和 allowlist test 更新。
+- test diff 精确为 1 个新 Gateway test、Application allowlist test 更新，以及 HLI-2A-R1
+  的 HLI-1C exported-count `29 -> 35`。
 - Application exported allowlist 精确 35。
 - Application project reference 继续只有 Core。
 - catalog 精确四项、固定顺序、version=1、limits 与现有常量一致。
@@ -359,7 +361,14 @@ HLI-2A 不修改 Host 行为，因此不要求电脑控制或 UI 烟测。
 自审结论：该契约在当前代码事实下足够可靠。它冻结了 HLI-2B 真正需要的最小入口，
 同时把最易引发返工的 wire、dynamic dispatch、Job/Artifact 与 Host write authority 排除在外。
 
-## 18. 当前停止点
+## 18. 完成状态与停止点
 
-HLI-2A-0 审计与最终契约已完成；Gateway 生产实现尚未开始。下一安全入口是在用户确认本
-最终契约后执行 HLI-2A-1，不得自动进入 HLI-2B。
+HLI-2A-1..2A-4 已完成。实现新增精确 6 个 Experimental public 类型，Application exported
+allowlist 精确为 35；Gateway focused 12/12、Application 94/94、HLI-1C 11/11、完整非 UI
+2537/2537 均通过。完成证据见 `Docs/AUTOMATION-HLI-2A_StageLedger.md`。
+
+首次完整回归暴露 HLI-1C 历史测试仍硬编码 29。HLI-2A-R1 只将该 test-only assertion
+更新为 35，不改变 Host authority 或生产行为；这是最终契约唯一新增允许路径。
+
+HLI-2A 在治理与清洁源码包完成后停止，不自动进入 HLI-2B。下一安全入口是 HLI-2B
+IDE/AI Gateway Consumer 的代码事实审计与最终契约。

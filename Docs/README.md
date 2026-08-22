@@ -30,7 +30,7 @@
 | 查看已完成 Headless Diagnostics | `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` + `AUTOMATION-HLI-1A2_StageLedger.md` |
 | 查看已完成 Headless Edit Preview | `AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` + `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` + `AUTOMATION-HLI-1B_StageLedger.md` |
 | 查看已完成 Host Apply 边界 | `AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` + `AUTOMATION-HLI-1C_HostBoundaryFinalContract.md` + `AUTOMATION-HLI-1C_StageLedger.md` |
-| 审查/实施最小 Capability Gateway | `AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` + `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` |
+| 查看已完成最小 Capability Gateway | `AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` + `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` + `AUTOMATION-HLI-2A_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
 ## 3. 状态词
