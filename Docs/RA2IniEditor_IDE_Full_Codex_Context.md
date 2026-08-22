@@ -40,7 +40,9 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-2A 事实证据 | `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` |
 | HLI-2A 最终契约 | `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` |
 | HLI-2A 完成证据 | `Docs/AUTOMATION-HLI-2A_StageLedger.md` |
-| 下一安全入口 | HLI-2B IDE/AI Gateway Consumer 代码事实审计与最终契约 |
+| HLI-2B 事实证据 | `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` |
+| HLI-2B 最终契约 | `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` |
+| 下一安全入口 | 确认 HLI-2B 最终契约后执行 HLI-2B-1..2B-4 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -191,8 +193,13 @@ façade 已实现；新增精确 6 个 Experimental public 类型，allowlist 29
 两个 canonical service，无 generic dispatcher、wire schema、Apply/Save 或 Job/Event/Artifact。
 12/12、Application 94/94、HLI-1C 11/11 和完整非 UI 2537/2537 均通过。
 
-下一安全入口是 HLI-2B IDE/AI Gateway Consumer 的代码事实审计与最终契约；必须先决定
-public 8M/10k 与当前 Host budget 的兼容策略，不得直接切换 consumer 或公开 Apply/Save。
+HLI-2B-0 已完成：审计确认唯一改造点是现有 `Ra2IniEditPreviewService`，最终契约选择
+Gateway public 8M/10k/128 budget，并要求超限明确编辑在 provider 调用前由 descriptor-driven
+门禁本地拒绝；advisory 仍可使用截断上下文。Application 94/94、相关 Host/AI 48/48 基线通过。
+生产实现、`PreviewForHost` 删除和 Shell preflight 尚未开始。
+
+下一安全入口是确认 `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 后连续执行
+HLI-2B-1..2B-4；不得在未确认时切换 consumer 或修改 public Apply/Save。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

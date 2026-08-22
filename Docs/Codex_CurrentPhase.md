@@ -35,6 +35,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
   Gateway/descriptor/registry，冻结固定四能力目录与强类型门面。
 - AUTOMATION-HLI-2A-1..2A-4 最小 Capability Gateway：固定四能力目录、6 个新增
   Experimental public 类型、allowlist 35、12/12 + 94/94 + 2537/2537。
+- AUTOMATION-HLI-2B-0 IDE/AI Gateway Consumer 代码事实审计与最终契约：已冻结唯一
+  adapter、public budget、发送前成本门禁和 Host authority；生产实现尚未开始。
 
 ### Implemented / Acceptance Pending
 
@@ -43,6 +45,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
+- HLI-2B-1..2B-4 Gateway consumer 尚未实施，等待最终契约确认。
 - 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
   均未实现。
 
@@ -79,6 +82,7 @@ Infrastructure、IDE/Shell/XAML/project/legacy diff 为 0；Application exported
 |---|---|---|
 | HLI-TD-001 | Repaid through HLI-2A | Section/Reference/Diagnostics/Preview 唯一权威与 typed Gateway 均在 Application；IDE consumer 属 HLI-2B |
 | HLI-TD-002 | Repaid | diagnostic core 已 neutral；IDE 只保留单向 ViewModel adapter |
+| HLI-2B budget transition | Contracted / not implemented | 计划统一为 public 8 MiB/10k，并在 provider 调用前 fail closed |
 | AGENT-AUTHORING-A1-TD-001 | Open / controlled | SemanticModel 可能重复构建，只影响潜在性能 |
 | SEARCH-UIA-001 | Open | AvalonDock 浮动 child-HWND 阻止外部 UIA 穿透 Search 内容 |
 | Mixed-DPI visual coverage | Manual | 特定多屏硬件状态未由自动化覆盖 |
@@ -86,14 +90,15 @@ Infrastructure、IDE/Shell/XAML/project/legacy diff 为 0；Application exported
 
 ## 6. 下一安全入口
 
-下一安全操作是进入：
+下一安全操作是：
 
 ```text
-AUTOMATION-HLI-2B IDE/AI Gateway Consumer code-fact audit and final contract
+确认 AUTOMATION-HLI-2B IDE/AI Gateway Consumer Final Contract，随后执行 HLI-2B-1..2B-4
 ```
 
-HLI-2A 完成证据见 `Docs/AUTOMATION-HLI-2A_StageLedger.md`。HLI-2B 必须先审计 current AI
-consumer、HLI-1C admission seam 与 public/Host budget 差异，不自动实施 consumer。
+HLI-2B 审计与最终契约见 `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` 和
+`Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`。当前只完成契约阶段；未确认前
+不得切换 consumer、删除 `PreviewForHost` 或修改 Shell 请求门禁。
 
 ## 7. 最小继续阅读集
 
@@ -120,6 +125,8 @@ consumer、HLI-1C admission seam 与 public/Host budget 差异，不自动实施
 21. `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md`
 22. `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md`
 23. `Docs/AUTOMATION-HLI-2A_StageLedger.md`
+24. `Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md`
+25. `Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`
 
 旧累积状态已保存在：
 

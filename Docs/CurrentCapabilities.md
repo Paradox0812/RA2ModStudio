@@ -10,8 +10,8 @@
 诊断、保存安全、DeepSeek 流式助手、受限当前文件结构化编辑闭环，以及可由
 `net8.0` 调用方独立消费的 Document Query、Diagnostics 和 Edit Preview 切片。
 
-它还不是最终的自然语言 Mod 生产 Agent：Capability Gateway、独立 Agent、
-素材/图标生成、SHP/VXL 流水线、Job Runtime 和
+它还不是最终的自然语言 Mod 生产 Agent：最小进程内 Capability Gateway 已实现，但内置
+AI consumer、独立 Agent、素材/图标生成、SHP/VXL 流水线、Job Runtime 和
 运行时测试尚未实现。
 
 ## 2. 已完成并有验证证据
@@ -44,6 +44,8 @@
 | HLI-1A1 Headless Document Query | Core-only `RA2IniEditor.Application`、Section Get、current-document References Find、typed failure/limits/cancellation | Completed / Verified；Application.Tests 31/31、full 2526/2526、IdeOnly package 1086 |
 | HLI-1A2 Headless Diagnostics | Application 唯一 neutral diagnostics/FieldTrust core，IDE 单向 ViewModel adapter | Completed / Verified；Application.Tests 47/47、dependency 149/149、full 2526/2526 |
 | HLI-1B Headless Edit Preview | 受限字段 Upsert/Replace、candidate text、ordered changes、operation evidence、diagnostic delta、typed failure/limits/cancellation | Completed / Verified；Application.Tests 82/82、A2/A3/A4 88/88、TextModel 390/390、full 2526/2526 |
+| HLI-1C Host Boundary | Workspace generation/active slot、Host projection guard、single-use Apply authority | Completed / Verified；Host 53/53、full 2537/2537 |
+| HLI-2A Capability Gateway | 固定四能力 catalog、version/risk/limits、typed Query/Preview façade | Completed / Verified；Gateway 12/12、Application 94/94、full 2537/2537 |
 
 ## 3. 已实现但仍有验收边界
 
@@ -59,9 +61,9 @@
 
 | 能力 | 代码事实 | 状态 |
 |---|---|---|
-| 单文档 Section/Reference query | 已位于 Core-only `RA2IniEditor.Application`，有 Experimental typed API | Headless slice completed；尚未接 Gateway |
-| 单文档 Diagnostics query | 唯一算法位于 Core-only Application；有 Experimental typed API | Headless slice completed；尚未接 Gateway |
-| 语义 Edit Preview | 唯一 engine 位于 Core-only Application；有 Experimental typed API | Headless slice completed；只预览，不 Apply/Save |
+| 单文档 Section/Reference query | 已位于 Core-only `RA2IniEditor.Application`，由 typed Gateway 暴露 | Gateway available；尚无独立 Agent/CLI consumer |
+| 单文档 Diagnostics query | 唯一算法位于 Core-only Application，由 typed Gateway 暴露 | Gateway available；尚无独立 Agent/CLI consumer |
+| 语义 Edit Preview | 唯一 engine 位于 Core-only Application，由 typed Gateway 暴露 | Gateway available；只预览，不 Apply/Save |
 | Apply/Undo | A3 在 IDE host 内完整 | Host-only by design |
 | Save/Backup/Rollback | 现有服务完整 | Host/user-owned；不是 Agent capability |
 | A4 proposal | 当前 WPF 内置 AI 可消费 | 尚未通过 Capability Gateway 提供给独立 Agent/CLI |
@@ -71,7 +73,7 @@
 
 ## 5. 尚未实现
 
-- Versioned Capability Registry / Gateway。
+- 动态 Capability Registry、wire transport 与独立 host（最小固定 typed Gateway 已实现）。
 - 独立 Agent、CLI (`ra2tool`) 或进程外协议。
 - 通用语义模板和完整 Section/对象创建。
 - 项目级语义引用 API。
@@ -96,21 +98,22 @@
 
 ## 7. 最新可信验证基线
 
-当前最新完整实现证据来自 HLI-1B：
+当前最新完整实现证据来自 HLI-2A：
 
 ```text
 dotnet restore: Passed
-dotnet build Debug: Passed, 0 warnings, 0 errors
-dotnet test RA2IniEditor.Application.Tests: Passed 82/82
-dotnet test A2/A3/A4 regression: Passed 88/88
-dotnet test TextModel/AddProperty/Search/Completion/Save regression: Passed 390/390
-dotnet test RA2IniEditor.Tests: Passed 2526/2526
-IdeOnly clean package: Passed after governance flush
-UI / computer control: NotRun because HLI-1B has no UI behavior change
+dotnet build Debug: Passed, 0 errors; 1 existing warning in untouched test file
+dotnet test RA2IniEditor.Application.Tests: Passed 94/94
+dotnet test Gateway focused: Passed 12/12
+dotnet test HLI-1C boundary: Passed 11/11
+dotnet test RA2IniEditor.Tests: Passed 2537/2537
+IdeOnly clean package: Passed, 1115 files
+UI / computer control: NotRun because HLI-2A has no UI behavior change
 ```
 
 不同子系统的历史验证数量不同，应以各自 Stage Ledger 为证据，不把最新全量
 测试数量倒推为所有旧阶段都在同一环境重新验收。
 
-HLI-1A1/1A2/1B 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方消费；
-尚无 Gateway、独立 Agent/CLI 或 public Apply/Save，不能据此宣称完整 Agent 已可用。
+HLI-1A1/1A2/1B 与 HLI-2A 使 Query、Diagnostics 和 Preview 可由普通 `net8.0` 调用方经
+typed Gateway 消费；内置 AI 尚未切换为 Gateway consumer，也没有独立 Agent/CLI 或 public
+Apply/Save，不能据此宣称完整 Agent 已可用。

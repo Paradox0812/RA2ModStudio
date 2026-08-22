@@ -84,7 +84,7 @@ Application exported allowlist 已从 18 精确增加到 29；reflection、行�
 
 | 候选 | 状态 | 原因 |
 |---|---|---|
-| Edit Preview request/result/change DTO | Implemented / Experimental | 进程内 API 已可消费；尚无 Gateway/wire contract |
+| Edit Preview request/result/change DTO | Implemented / Experimental | 已由 typed Gateway 暴露；尚无 wire contract |
 | Apply/Undo API | Host-only by design | 继续由 IDE active session/currency/transaction 拥有 |
 | Save/Backup/Rollback API | Host/user-owned by design | 不成为 Headless Application 的写盘接口 |
 
@@ -107,14 +107,14 @@ Application exported allowlist 已从 18 精确增加到 29；reflection、行�
 禁止用公开这些内部模型的方式减少迁移改动；未来 Gateway 只能依赖上面的高层
 Experimental DTO/service。
 
-## 7. HLI-1C 零变更确认与下一门禁
+## 7. HLI-1C 历史零变更确认
 
 HLI-1C public API diff 为 0；Host boundary contract tests 与完整回归通过，Application
 exported allowlist 精确保持 29。没有公开 raw TextModel/SemanticModel、Apply/Save，
 也没有改变 Section/Reference/Validate/Preview 的公开失败语义。
 
-HLI-2A-0 已完成独立代码事实审计和最终契约；本节的 29-type 状态仍是当前生产事实。
-Gateway 候选只有在 HLI-2A 实施与门禁通过后才可改为 Implemented。
+上述 29-type 是 HLI-1C 完成时的历史事实；HLI-2A 随后已把当前 production allowlist
+增加到 35。当前状态以第 8 节和 HLI-2A Stage Ledger 为准。
 
 ## 8. HLI-2A 已实现的 Experimental Gateway API
 
@@ -134,3 +134,15 @@ Application tests、11 项 HLI-1C boundary 和 2537 项完整非 UI 回归均通
 统一 failure/result、wire DTO、Apply/Save、Job/Event/Artifact 或 provider schema；完整签名
 和完成证据见 `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` 与
 `AUTOMATION-HLI-2A_StageLedger.md`。
+
+## 9. HLI-2B public API 零变更契约
+
+HLI-2B-0 审计确认 consumer 切换无需新增或修改 public API：
+
+- Application exported allowlist 必须保持精确 35；
+- 复用 `IRa2AutomationCapabilityGateway.Preview`、既有 snapshot/plan/result/failure；
+- `Ra2AiEditAvailabilityKind.ResourceLimitExceeded` 仅是拟新增的 IDE internal 状态；
+- 删除 internal `PreviewForHost` 不影响 public surface；
+- 不增加 Host budget overload、Apply/Save、unified Gateway failure 或 wire DTO。
+
+状态：`Contracted / Not Implemented`。实现证据在 HLI-2B-1..2B-4 完成前不得补记。

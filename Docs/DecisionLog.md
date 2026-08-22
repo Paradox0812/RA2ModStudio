@@ -255,3 +255,31 @@ CurrentPhase 和对应 Stage Ledger 负责。
 - Follow-up:
   - HLI-2A-1..2A-4 已完成并通过 94/94、2537/2537 与 clean package 门禁；HLI-2B 先审计
     IDE consumer 和 public/Host budget 差异，不自动修改 A4 policy。
+
+## Decision: HLI-2B 统一采用 Gateway public budget，并在 provider 前 fail closed
+
+- Status: Proposed / awaiting HLI-2B implementation approval
+- Date: 2026-08-22
+- Task(s): AUTOMATION-HLI-2B-0
+- Context:
+  - 内置 AI 当前经唯一 IDE Host adapter 调用 `PreviewForHost`，资源预算为 `int.MaxValue`；
+    HLI-2A Gateway public Preview 为 8,388,608 chars / 10,000 diagnostics / 128 operations。
+  - 只替换 adapter 会让超限明确编辑在真实模型请求完成后才失败，产生可预先避免的调用。
+- Decision:
+  - 原位把现有 `Ra2IniEditPreviewService` 改为 typed Gateway consumer，不新增第二 adapter。
+  - 内置 AI 明确采用 Gateway public budget；consumer 切换后删除 internal `PreviewForHost`。
+  - Shell composition root 持有并注入同一 Gateway instance，在 provider send 前从 Preview
+    descriptor 读取限制并 fail closed；普通 advisory 仍使用现有截断上下文，不因超大文档被禁用。
+  - Workspace admission、A4 policy、explicit Apply、Shell transaction/Undo 和 Save authority不变。
+- Rejected Alternatives:
+  - 超限时回退 `PreviewForHost`：descriptor 与执行不一致并保留双预算旁路。
+  - 新增 public Host budget overload：扩大 Experimental API 且允许 caller 自行放大资源限制。
+  - 只在 provider 返回后处理 `DocumentTooLarge`：正确性尚可，但成本门禁不足。
+  - 新增平行 Gateway adapter：违反 HLI-1C 唯一 admission seam 并制造后续删除工作。
+- Consequences:
+  - 超 8 MiB 当前文件的 AI 结构化编辑将被本地拒绝且不发送；这是显式兼容性收窄。
+  - Application public API 保持 35 个 exported types；不增加新的 failure/DTO。
+  - Shell 需要一处经最终契约精确批准的 code-behind preflight，但 XAML/transaction/Save 零 diff。
+- Follow-up:
+  - 用户确认 `AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` 后连续执行 2B-1..2B-4；
+    实现和完整回归通过后将本决策改为 Accepted。

@@ -24,7 +24,7 @@
 | HLI-1B | Headless Edit Preview | A2 等价 snapshot/plan/preview/change set | Completed / Verified |
 | HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Completed / Verified |
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed routing、取消 | Completed / Verified |
-| HLI-2B | 内置 AI 改为 Gateway consumer | 保留 A4-R1 policy，不再直接依赖 IDE internal 服务 | Not started |
+| HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Final contract / awaiting implementation approval |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Not started |
 | CONTENT-1 | 语义对象/模板层 | 新 Section、对象模板、跨文件计划、Artifact plan | Deferred |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
@@ -65,7 +65,8 @@
   Application 94/94、完整非 UI 2537/2537。
 - Gateway 只路由已冻结能力，不提供任意文件、任意命令、Apply/Save 或 generic patch。
 - HLI-2B 将 A4-R1 改为 Gateway consumer，并继续保留 official/custom endpoint 和
-  required-tool policy。
+  required-tool policy。最终契约明确采用 public 8 MiB/10k/128 budget；超限明确编辑在
+  provider 请求前本地拒绝，advisory 仍可使用截断上下文。
 
 ### HLI-2C：近期产品验收点
 
@@ -132,9 +133,10 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-AUTOMATION-HLI-2B IDE/AI Gateway Consumer code-fact audit and final contract
+确认 AUTOMATION-HLI-2B IDE/AI Gateway Consumer Final Contract
 ```
 
-HLI-2A 完成证据见 `Docs/AUTOMATION-HLI-2A_StageLedger.md`。HLI-2B 必须先核实当前 AI
-调用链、现有 internal Preview seam 和 public 8M/10k 与 Host budget 差异，再冻结 consumer
-契约；不得直接修改 A4 policy、public Apply/Save、任意命令/文件访问或自动 Save。
+代码事实审计和最终契约已完成，见
+`Docs/AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` 与
+`Docs/AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md`。实现仍需确认；确认后按
+2B-1..2B-4 连续执行，不修改 A4 provider/tool/apply policy 或 public Apply/Save。
