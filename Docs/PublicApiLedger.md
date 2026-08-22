@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-22  
-当前阶段：AUTOMATION-HLI-1C Completed / Verified
+当前阶段：AUTOMATION-HLI-2A-0 Final Contract / Implementation Not Started
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -15,6 +15,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-1A2 | 扩展 `Validate` + 精确 3-type allowlist | Implemented / Experimental；18-type reflection 与完整回归通过 |
 | HLI-1B | 新增 Edit Preview service + 精确 11-type allowlist | Implemented / Experimental；29-type reflection 与完整回归通过 |
 | HLI-1C | None | Verified：Host boundary guards/tests 完成；allowlist 精确保持 29 |
+| HLI-2A-0 | None（仅预登记 6-type 候选） | Final contract；生产 allowlist 当前仍精确为 29 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -112,5 +113,23 @@ HLI-1C public API diff 为 0；Host boundary contract tests 与完整回归通�
 exported allowlist 精确保持 29。没有公开 raw TextModel/SemanticModel、Apply/Save，
 也没有改变 Section/Reference/Validate/Preview 的公开失败语义。
 
-下一次台账更新门禁是 HLI-2A Capability Gateway 最终契约。Gateway descriptor、版本、
-typed invocation/result 或 wire 兼容性不得从 HLI-1C 实现反推，必须单独审计和冻结。
+HLI-2A-0 已完成独立代码事实审计和最终契约；本节的 29-type 状态仍是当前生产事实。
+Gateway 候选只有在 HLI-2A 实施与门禁通过后才可改为 Implemented。
+
+## 8. HLI-2A 已冻结但尚未实施的 API 候选
+
+HLI-2A-0 代码事实审计确认当前不存在生产 Gateway。下列 6 个类型已由最终契约冻结为
+实施候选，状态为 `Proposed / Experimental / Not Implemented`：
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Required Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| HLI-2A | `IRa2AutomationCapabilityGateway` | Interface | 四项能力的 typed discovery/invocation boundary | HLI-2B/2C/future host | Experimental | exact surface/parity/cancel | 无 generic Invoke |
+| HLI-2A | `Ra2AutomationCapabilityGateway` | Stateless implementation | 委托现有两个 canonical service | HLI-2B/2C | Experimental | ctor/thread/parity | 无 state/cache/host |
+| HLI-2A | `Ra2AutomationCapabilityDescriptor` | Immutable descriptor | 暴露 ID/version/risk/stability/limits | discovery/policy | Experimental | exact properties/immutability | internal ctor |
+| HLI-2A | `Ra2AutomationCapabilityIds` | Constants | 冻结四项 ID 与 CurrentVersion=1 | routing/wire adapter later | Experimental | exact constants/order | 无 alias |
+| HLI-2A | `Ra2AutomationCapabilityRisk` | Enum | 区分 Query/Edit 声明风险 | future policy | Experimental | exact values | 不是授权票据 |
+| HLI-2A | `Ra2AutomationCapabilityStability` | Enum | 声明当前兼容状态 | discovery | Experimental | exact values | 当前只有 Experimental |
+
+实施通过后 exported allowlist 必须从 29 精确变为 35。在此之前，以上条目不得写成
+Implemented。HLI-2A 不新增统一 failure/result、wire DTO、Apply/Save、Job/Event/Artifact 或
+provider schema；完整签名见 `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md`。

@@ -31,6 +31,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-1B Headless Edit Preview（唯一 semantic engine、IDE thin adapter、29-type Experimental API、82/82 + 88/88 + 390/390 + 2526/2526）。
 - AUTOMATION-HLI-1C Host Boundary Confirmation（两处 internal admission/projection guard、
   11 个新契约测试、public API 0 change、82/82 + 53/53 + 2537/2537）。
+- AUTOMATION-HLI-2A-0 Capability Gateway 代码事实审计与最终契约：确认当前无生产
+  Gateway/descriptor/registry，冻结固定四能力目录与强类型门面；尚未实施 public API。
 
 ### Implemented / Acceptance Pending
 
@@ -39,8 +41,9 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- Capability Gateway、独立 Agent/CLI、Job/Event/
-  Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
+- HLI-2A 最终契约已生成，生产实现尚未开始，等待用户实施确认。
+- 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
+  均未实现。
 
 ## 3. 最新完整实现证据
 
@@ -81,15 +84,15 @@ Infrastructure、Shell/XAML/project/legacy diff 为 0；Application exported all
 
 ## 6. 下一安全入口
 
-下一安全操作是进入：
+下一安全操作是用户确认 HLI-2A 最终契约后进入：
 
 ```text
-AUTOMATION-HLI-2A Capability Gateway code-fact audit and final contract
+AUTOMATION-HLI-2A-1 Descriptor and Catalog Contracts
 ```
 
-HLI-1C 审计、契约和完成证据见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`、
-`Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md` 与
-`Docs/AUTOMATION-HLI-1C_StageLedger.md`。HLI-2A 必须先审计/冻结契约，不自动实施 Gateway。
+HLI-2A 审计和契约见 `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` 与
+`Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md`。当前没有 Gateway 生产实现；
+不得跳过确认直接进入 HLI-2A-1，也不得自动进入 HLI-2B。
 
 ## 7. 最小继续阅读集
 
@@ -113,6 +116,8 @@ HLI-1C 审计、契约和完成证据见 `Docs/AUTOMATION-HLI-1C_HostBoundaryCod
 18. `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md`
 19. `Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md`
 20. `Docs/AUTOMATION-HLI-1C_StageLedger.md`
+21. `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md`
+22. `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md`
 
 旧累积状态已保存在：
 

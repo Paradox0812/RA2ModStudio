@@ -37,7 +37,9 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-1C 事实证据 | `Docs/AUTOMATION-HLI-1C_HostBoundaryCodeFactAudit.md` |
 | HLI-1C 最终契约 | `Docs/AUTOMATION-HLI-1C_HostBoundaryFinalContract.md` |
 | HLI-1C 完成证据 | `Docs/AUTOMATION-HLI-1C_StageLedger.md` |
-| 下一安全入口 | HLI-2A Capability Gateway 代码事实审计与最终契约 |
+| HLI-2A 事实证据 | `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` |
+| HLI-2A 最终契约 | `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` |
+| 下一安全入口 | 用户确认后执行 HLI-2A-1 Descriptor and Catalog Contracts |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -53,7 +55,8 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
 ```
 
 `RA2IniEditor.Application` 已通过 HLI-1A1/1A2/1B 迁入 Query、Diagnostics 与 Preview
-唯一闭包。IDE 通过单向 adapter 继续消费 neutral facts；Gateway 仍未实现。
+唯一闭包。IDE 通过单向 adapter 继续消费 neutral facts；HLI-2A Gateway 最终契约已冻结，
+但 Gateway 生产类型仍未实现。
 
 ## 4. 当前已完成能力
 
@@ -75,7 +78,7 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
 
 ## 5. 当前不存在的能力
 
-- Capability Gateway、CLI 或外部 Agent host。
+- Capability Gateway 生产实现、CLI 或外部 Agent host。
 - 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
@@ -180,8 +183,14 @@ active-slot admission 前验证返回 wrapper 与 invocation snapshot/plan 的�
 `RegisterPreview`、proposal handle store、public Apply 或 Gateway adapter。Application
 allowlist 保持 29；82/82、Host 53/53 和完整非 UI 2537/2537 通过。
 
-下一安全入口是 HLI-2A Capability Gateway 的代码事实审计与最终契约；不得直接实现
-Gateway、HLI-2B consumer 或公开 Apply/Save。
+HLI-2A-0 已完成：代码事实审计确认当前只有两个 canonical typed service、29 个
+Experimental public 类型，没有 Gateway/descriptor/registry。最终契约冻结固定四项
+immutable catalog、version=1、Query/Edit risk、现有限制与 typed façade；实施候选精确新增
+6 个 public 类型，预期 allowlist 29 -> 35。generic dispatcher、wire schema、Apply/Save、
+Job/Event/Artifact 均明确排除。
+
+下一安全入口是在用户确认 `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` 后
+执行 HLI-2A-1；不得自动进入 HLI-2B consumer 或公开 Apply/Save。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

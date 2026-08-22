@@ -23,7 +23,7 @@
 | HLI-1A2 | Headless Diagnostics | neutral 唯一核心、IDE adapter、Validate Experimental API | Completed / Verified |
 | HLI-1B | Headless Edit Preview | A2 等价 snapshot/plan/preview/change set | Completed / Verified |
 | HLI-1C | IDE Host Boundary Confirmation | 复用 Preview seam、加固 Host binding -> 现有 A3 Apply/Undo | Completed / Verified |
-| HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed failure、取消 | Not started |
+| HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed routing、取消 | Final contract / implementation awaiting approval |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 保留 A4-R1 policy，不再直接依赖 IDE internal 服务 | Not started |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Not started |
 | CONTENT-1 | 语义对象/模板层 | 新 Section、对象模板、跨文件计划、Artifact plan | Deferred |
@@ -60,7 +60,9 @@
 ### HLI-1C/2A/2B：接回真实产品
 
 - IDE capture 当前快照；Application 负责确定性 query/preview；IDE host 负责 Apply。
-- Gateway 只路由已冻结能力，不提供任意文件、任意命令或 generic patch。
+- HLI-2A-0 已完成代码事实审计并冻结：Gateway 使用固定四项 immutable catalog 与
+  typed façade，只委托现有 Query/Preview service，不提供 generic `Invoke`。
+- Gateway 只路由已冻结能力，不提供任意文件、任意命令、Apply/Save 或 generic patch。
 - A4-R1 作为 Gateway consumer，继续保留 official/custom endpoint 和 required-tool policy。
 
 ### HLI-2C：近期产品验收点
@@ -125,12 +127,13 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 
 ## 7. 下一安全入口
 
-当前下一入口是：
+当前下一入口是用户确认 HLI-2A 最终契约后：
 
 ```text
-AUTOMATION-HLI-2A Capability Gateway code-fact audit and final contract
+AUTOMATION-HLI-2A-1 Descriptor and Catalog Contracts
 ```
 
-HLI-1C 完成证据见 `Docs/AUTOMATION-HLI-1C_StageLedger.md`。下一阶段先冻结 Gateway 的
-descriptor、版本、typed failure、取消、资源限制和 Host/consumer 边界；不得直接添加
-public Apply/Save、任意命令/文件访问、Preview store，或自动进入 HLI-2B consumer 实现。
+HLI-2A 事实审计与最终契约见 `Docs/AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md`
+和 `Docs/AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md`。实现候选精确新增 6 个
+Experimental public 类型、allowlist 29 -> 35；不得添加 public Apply/Save、任意命令/文件
+访问、Preview store、wire schema、Job/Event/Artifact，或自动进入 HLI-2B consumer 实现。

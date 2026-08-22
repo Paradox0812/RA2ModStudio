@@ -226,3 +226,31 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 产物必须明确区分 VOX、SliceStack、VXLSE import package 和最终 VXL。
 - Follow-up:
   - ASSET-VOX-1 用真实导入样本冻结 axis/order/pivot/palette 契约。
+
+## Decision: HLI-2A 采用固定目录与强类型 Gateway，而非动态 dispatcher
+
+- Status: Proposed / awaiting implementation approval
+- Date: 2026-08-22
+- Task(s): AUTOMATION-HLI-2A-0
+- Context:
+  - HLI-1 已完成四项 UI-neutral 能力和 29 个 Experimental 类型，但当前没有生产
+    Gateway、descriptor、registry 或 transport。
+  - 长期自动化架构还需要 Job/Event/Artifact、wire schema、权限和 tracing；这些数据模型
+    尚未冻结，也不是 HLI-2B 内置 AI consumer 的前置必需。
+- Decision:
+  - HLI-2A 只新增固定四项 immutable capability catalog 与 typed Gateway façade，直接委托
+    现有 DocumentQuery/EditPreview service。
+  - descriptor 只公开 ID、version、Query/Edit risk、Experimental stability 与现有限制。
+  - 不增加 generic `Invoke`、mutable registry、wire schema、统一 failure、Apply/Save 或状态。
+- Rejected Alternatives:
+  - `Invoke(string, object/dynamic)` 或 reflection router：牺牲编译期边界并迫使提前设计统一
+    failure/serialization。
+  - 将 `Ra2AiAuthoringToolCatalog` 提升为 Gateway：它是 provider-specific 模型输出 schema，
+    不能成为 Application 领域契约。
+  - 同时实现 Job/Event/Artifact/permissions：会把当前 R2/R3 切片升级为缺少消费者的 R4 框架。
+- Consequences:
+  - 首版 Gateway 适合进程内 IDE/Agent/CLI host，尚不声明 wire compatibility。
+  - 新增 public 类型候选精确为 6，allowlist 预期 29 -> 35。
+  - HLI-2B 仍需单独决定 public 8M/10k budget 与现有 Host budget 的产品兼容策略。
+- Follow-up:
+  - 用户确认 HLI-2A 最终契约后执行 HLI-2A-1..2A-4；完成证据通过后将本决策改为 Accepted。
