@@ -23,7 +23,10 @@ public sealed class Ra2AutomationBoundaryTests
         "Ra2AutomationReferenceQueryResult",
         "Ra2AutomationReferenceQueryFailureKind",
         "Ra2AutomationReferenceTargetFact",
-        "Ra2AutomationReferenceFact"
+        "Ra2AutomationReferenceFact",
+        "Ra2AutomationDocumentDiagnosticsFailureKind",
+        "Ra2AutomationDocumentDiagnosticsResult",
+        "Ra2AutomationDiagnosticFact"
     ];
 
     [Fact]

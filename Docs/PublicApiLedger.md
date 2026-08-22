@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-22  
-当前阶段：AUTOMATION-HLI-1A2 Final Contract / Implementation Pending
+当前阶段：AUTOMATION-HLI-1A2 Completed / Verified
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -12,7 +12,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 |---|---|---|
 | HLI-1A0 | None | None；tests + docs only |
 | HLI-1A1 | 新增下列精确 15-type allowlist | Additive / Experimental；reflection、headless 和 full regression 已通过 |
-| HLI-1A2 Contract | 候选扩展 `Validate` + 精确 3-type allowlist | Not implemented；实施需 R3/R2 明确批准 |
+| HLI-1A2 | 扩展 `Validate` + 精确 3-type allowlist | Implemented / Experimental；18-type reflection 与完整回归通过 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -40,19 +40,20 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 命名空间统一为 `RA2IniEditor.Application.Automation.Experimental`。当前 assembly
 exported types 与这 15 项精确相等；证据见 `AUTOMATION-HLI-1A1_StageLedger.md`。
 
-## 3. HLI-1A2 已契约、未实施的 Experimental 候选
+## 3. HLI-1A2 已实现 Experimental Diagnostics 契约
 
-HLI-1A2 事实审计确认应扩展现有 `IRa2AutomationDocumentQueryService`，不新建
-Diagnostics service 或空 request DTO。实施前候选如下：
+HLI-1A2 扩展现有 `IRa2AutomationDocumentQueryService`，没有新建 Diagnostics service
+或空 request DTO。以下 API 状态均为 `Implemented / Experimental`：
 
-| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Planned Tests | Notes |
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
 |---|---|---|---|---|---|---|---|
 | HLI-1A2 | `IRa2AutomationDocumentQueryService.Validate` | Method | 从显式文档快照运行当前文档诊断 | HLI-2A/2C | Experimental | interface/reflection/behavior | 扩展既有 interface，对自定义 implementer 有兼容风险 |
 | HLI-1A2 | `Ra2AutomationDocumentDiagnosticsResult` | Result DTO | 返回 identity/revision、typed failure 和 immutable facts | HLI-2A/2C | Experimental | state/identity/empty/failure | failure 无 partial facts |
 | HLI-1A2 | `Ra2AutomationDocumentDiagnosticsFailureKind` | Failure enum | 区分 large/limit/cancel/analysis | HLI-2A | Experimental | every enum path | None=0，不以 message 推断 |
 | HLI-1A2 | `Ra2AutomationDiagnosticFact` | Fact DTO | UI-neutral code/source/severity/location/version | HLI-1B/2A/2C | Experimental | parity/order/immutability | 不公开 ViewModel/raw model |
 
-实施后 exported allowlist 才可从 15 更新为 18。当前代码仍只有 15 个 exported types。
+Application exported allowlist 已从 15 精确更新为 18；证据见
+`AUTOMATION-HLI-1A2_StageLedger.md`。
 
 ## 4. 延后候选
 
@@ -80,6 +81,5 @@ Experimental DTO/service。
 
 ## 6. 下一次台账更新门禁
 
-HLI-1A2 实施时必须用 reflection 证明精确 18-type allowlist，且 Section/Reference
-签名和行为不变。只有 Stage Ledger 记录 headless、149 项依赖集、完整回归和
-package 通过后，上述 3 个候选才可标记 `Implemented`。
+下一次更新门禁是 HLI-1B 的 Edit Preview public contract。不得借 HLI-1B 公开 raw
+TextModel/SemanticModel，也不得改变已实现 Section/Reference/Validate 的失败语义。

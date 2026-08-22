@@ -2,7 +2,7 @@
 
 更新日期：2026-08-22  
 状态：Completed / Read-only code fact audit  
-实现状态：Not implemented
+实现状态：Implemented / Verified；完成证据见 `AUTOMATION-HLI-1A2_StageLedger.md`
 
 ## 1. 审计目标和边界
 

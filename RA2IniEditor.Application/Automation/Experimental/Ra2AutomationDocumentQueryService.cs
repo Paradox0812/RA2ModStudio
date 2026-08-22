@@ -1,3 +1,4 @@
+using RA2IniEditor.Application.Diagnostics;
 using RA2IniEditor.Core.Schema;
 using RA2IniEditor.Application.Language;
 
@@ -8,6 +9,82 @@ public sealed class Ra2AutomationDocumentQueryService : IRa2AutomationDocumentQu
     public const int MaximumDocumentCharacters = 8 * 1024 * 1024;
 
     public const int MaximumResultItems = 10_000;
+
+    private readonly Ra2DocumentDiagnosticService _diagnosticService = new();
+
+    public Ra2AutomationDocumentDiagnosticsResult Validate(
+        Ra2AutomationDocumentSnapshot snapshot,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        if (snapshot.Text.Length > MaximumDocumentCharacters)
+        {
+            return CreateDiagnosticsFailure(
+                snapshot,
+                Ra2AutomationDocumentDiagnosticsFailureKind.DocumentTooLarge,
+                "The document exceeds the supported character limit.");
+        }
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            IReadOnlyList<Ra2DiagnosticFact> facts = _diagnosticService.Analyze(
+                new Ra2DocumentSnapshot(snapshot.FilePath, snapshot.Text, snapshot.Version),
+                snapshot.FieldRegistry.Provider,
+                cancellationToken: cancellationToken,
+                maximumResultItems: MaximumResultItems);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            List<Ra2AutomationDiagnosticFact> diagnostics = new(facts.Count);
+            for (int index = 0; index < facts.Count; index++)
+            {
+                if (index > 0 && index % Ra2DocumentDiagnosticService.CancellationCheckInterval == 0)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                Ra2DiagnosticFact fact = facts[index];
+                diagnostics.Add(new Ra2AutomationDiagnosticFact(
+                    fact.Code,
+                    fact.SourceKind,
+                    fact.Severity,
+                    fact.Message,
+                    fact.FilePath,
+                    fact.LineNumber,
+                    fact.ColumnNumber,
+                    fact.SectionId,
+                    fact.Key,
+                    fact.AnalysisVersion));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return new Ra2AutomationDocumentDiagnosticsResult(
+                snapshot,
+                Ra2AutomationDocumentDiagnosticsFailureKind.None,
+                "The document diagnostics completed.",
+                diagnostics);
+        }
+        catch (Ra2DiagnosticResultLimitExceededException)
+        {
+            return CreateDiagnosticsFailure(
+                snapshot,
+                Ra2AutomationDocumentDiagnosticsFailureKind.ResultLimitExceeded,
+                "The diagnostics result exceeds the supported item limit.");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateDiagnosticsFailure(
+                snapshot,
+                Ra2AutomationDocumentDiagnosticsFailureKind.Canceled,
+                "The document diagnostics were canceled.");
+        }
+        catch (Exception exception) when (!IsFatalException(exception))
+        {
+            return CreateDiagnosticsFailure(
+                snapshot,
+                Ra2AutomationDocumentDiagnosticsFailureKind.AnalysisFailed,
+                "The document diagnostics could not be completed.");
+        }
+    }
 
     public Ra2AutomationSectionQueryResult GetSection(
         Ra2AutomationDocumentSnapshot snapshot,
@@ -254,6 +331,12 @@ public sealed class Ra2AutomationDocumentQueryService : IRa2AutomationDocumentQu
         Ra2AutomationReferenceQueryFailureKind failureKind,
         string message)
         => new(snapshot, failureKind, message, null, Array.Empty<Ra2AutomationReferenceFact>());
+
+    private static Ra2AutomationDocumentDiagnosticsResult CreateDiagnosticsFailure(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationDocumentDiagnosticsFailureKind failureKind,
+        string message)
+        => new(snapshot, failureKind, message, Array.Empty<Ra2AutomationDiagnosticFact>());
 
     private static Ra2AutomationTextSpan ToAutomationSpan(Ra2TextSpan span)
         => new(span.Start, span.Length);

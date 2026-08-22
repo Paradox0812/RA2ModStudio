@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-1A2 Headless Diagnostics Final Contract
 
 契约日期：2026-08-22  
-状态：Final / Awaiting implementation approval  
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-1A1 Completed / Verified  
 事实依据：`Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md`
 
@@ -27,8 +27,8 @@ UI risk: None; no XAML or AutomationId change
 Governance mode: Deferred during continuous cards; flush at HLI-1A2 stop
 ```
 
-本文档授权后可按 1A2-0 至 1A2-5 连续实施，每卡自审后继续，不需要
-逐卡批准。本文档本身不是实施授权；未获得明确确认前不得移动生产文件。
+本文档已获用户明确实施授权，并已按 1A2-0 至 1A2-5 连续完成。最终证据见
+`Docs/AUTOMATION-HLI-1A2_StageLedger.md`。
 
 ## 3. 非目标
 
@@ -472,10 +472,9 @@ powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profi
 | 是否影响持久化/网络 | None | 进程内 CLR Experimental API |
 | 是否需要 AgentPilot | No | 机械迁移也应先以主代理执行，避免再次高 Token 循环 |
 
-审查结论：契约边界完整，未发现会强制 HLI-1B 返工的 API 或所有权问题。
-实施前唯一剩余门禁是用户对该 R3/R2 最终契约的明确确认。
+审查结论：契约边界完整，实现和回归门禁均已通过，未发现会强制 HLI-1B
+返工的 API 或所有权问题。
 
 ## 16. Stop Rule
 
-当前停在契约门，不改动生产代码。获得明确实施确认后，可连续执行
-HLI-1A2-0 至 HLI-1A2-5；完成后必须停止，不自动进入 HLI-1B Headless Edit Preview。
+当前停在 HLI-1A2 完成点，不自动进入 HLI-1B Headless Edit Preview。

@@ -27,6 +27,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-0B 最小能力契约已确认并完成契约阶段。
 - AUTOMATION-HLI-1A0 Query 依赖锥特征化与门禁测试（7/7）。
 - AUTOMATION-HLI-1A1 Headless Document Query（Application、15-type Experimental API、31/31 + 2526/2526）。
+- AUTOMATION-HLI-1A2 Headless Diagnostics（唯一 neutral core、IDE adapter、18-type Experimental API、42/42 + 149/149 + 2526/2526）。
 
 ### Implemented / Acceptance Pending
 
@@ -35,26 +36,26 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-1A2 Headless Diagnostics 已完成代码事实回归与最终契约；生产迁移尚未批准/实施。
+- HLI-1B Headless Edit Preview 尚未完成代码事实回归或最终契约。
 - Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AUTOMATION-HLI-1A1_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-1A2_StageLedger.md`
 
 ```text
 Restore: Passed
 Debug build: Passed, 0 errors, one pre-existing CS8602 warning
-Application.Tests: Passed 31/31
-Query dependency regression: Passed 54/54
+Application.Tests: Passed 42/42
+Diagnostics/A1/FieldTrust regression: Passed 149/149
 Non-UI tests: Passed 2526/2526
-IdeOnly clean package: Passed, 1086 files, 10.29 MiB
+IdeOnly clean package: Passed, final package rerun after governance flush
 Computer control: NotRun; no UI behavior changed
 ```
 
-HLI-1A1 静态证据：22/22 新路径、旧路径 0、逐行迁移等价 failures 0、Application
-Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精确 15。
+HLI-1A2 静态证据：9 个旧路径 0、Diagnostics/FieldTrust 算法副本 0、Application
+Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精确 18。
 
 ## 4. 当前关键边界
 
@@ -69,8 +70,8 @@ Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精�
 
 | ID/Area | 状态 | 影响 |
 |---|---|---|
-| HLI-TD-001 | Partially repaid | Section/Reference 已迁 Application；Diagnostics/Preview 后续切片仍待处理 |
-| HLI-TD-002 | Open / controlled | diagnostic presentation coupling 仍位于 IDE assembly |
+| HLI-TD-001 | Partially repaid | Section/Reference/Diagnostics 已迁 Application；Preview 后续切片仍待处理 |
+| HLI-TD-002 | Repaid | diagnostic core 已 neutral；IDE 只保留单向 ViewModel adapter |
 | AGENT-AUTHORING-A1-TD-001 | Open / controlled | SemanticModel 可能重复构建，只影响潜在性能 |
 | SEARCH-UIA-001 | Open | AvalonDock 浮动 child-HWND 阻止外部 UIA 穿透 Search 内容 |
 | Mixed-DPI visual coverage | Manual | 特定多屏硬件状态未由自动化覆盖 |
@@ -78,16 +79,14 @@ Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精�
 
 ## 6. 下一安全入口
 
-下一安全操作是审批并实施：
+下一安全操作是先只读审计并制定：
 
 ```text
-AUTOMATION-HLI-1A2 Headless Diagnostics Final Contract (HLI-1A2-0..5)
+AUTOMATION-HLI-1B Headless Edit Preview code-fact audit and final contract
 ```
 
-事实审计与最终契约已分别完成，见
-`Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` 和
-`Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md`。未获明确实施确认前不移动
-Diagnostics；实施后也必须停止在 HLI-1A2，不自动进入 HLI-1B。
+HLI-1A2 已完成，见 `Docs/AUTOMATION-HLI-1A2_StageLedger.md`。当前必须停止在
+HLI-1A2；未经新的事实审计、最终契约和用户确认，不迁移 HLI-1B Preview。
 
 ## 7. 最小继续阅读集
 
@@ -104,6 +103,7 @@ Diagnostics；实施后也必须停止在 HLI-1A2，不自动进入 HLI-1B。
 11. `Docs/AUTOMATION-HLI-1A1_StageLedger.md`
 12. `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md`
 13. `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md`
+14. `Docs/AUTOMATION-HLI-1A2_StageLedger.md`
 
 旧累积状态已保存在：
 

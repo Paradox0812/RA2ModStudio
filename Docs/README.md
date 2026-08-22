@@ -27,7 +27,8 @@
 | 查找 Public API 候选与兼容状态 | `PublicApiLedger.md` |
 | 查看已完成 Headless Query 迁移 | `AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md` + `AUTOMATION-HLI-1A1_StageLedger.md` |
 | 审查 Headless Diagnostics 事实 | `AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` |
-| 继续下一 Headless 阶段 | `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` + `Codex_CurrentPhase.md` |
+| 查看已完成 Headless Diagnostics | `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` + `AUTOMATION-HLI-1A2_StageLedger.md` |
+| 继续下一 Headless 阶段 | `Codex_CurrentPhase.md` + HLI-1B 新事实审计（尚未生成） |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
 ## 3. 状态词

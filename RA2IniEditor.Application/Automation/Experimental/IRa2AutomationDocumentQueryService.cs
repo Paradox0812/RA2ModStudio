@@ -11,4 +11,8 @@ public interface IRa2AutomationDocumentQueryService
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationReferenceQuery request,
         CancellationToken cancellationToken = default);
+
+    Ra2AutomationDocumentDiagnosticsResult Validate(
+        Ra2AutomationDocumentSnapshot snapshot,
+        CancellationToken cancellationToken = default);
 }

@@ -31,7 +31,7 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | 最新 Headless 实现证据 | `Docs/AUTOMATION-HLI-1A1_StageLedger.md` |
 | HLI-1A2 事实证据 | `Docs/AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` |
 | HLI-1A2 最终契约 | `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` |
-| 下一安全入口 | 明确批准后实施 HLI-1A2-0..5 |
+| 下一安全入口 | 只读回归并契约 HLI-1B Headless Edit Preview |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -46,9 +46,8 @@ RA2IniEditor.Tests             IDE/non-UI integration tests
 RA2IniEditor.UiAutomationTests opt-in UIA smoke
 ```
 
-`RA2IniEditor.Application` 已通过 HLI-1A1 建立并迁入首个 Query 闭包。Diagnostics
-的事实回归和最终契约已完成，但生产代码仍在 IDE；Preview 和 Gateway 仍未进入
-该程序集。
+`RA2IniEditor.Application` 已通过 HLI-1A1/1A2 迁入 Query 与 Diagnostics 唯一闭包。
+IDE 通过单向 adapter 继续消费 neutral facts；Preview 和 Gateway 仍未进入该程序集。
 
 ## 4. 当前已完成能力
 
@@ -68,7 +67,7 @@ RA2IniEditor.UiAutomationTests opt-in UIA smoke
 
 ## 5. 当前不存在的能力
 
-- Headless Diagnostics/Edit Preview、Capability Gateway、CLI 或外部 Agent host。
+- Headless Edit Preview、Capability Gateway、CLI 或外部 Agent host。
 - 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
@@ -160,10 +159,9 @@ HLI-1A1 已完成：22 个 internal Classification/Language 文件迁入 Applica
 body-span 隔离、Reference 空成功/无法解析失败、8M chars/10k items 和取消门禁均已
 通过 31 项 headless、54 项迁移和 2526 项完整测试。
 
-当前下一入口是对 HLI-1A2 最终契约的明确实施批准。契约仅允许原子迁移唯一
-diagnostic/FieldTrust 闭包、保留 IDE 单向 ViewModel adapter，并把 public allowlist 从 15
-精确扩大到 18。不得直接公开 diagnostic ViewModel，也不得在 HLI-1A2 中实施 Gateway
-或 Preview 迁移。
+HLI-1A2 已完成：diagnostic/FieldTrust 唯一闭包位于 Application，IDE 保留单向
+ViewModel adapter，public allowlist 精确为 18。当前下一入口是 HLI-1B 的只读
+TextModel/Preview 依赖回归和最终契约；不得直接公开 raw model 或进入 Gateway。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

@@ -112,7 +112,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-1A2 扩展现有 Document Query service 并保留 IDE 单向适配
 
-- Status: Proposed / Awaiting implementation approval
+- Status: Accepted
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-1A2
 - Context:
@@ -141,8 +141,8 @@ CurrentPhase 和对应 Stage Ledger 负责。
     只有唯一生产实现。
   - A1 的完整 TextModel orchestration 和双解析性能债务不在迁移中顺手改写。
 - Follow-up:
-  - 用户确认 `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` 后才实施；
-    完成后停止，HLI-1B 另行契约。
+  - HLI-1A2 已完成并通过 headless、149 项依赖集、完整回归和 clean package 门禁；
+    当前停止，HLI-1B 另行事实回归和契约。
 
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 
