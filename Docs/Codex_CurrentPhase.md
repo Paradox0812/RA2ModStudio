@@ -28,6 +28,7 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-1A0 Query 依赖锥特征化与门禁测试（7/7）。
 - AUTOMATION-HLI-1A1 Headless Document Query（Application、15-type Experimental API、31/31 + 2526/2526）。
 - AUTOMATION-HLI-1A2 Headless Diagnostics（唯一 neutral core、IDE adapter、18-type Experimental API、47/47 + 149/149 + 2526/2526）。
+- AUTOMATION-HLI-1B Headless Edit Preview（唯一 semantic engine、IDE thin adapter、29-type Experimental API、82/82 + 88/88 + 390/390 + 2526/2526）。
 
 ### Implemented / Acceptance Pending
 
@@ -36,27 +37,27 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- HLI-1B Headless Edit Preview 已完成代码事实回归和最终契约；生产代码尚未实施，
-  等待用户明确确认。
 - Capability Gateway、独立 Agent/CLI、Job/Event/
   Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host 均未实现。
 
 ## 3. 最新完整实现证据
 
-来源：`Docs/AUTOMATION-HLI-1A2_StageLedger.md`
+来源：`Docs/AUTOMATION-HLI-1B_StageLedger.md`
 
 ```text
 Restore: Passed
-Debug build: Passed, 0 errors, one pre-existing CS8602 warning
-Application.Tests: Passed 47/47
-Diagnostics/A1/FieldTrust regression: Passed 149/149
+Debug build: Passed, 0 warnings, 0 errors
+Application.Tests: Passed 82/82
+A2/A3/A4 regression: Passed 88/88
+TextModel/AddProperty/Search/Completion/Save regression: Passed 390/390
 Non-UI tests: Passed 2526/2526
-IdeOnly clean package: Passed, final package rerun after governance flush
+IdeOnly clean package: Passed after governance flush
 Computer control: NotRun; no UI behavior changed
 ```
 
-HLI-1A2 静态证据：9 个旧路径 0、Diagnostics/FieldTrust 算法副本 0、Application
-Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精确 18。
+HLI-1B 静态证据：8 个旧 TextModel/change 路径及 2 个旧 IDE plan 路径为 0、IDE
+Preview service 为 thin adapter、Application Core-only、HLI-1B Application 变更文件的
+WPF/IDE/Infrastructure/IO forbidden reference 为 0、exported allowlist 精确 29。
 
 ## 4. 当前关键边界
 
@@ -71,7 +72,7 @@ Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精�
 
 | ID/Area | 状态 | 影响 |
 |---|---|---|
-| HLI-TD-001 | Partially repaid | Section/Reference/Diagnostics 已迁 Application；Preview 后续切片仍待处理 |
+| HLI-TD-001 | Repaid for HLI-1 scope | Section/Reference/Diagnostics/Preview 唯一权威均已迁 Application；Gateway 仍属后续能力 |
 | HLI-TD-002 | Repaid | diagnostic core 已 neutral；IDE 只保留单向 ViewModel adapter |
 | AGENT-AUTHORING-A1-TD-001 | Open / controlled | SemanticModel 可能重复构建，只影响潜在性能 |
 | SEARCH-UIA-001 | Open | AvalonDock 浮动 child-HWND 阻止外部 UIA 穿透 Search 内容 |
@@ -80,16 +81,16 @@ Core-only、forbidden token 0、stale qualified name 0、exported allowlist 精�
 
 ## 6. 下一安全入口
 
-下一安全操作是等待用户确认最终契约，然后从：
+下一安全操作是先进行只读代码事实回归并形成：
 
 ```text
-AUTOMATION-HLI-1B-0 Baseline Guard and Rollback
+AUTOMATION-HLI-1C Host Boundary Confirmation final contract
 ```
 
-事实审计：`Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`。
-
-最终契约：`Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`。
-当前必须停止在契约门；未经用户确认，不迁移 HLI-1B Preview。
+HLI-1B 事实、契约与完成证据分别见
+`Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`、
+`Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 和
+`Docs/AUTOMATION-HLI-1B_StageLedger.md`。当前停止在 HLI-1B；不得自动实施 HLI-1C。
 
 ## 7. 最小继续阅读集
 
@@ -109,6 +110,7 @@ AUTOMATION-HLI-1B-0 Baseline Guard and Rollback
 14. `Docs/AUTOMATION-HLI-1A2_StageLedger.md`
 15. `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`
 16. `Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md`
+17. `Docs/AUTOMATION-HLI-1B_StageLedger.md`
 
 旧累积状态已保存在：
 

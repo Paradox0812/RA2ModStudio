@@ -28,7 +28,7 @@
 | 查看已完成 Headless Query 迁移 | `AUTOMATION-HLI-1A1_DocumentQuerySliceFinalContract.md` + `AUTOMATION-HLI-1A1_StageLedger.md` |
 | 审查 Headless Diagnostics 事实 | `AUTOMATION-HLI-1A2_DiagnosticsCodeFactAudit.md` |
 | 查看已完成 Headless Diagnostics | `AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` + `AUTOMATION-HLI-1A2_StageLedger.md` |
-| 审查下一 Headless 阶段 | `AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` + `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` |
+| 查看已完成 Headless Edit Preview | `AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` + `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` + `AUTOMATION-HLI-1B_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
 ## 3. 状态词

@@ -33,7 +33,8 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-1A2 最终契约 | `Docs/AUTOMATION-HLI-1A2_HeadlessDiagnosticsFinalContract.md` |
 | HLI-1B 事实证据 | `Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md` |
 | HLI-1B 最终契约 | `Docs/AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` |
-| 下一安全入口 | 用户确认后进入 HLI-1B-0 Baseline Guard and Rollback |
+| HLI-1B 完成证据 | `Docs/AUTOMATION-HLI-1B_StageLedger.md` |
+| 下一安全入口 | HLI-1C Host Boundary Confirmation 事实回归与最终契约 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -41,15 +42,15 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 ```text
 RA2IniEditor.Core              net8.0，INI model/parser/schema/validation primitives
 RA2IniEditor.Infrastructure    net8.0，Field Registry、BuiltIn 数据、IO helpers
-RA2IniEditor.Application       net8.0，Core-only Section/Reference query 与 Experimental API
+RA2IniEditor.Application       net8.0，Core-only Query/Diagnostics/Edit Preview 与 Experimental API
 RA2IniEditor.IDE               net8.0-windows，WPF Shell、editing/AI/search 和 Application consumer
 RA2IniEditor.Application.Tests net8.0 headless contract tests
 RA2IniEditor.Tests             IDE/non-UI integration tests
 RA2IniEditor.UiAutomationTests opt-in UIA smoke
 ```
 
-`RA2IniEditor.Application` 已通过 HLI-1A1/1A2 迁入 Query 与 Diagnostics 唯一闭包。
-IDE 通过单向 adapter 继续消费 neutral facts；Preview 和 Gateway 仍未进入该程序集。
+`RA2IniEditor.Application` 已通过 HLI-1A1/1A2/1B 迁入 Query、Diagnostics 与 Preview
+唯一闭包。IDE 通过单向 adapter 继续消费 neutral facts；Gateway 仍未实现。
 
 ## 4. 当前已完成能力
 
@@ -64,12 +65,14 @@ IDE 通过单向 adapter 继续消费 neutral facts；Preview 和 Gateway 仍未
   A4-R1 official endpoint structured-edit proposal 和显式 Apply。
 - HLI-1A1 Core-only Application：Section Get、current-document References Find、
   15-type Experimental API、typed failure/limits/cancellation。
+- HLI-1A2/1B：同一 Core-only Application 提供 Diagnostics 与受限 semantic Edit
+  Preview；public allowlist 精确为 29，Preview 不修改 Host 或磁盘。
 
 精确边界与证据见 `Docs/CurrentCapabilities.md`。
 
 ## 5. 当前不存在的能力
 
-- Headless Edit Preview、Capability Gateway、CLI 或外部 Agent host。
+- Capability Gateway、CLI 或外部 Agent host。
 - 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
@@ -164,10 +167,12 @@ body-span 隔离、Reference 空成功/无法解析失败、8M chars/10k items �
 HLI-1A2 已完成：diagnostic/FieldTrust 唯一闭包位于 Application，IDE 保留单向
 ViewModel adapter，public allowlist 精确为 18。
 
-HLI-1B 事实审计和最终契约已完成但未实施：冻结 6 个 TextModel + 2 个 TextChange
-文件原子迁移、唯一 semantic preview engine、IDE Host thin adapter、11 个新增
-Experimental public types（实施后 allowlist 29）以及 1B-0..1B-6 连续门禁。当前等待
-用户确认；不得提前修改生产代码或进入 Gateway。
+HLI-1B 已完成：6 个 TextModel + 2 个 TextChange 已原子迁入 Application internal，
+唯一 semantic preview engine 与 11 个新增 Experimental public types 已实现，IDE 保留
+thin Host adapter，allowlist 精确为 29。82/82、88/88、390/390 和 2526/2526 均通过。
+
+下一入口是 HLI-1C Host Boundary Confirmation 的事实回归与最终契约；只确认成功
+Preview 如何进入现有 A3 active slot/currency/apply/undo，不实现 Gateway 或新写入通道。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

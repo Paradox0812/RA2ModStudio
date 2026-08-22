@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-22  
-当前阶段：AUTOMATION-HLI-1B Final contract / not implemented
+当前阶段：AUTOMATION-HLI-1B Completed / Verified
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -13,7 +13,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-1A0 | None | None；tests + docs only |
 | HLI-1A1 | 新增下列精确 15-type allowlist | Additive / Experimental；reflection、headless 和 full regression 已通过 |
 | HLI-1A2 | 扩展 `Validate` + 精确 3-type allowlist | Implemented / Experimental；18-type reflection 与完整回归通过 |
-| HLI-1B | 候选新增 Edit Preview service + 精确 11-type allowlist | Contracted / not implemented；实施后 allowlist 应为 29 |
+| HLI-1B | 新增 Edit Preview service + 精确 11-type allowlist | Implemented / Experimental；29-type reflection 与完整回归通过 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -56,12 +56,12 @@ HLI-1A2 扩展现有 `IRa2AutomationDocumentQueryService`，没有新建 Diagnos
 Application exported allowlist 已从 15 精确更新为 18；证据见
 `AUTOMATION-HLI-1A2_StageLedger.md`。
 
-## 4. HLI-1B 已冻结、尚未实现的 Experimental 契约
+## 4. HLI-1B 已实现的 Experimental 契约
 
-以下候选已由 `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 冻结，但尚未
-写入生产代码，不能标记为 Implemented：
+以下 API 已按 `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 实现，状态均为
+`Implemented / Experimental`：
 
-| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Required Tests | Notes |
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
 |---|---|---|---|---|---|---|---|
 | HLI-1B | `IRa2AutomationEditPreviewService` | Interface | Headless 单文档结构化预览入口 | HLI-2A | Experimental | interface/boundary/parity | 无 Apply/Save/store |
 | HLI-1B | `Ra2AutomationEditPreviewService` | Stateless implementation | 唯一 public Preview 实现 | HLI-1C/2A | Experimental | limits/cancel/thread/parity | 8M chars/10k diagnostics |
@@ -75,13 +75,14 @@ Application exported allowlist 已从 15 精确更新为 18；证据见
 | HLI-1B | `Ra2AutomationEditOperationPreview` | Fact DTO | 逐操作 outcome/span/trust 证据 | HLI-1C/2C | Experimental | parity/order | 构造器 internal |
 | HLI-1B | `Ra2AutomationEditPreviewResult` | Result DTO | candidate/changes/delta/typed failure | HLI-1C/2A/2C | Experimental | state/no-partial/determinism | failure 无可应用 payload |
 
-实施完成后 Application exported allowlist 必须从 18 精确增加到 29；在实现前仍应保持 18。
+Application exported allowlist 已从 18 精确增加到 29；reflection、行为、边界、并发、
+取消和完整回归证据见 `AUTOMATION-HLI-1B_StageLedger.md`。
 
 ## 5. 延后候选
 
 | 候选 | 状态 | 原因 |
 |---|---|---|
-| Edit Preview request/result/change DTO | Contracted in HLI-1B / not implemented | 最终形状已冻结；等待 R3/R2 实施授权 |
+| Edit Preview request/result/change DTO | Implemented / Experimental | 进程内 API 已可消费；尚无 Gateway/wire contract |
 | Apply/Undo API | Host-only by design | 继续由 IDE active session/currency/transaction 拥有 |
 | Save/Backup/Rollback API | Host/user-owned by design | 不成为 Headless Application 的写盘接口 |
 
@@ -106,6 +107,6 @@ Experimental DTO/service。
 
 ## 7. 下一次台账更新门禁
 
-下一次状态更新门禁是 HLI-1B 实施完成和精确 29-type reflection 证据。不得在实现前
-把候选标为 Implemented，也不得借 HLI-1B 公开 raw TextModel/SemanticModel、Apply/Save，
-或改变已实现 Section/Reference/Validate 的失败语义。
+下一次状态更新门禁是 HLI-1C Host Boundary Confirmation。不得借 HLI-1C 公开 raw
+TextModel/SemanticModel、Apply/Save，或改变已实现 Section/Reference/Validate/Preview
+的失败语义；Gateway/wire 兼容性必须在 HLI-2A 单独冻结。

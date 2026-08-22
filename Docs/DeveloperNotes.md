@@ -21,6 +21,7 @@ Do not restore legacy root `RA2IniEditor.sln` or `RA2IniEditor.csproj` for IDE-o
 
 - `RA2IniEditor.Core`: core INI document model, parsing, schema, field definitions, and validation primitives.
 - `RA2IniEditor.Infrastructure`: infrastructure services, field registry loading, BuiltIn v3.2 fallback registry assets, import / apply support, and IO helpers.
+- `RA2IniEditor.Application`: Core-only `net8.0` document query, diagnostics, semantic edit-preview implementation, and Experimental high-level contracts.
 - `RA2IniEditor.IDE`: WPF IDE shell, Source Editor integration, project explorer, navigation, completion, hover, diagnostics, save preflight, and field registry UI.
 - `RA2IniEditor.Tests`: unit and boundary tests for Core, Infrastructure, and IDE behavior.
 - `RA2IniEditor.UiAutomationTests`: opt-in UI automation tests for selected IDE smoke paths.
@@ -125,21 +126,21 @@ UI automation tests live in `RA2IniEditor.UiAutomationTests` and should remain o
 
 ## 11. Automation Architecture Direction
 
-The current A1-A4 algorithms are real and tested, but most live in the
-`net8.0-windows` IDE assembly. Do not describe them as an independently consumable
-Agent SDK.
+The HLI-1 Query, Diagnostics, and semantic Edit Preview algorithms are real, tested,
+and live in the Core-only `net8.0` Application assembly. They are Experimental
+in-process APIs, not a stable Agent SDK or wire protocol.
 
-The proposed next boundary is documented in
-`Docs/AUTOMATION-HLI-0B_MinimumCapabilityContract.md`:
+The governing boundary is documented in
+`Docs/AUTOMATION-HLI-0B_MinimumCapabilityContract.md` and the completed HLI-1 ledgers:
 
 - a candidate `RA2IniEditor.Application` (`net8.0`) assembly;
 - UI-neutral document query, diagnostics and semantic Preview capabilities;
 - IDE-host ownership of active editor capture, Apply, Undo and Save;
 - later Gateway/CLI/Job/Asset consumers using the same canonical implementation.
 
-HLI-0B is still proposed. Do not create the project, move algorithms or publish new
-APIs until its R3 implementation path is explicitly confirmed and HLI-1A0 has frozen
-the exact dependency cone.
+HLI-0B and HLI-1A/1B are implemented through the documented vertical slices. The next
+safe stage is HLI-1C Host Boundary Confirmation. Do not add public Apply/Save, a
+Gateway, CLI, wire DTO, or a second Preview authority without its own approved contract.
 
 ## 12. Documentation Authority
 

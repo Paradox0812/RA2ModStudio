@@ -1,7 +1,7 @@
 # AUTOMATION-HLI-1B Headless Edit Preview Final Contract
 
 契约日期：2026-08-22  
-状态：Final / Awaiting user implementation approval  
+状态：Completed / Verified
 前置基线：AUTOMATION-HLI-1A2 Completed / Verified  
 事实依据：`Docs/AUTOMATION-HLI-1B_EditPreviewCodeFactAudit.md`
 
@@ -35,7 +35,7 @@ Shell risk: None; ShellWindow.xaml/.xaml.cs both forbidden
 Governance mode: Deferred during continuous cards; flush at HLI-1B stop
 ```
 
-本文档阶段只写文档。生产实施必须在用户明确确认本最终契约后开始。
+用户已明确确认本最终契约；HLI-1B-0..1B-6 已按本文连续实施并完成验证。
 
 ## 3. 非目标
 
@@ -691,5 +691,6 @@ Preview 数据、所有权或程序集边界问题。剩余主要风险是 TextM
 
 ## 18. Stop Rule
 
-当前停止在 HLI-1B 最终契约。未经用户明确确认，不修改生产代码、不创建 rollback 包，
-也不进入 HLI-1B-0。
+HLI-1B 已完成并停止。不得从本契约推断 HLI-1C、Gateway、Apply/Save public API、
+独立 Agent/CLI 或自动写盘已经实现；进入 HLI-1C 前必须单独完成代码事实回归与契约。
+完成证据见 `Docs/AUTOMATION-HLI-1B_StageLedger.md`。

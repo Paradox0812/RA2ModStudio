@@ -146,7 +146,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: HLI-1B 迁移唯一 Preview 权威并保留 Host Apply 所有权
 
-- Status: Proposed / final contract awaiting implementation approval
+- Status: Accepted / implemented and verified
 - Date: 2026-08-22
 - Task(s): AUTOMATION-HLI-1B
 - Context:
@@ -170,14 +170,14 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 同时迁移 A3/A4/Save；会混淆 Preview 与提交权威并扩大 R3 风险。
   - 为减少 adapter 直接让 Gateway 调用 EditorTransactionPort；会绕过用户确认和 live currency。
 - Consequences:
-  - 实施为 R3/R2，必须保持 Application 47/47 和 A2/A3/A4 84/84 迁移前基线，增加
-    headless parity/limits/reflection tests，并运行完整非 UI suite。
+  - 实施为 R3/R2；迁移前 Application 47/47、受影响 88/88 基线通过，迁移后
+    Application 82/82、受影响 88/88、TextModel 相关 390/390 和完整 2526/2526 通过。
   - TextModel 移动影响 Save/Search/Completion 的编译依赖，需 global using 和受影响回归；
     不授权行为重构。
   - HLI-1C 只确认 Host adapter 与 A3/A4 生命周期，不再设计第二套 Preview 数据模型。
 - Follow-up:
-  - 用户确认 `AUTOMATION-HLI-1B_HeadlessEditPreviewFinalContract.md` 后，从 HLI-1B-0
-    baseline/rollback 开始连续实施；完成后停止，不自动进入 HLI-1C。
+  - HLI-1B 已完成并停止；下一步只允许进入 HLI-1C Host Boundary Confirmation 的
+    代码事实回归与最终契约，不自动进入 Gateway 或新增写入通道。
 
 ## Decision: VXL 近期通过 VOX 二维切片和 VXLSE III 完成
 
