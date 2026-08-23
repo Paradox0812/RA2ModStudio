@@ -33,6 +33,7 @@
 | 查看已完成最小 Capability Gateway | `AUTOMATION-HLI-2A_CapabilityGatewayCodeFactAudit.md` + `AUTOMATION-HLI-2A_CapabilityGatewayFinalContract.md` + `AUTOMATION-HLI-2A_StageLedger.md` |
 | 查看已完成 HLI-2B IDE/AI Gateway consumer | `AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` + `AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` + `AUTOMATION-HLI-2B_StageLedger.md` |
 | 查看已完成 HLI-2C 首个高层 Agent 闭环 | `AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` + `AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md` + `AUTOMATION-HLI-2C_StageLedger.md` |
+| 查看语义层、独立 Host 与素材的优先级裁决 | `AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
 ## 3. 状态词

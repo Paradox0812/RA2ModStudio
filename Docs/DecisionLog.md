@@ -307,3 +307,29 @@ CurrentPhase 和对应 Stage Ledger 负责。
 - Follow-up:
   - HLI-2C 已通过 94/94、37/37、2549/2549 和 clean package 1123；下一阶段先审计
     独立 Agent Host 与 CONTENT-1 的优先级，不自动扩大 Gateway authority。
+
+## Decision: CONTENT-1 先于独立 Agent Host，素材侧继续后置
+
+- Status: Accepted / route ordering only
+- Date: 2026-08-23
+- Task(s): AUTOMATION-POST-HLI-0
+- Context:
+  - HLI-v1 已提供进程内 typed Gateway，但 snapshot 仍携带
+    `IRa2FieldDefinitionProvider`，不是 wire DTO。
+  - 当前没有 CLI/IPC/RPC、session、permission、audit 或 IDE-mediated external Apply protocol。
+  - 长期语义面仍缺 Field Schema query、ResolveReference、CreateSection 和 ApplyTemplate。
+- Decision:
+  - 连续路线采用 `CONTENT-1 -> HOST-1 -> ASSET`。
+  - CONTENT-1 先复用 canonical Application semantics 补齐 query、模板展开、新 Section Preview
+    与既有 IDE explicit Apply；随后才冻结独立 Host 的 wire/session/permission。
+  - 素材 provider 的 INI binding 必须回到 Semantic Edit Preview，不得直接修改文本。
+- Rejected Alternatives:
+  - Host first：会围绕不完整的四能力目录冻结协议，并在 CONTENT-1 后再次扩展。
+  - Asset first：会在缺少 template/Section/reference binding 时制造字符串拼接或第二写入权威。
+  - Generic raw command/patch：会绕过 typed failure、diagnostic delta 和 Host-owned Apply。
+- Consequences:
+  - 下一安全入口是 CONTENT-1A 的代码事实回归与最终契约；本决策不批准具体 public API。
+  - 独立 Host 维持 R4 后置，Apply/Undo/Save 继续由 IDE Host/User authority 拥有。
+- Follow-up:
+  - CONTENT-1A 只评审 `GetFieldSchema` 与 `ResolveReference` 的 current-document typed query；
+    CreateSection、模板写入、wire、Job/Event/Artifact 和素材实现均不得顺带进入。

@@ -26,7 +26,9 @@
 | HLI-2A | 最小 Capability Gateway | descriptor、版本、限制、typed routing、取消 | Completed / Verified |
 | HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Completed / Verified |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Completed / Verified |
-| CONTENT-1 | 语义对象/模板层 | 新 Section、对象模板、跨文件计划、Artifact plan | Deferred |
+| POST-HLI-0 | Semantic / Host 优先级审计 | 代码事实、复用矩阵、语义优先路线 | Completed / DocsOnly |
+| CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、模板模型、新 Section Preview、IDE Apply | Next / Contract required |
+| HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after CONTENT-1 |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
 | ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
 | ASSET-SHP-1 | SHP 动画流水线 | frame spec、palette、anchor、preview、export adapter | Deferred |
@@ -82,6 +84,19 @@
 该闭环已通过 94/94、37/37、2549/2549 与 IdeOnly clean package 门禁。Minimum HLI-v1
 可视为完成，但不包含独立 Agent host、模板、多文件、素材或 Runtime Test。
 
+### POST-HLI-0：Semantic / Host 优先级审计（已完成）
+
+代码事实确认应先完成 `CONTENT-1`，再冻结独立 Agent Host，最后进入素材侧：
+
+- Gateway 已可被非 WPF 进程内宿主引用，但 snapshot 直接携带
+  `IRa2FieldDefinitionProvider`，不是 wire DTO；
+- 当前没有 CLI/IPC/RPC/permission/session/audit Host 基础；
+- CONTENT-1 可以复用现有 schema、Section/reference、diagnostics、Preview 和 IDE Apply；
+- 当前缺少 Schema/Resolve Gateway facts、CreateSection、语义 template model 与 expansion；
+- 先做 Host 会围绕不完整的四能力目录冻结协议，CONTENT-1 后必然扩展。
+
+完整证据见 `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`。
+
 ## 4. 素材路线
 
 ### ASSET-ICON-1
@@ -134,9 +149,9 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-下一纵向切片优先级与代码事实审计
+CONTENT-1A Semantic Query Completion 代码事实回归与最终契约
 ```
 
-HLI-2C 已完成，证据见 `Docs/AUTOMATION-HLI-2C_StageLedger.md`。下一阶段应在“独立 Agent
-Host”和“CONTENT-1 语义模板层”之间先做优先级与代码事实审计；不得直接引入 public
-Apply/Save、wire、Job Runtime 或素材写入。
+POST-HLI-0 审计已裁决 `CONTENT-1 -> HOST-1 -> ASSET`。下一阶段只允许审计并冻结
+`GetFieldSchema` 与 `ResolveReference` 的 current-document typed query；不得直接实现模板、
+CreateSection、public Apply/Save、wire、Job Runtime 或素材写入。

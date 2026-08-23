@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-23
-当前阶段：AUTOMATION-HLI-2B Completed / Verified
+当前阶段：AUTOMATION-POST-HLI-0 Completed / DocsOnly
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -18,6 +18,7 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-2A | 新增固定目录 + typed Gateway 的精确 6-type allowlist | Implemented / Experimental；allowlist 35，94/94 + 2537/2537 |
 | HLI-2B | None | Verified：IDE consumer 切换与资源门禁完成；allowlist 精确保持 35 |
 | HLI-2C | None | Verified：复用 Gateway/Coordinator/Workspace；不新增 Agent façade 或 Apply/Save |
+| POST-HLI-0 | None | DocsOnly：裁决 CONTENT-1 先于 HOST-1；候选 API 尚未批准 |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -162,3 +163,19 @@ HLI-2C 首个高层 Agent 闭环只组合既有 public Gateway facts 与 IDE int
 状态：`Completed / Verified`。reflection、loopback、transaction 和完整回归通过；Application
 exported allowlist 精确为 35，Gateway catalog/五方法 surface 不变。证据见
 `AUTOMATION-HLI-2C_StageLedger.md`。
+
+## 11. POST-HLI-0 候选登记（未批准）
+
+本轮只读审计没有修改 public API、capability catalog、version 或 exported allowlist。以下仅用于
+CONTENT-1A/1B/1C 的后续契约评审：
+
+| Candidate | Status | Earliest Review | Boundary |
+|---|---|---|---|
+| Field schema request/result/fact/failure | Candidate / Not approved | CONTENT-1A | captured Registry snapshot；不得公开 provider/singleton |
+| Resolve reference request/result/fact/failure | Candidate / Not approved | CONTENT-1A | current-document typed query；不得冒充 project-wide |
+| Template definition/instance/parameter/failure | Candidate / internal-first | CONTENT-1B | 无持久化/wire/provider DTO 承诺 |
+| CreateSection / ApplyTemplate preview | Candidate / Not approved | CONTENT-1C | deterministic Preview only；无 Apply/Save |
+| Host wire/session/permission DTO | Explicitly deferred | HOST-1 | 必须独立 R4 契约与版本策略 |
+
+当前 production 事实仍为 35 个 exported Experimental types、四项 capability 和五个 Gateway
+方法。`Ra2AutomationFieldRegistrySnapshot.Provider` 明确是进程内对象，不得当作 wire shape。

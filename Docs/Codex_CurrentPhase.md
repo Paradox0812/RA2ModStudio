@@ -45,6 +45,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 - AUTOMATION-HLI-2C-1..2C-4 First High-Level Agent Loop：确定性 Gateway 与 provider loopback
   闭环、显式单次 Apply、更新后 Validate 和 Problems 刷新已完成；public API 0 change，
   94/94 + 37/37 + 2549/2549 + clean package 1123。
+- AUTOMATION-POST-HLI-0 Semantic / Host Priority Audit：只读代码事实确认 CONTENT-1 应先于
+  独立 Agent Host，素材侧继续后置；public API 和生产代码 0 change。
 
 ### Implemented / Acceptance Pending
 
@@ -53,8 +55,8 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
-  均未实现。
+- CONTENT-1、独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime
+  Test Host 均未实现。
 
 ## 3. 最新完整实现证据
 
@@ -99,12 +101,13 @@ XAML/project/legacy 和 transaction/Save diff 为 0，Application exported allow
 下一安全操作是：
 
 ```text
-下一纵向切片优先级与代码事实审计
+CONTENT-1A Semantic Query Completion 代码事实回归与最终契约
 ```
 
-Minimum HLI-v1 已由 HLI-2C 完成，证据见 `Docs/AUTOMATION-HLI-2C_StageLedger.md`。下一阶段
-先在独立 Agent Host 与 CONTENT-1 语义模板层之间做优先级和代码事实审计；不得直接把
-Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
+POST-HLI-0 已完成优先级裁决，证据见
+`Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`。下一阶段只审计并冻结
+`GetFieldSchema` 与 `ResolveReference` 的 typed current-document query；实现必须另有最终契约，
+不得直接把模板写入、Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
 
 ## 7. 最小继续阅读集
 
@@ -137,6 +140,7 @@ Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
 27. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md`
 28. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`
 29. `Docs/AUTOMATION-HLI-2C_StageLedger.md`
+30. `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`
 
 旧累积状态已保存在：
 
