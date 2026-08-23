@@ -27,7 +27,7 @@
 | HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Completed / Verified |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Completed / Verified |
 | POST-HLI-0 | Semantic / Host 优先级审计 | 代码事实、复用矩阵、语义优先路线 | Completed / DocsOnly |
-| CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、模板模型、新 Section Preview、IDE Apply | Next / Contract required |
+| CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、Section Preview、模板编译、IDE Apply | Final contract candidate / awaiting confirmation |
 | HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after CONTENT-1 |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
 | ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
@@ -149,9 +149,10 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前下一入口是：
 
 ```text
-CONTENT-1A Semantic Query Completion 代码事实回归与最终契约
+确认 AUTOMATION-CONTENT-1 连续最终契约候选
 ```
 
-POST-HLI-0 审计已裁决 `CONTENT-1 -> HOST-1 -> ASSET`。下一阶段只允许审计并冻结
-`GetFieldSchema` 与 `ResolveReference` 的 current-document typed query；不得直接实现模板、
-CreateSection、public Apply/Save、wire、Job Runtime 或素材写入。
+连续契约候选见 `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`，已把
+CONTENT-1 细分为 1A Field Schema、1B Reference Resolve、1C Section Preview、1D Template
+Domain、1E Template Gateway 和 1F IDE integration。确认前不得实施；wire、持久化模板、
+multi-file、public Apply/Save、Job Runtime 和素材写入仍不在范围内。

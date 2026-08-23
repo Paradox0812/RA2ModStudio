@@ -55,8 +55,9 @@ Preview + 显式 Apply/Save；更高自治级别需要后续单独契约。
 
 ### Contracted / Not Implemented
 
-- CONTENT-1、独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime
-  Test Host 均未实现。
+- AUTOMATION-CONTENT-1 连续最终契约候选已生成，等待用户确认；生产实现尚未开始。
+- 独立 Agent/CLI、Job/Event/Artifact、素材/图标/SHP/VXL 流水线和 Runtime Test Host
+  均未实现。
 
 ## 3. 最新完整实现证据
 
@@ -101,13 +102,12 @@ XAML/project/legacy 和 transaction/Save diff 为 0，Application exported allow
 下一安全操作是：
 
 ```text
-CONTENT-1A Semantic Query Completion 代码事实回归与最终契约
+确认 AUTOMATION-CONTENT-1 Semantic Template Continuous Final Contract
 ```
 
-POST-HLI-0 已完成优先级裁决，证据见
-`Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`。下一阶段只审计并冻结
-`GetFieldSchema` 与 `ResolveReference` 的 typed current-document query；实现必须另有最终契约，
-不得直接把模板写入、Apply/Save、wire、Job/Event/Artifact 纳入 Gateway。
+最终契约候选见 `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`。确认后
+可从 CONTENT-1A 开始按 1A..1F 连续实施并逐阶段审查；确认前不得修改生产代码。wire、模板
+持久化、multi-file、Apply/Save、Job/Event/Artifact 和素材仍明确后置。
 
 ## 7. 最小继续阅读集
 
@@ -141,6 +141,7 @@ POST-HLI-0 已完成优先级裁决，证据见
 28. `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md`
 29. `Docs/AUTOMATION-HLI-2C_StageLedger.md`
 30. `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`
+31. `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`
 
 旧累积状态已保存在：
 

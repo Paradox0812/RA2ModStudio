@@ -331,5 +331,31 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 下一安全入口是 CONTENT-1A 的代码事实回归与最终契约；本决策不批准具体 public API。
   - 独立 Host 维持 R4 后置，Apply/Undo/Save 继续由 IDE Host/User authority 拥有。
 - Follow-up:
-  - CONTENT-1A 只评审 `GetFieldSchema` 与 `ResolveReference` 的 current-document typed query；
-    CreateSection、模板写入、wire、Job/Event/Artifact 和素材实现均不得顺带进入。
+  - CONTENT-1A/1B 分别评审 `GetFieldSchema` 与 `ResolveReference` 的 current-document typed
+    query；CreateSection、模板写入、wire、Job/Event/Artifact 和素材实现不得提前进入。
+
+## Decision: CONTENT-1 模板编译到现有 EditPlan，并诚实保留未知引用类型
+
+- Status: Proposed / awaiting CONTENT-1 contract confirmation
+- Date: 2026-08-23
+- Task(s): AUTOMATION-CONTENT-1A..1F
+- Context:
+  - Field Registry 能表达 Reference/ReferenceList，但没有 target SectionKind schema。
+  - 现有 Preview/Workspace/Transaction 已是唯一安全编辑链；另建 Template Preview 会形成第二权威。
+- Decision:
+  - Schema query 使用 captured effective provider 和既有 FieldTrust classifier，不暴露 provider/singleton。
+  - ResolveReference 区分 SemanticKnown 与 FieldSchemaDeclared；通用引用 target kind 可为 Unknown，
+    不修改既有 FindReferences/Diagnostics 语义。
+  - Section creation 作为 existing EditPlan 的 additive structured input；模板 compiler 只生成同一 plan，
+    后续继续由 canonical Gateway Preview 和 IDE explicit Apply 消费。
+  - 模板定义 internal-first，不在 CONTENT-1 承诺 JSON/YAML persistence 或 wire shape。
+- Rejected Alternatives:
+  - 从字段名猜 reference target kind：会把不可靠推断变成语义事实。
+  - 新建独立 Template ChangeSet/Apply service：会复制 Preview、currency 和 transaction authority。
+  - 把完整对象模板塞入 Field Registry：混淆字段 schema 与对象结构事实源。
+  - 让 provider 返回 raw Section body：绕过字段 trust、diagnostics 和结构化操作边界。
+- Consequences:
+  - 现有 field-only plan 保持兼容；CreateSection/Template 作为 additive Experimental 扩展。
+  - 首个真实模板必须通过独立 source gate；无法通过时停止，不以 Mock 模板完成产品阶段。
+- Follow-up:
+  - 用户确认连续契约后从 CONTENT-1A 开始；target-kind enrichment、multi-file 和 asset binding 后置。

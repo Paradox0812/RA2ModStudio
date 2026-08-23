@@ -47,7 +47,8 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-2C 最终契约 | `Docs/AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md` |
 | HLI-2C 完成证据 | `Docs/AUTOMATION-HLI-2C_StageLedger.md` |
 | POST-HLI 优先级审计 | `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md` |
-| 下一安全入口 | CONTENT-1A Semantic Query Completion 代码事实回归与最终契约 |
+| CONTENT-1 连续契约 | `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md` |
+| 下一安全入口 | 确认 CONTENT-1 连续最终契约候选 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -216,9 +217,12 @@ POST-HLI-0 已完成：当前 Gateway 是可无头进程内消费但不可直接
 独立 Host 尚缺 wire/session/permission，CONTENT-1 则可复用现有 schema/query/reference/
 diagnostics/Preview/Apply 链。路线已裁决为 `CONTENT-1 -> HOST-1 -> ASSET`。
 
-下一安全入口是 `CONTENT-1A Semantic Query Completion` 的代码事实回归与最终契约，只审计
-并冻结 `GetFieldSchema` 与 `ResolveReference`；不得直接公开 Apply/Save，或跳到模板写入、
-wire、Job/Event/Artifact 和素材流水线实现。
+CONTENT-1 连续最终契约候选已生成：1A Field Schema、1B Reference Resolve、1C Section
+Creation Preview、1D internal Template Domain、1E Template Gateway、1F IDE Agent integration。
+字段库继续是 effective schema/trust 事实源，但不承担对象模板或 reference target-kind 推断。
+
+下一安全入口是用户确认该契约候选；确认后从 CONTENT-1A 连续实施。确认前不得修改生产代码，
+也不得直接公开 Apply/Save，或跳到 wire、持久化模板、multi-file、Job/Event/Artifact 和素材实现。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

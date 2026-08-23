@@ -166,16 +166,34 @@ exported allowlist 精确为 35，Gateway catalog/五方法 surface 不变。证
 
 ## 11. POST-HLI-0 候选登记（未批准）
 
-本轮只读审计没有修改 public API、capability catalog、version 或 exported allowlist。以下仅用于
-CONTENT-1A/1B/1C 的后续契约评审：
+本轮只读审计没有修改 public API、capability catalog、version 或 exported allowlist。以下候选
+已由 CONTENT-1 连续契约细分到 1A..1E，仍未实施：
 
 | Candidate | Status | Earliest Review | Boundary |
 |---|---|---|---|
 | Field schema request/result/fact/failure | Candidate / Not approved | CONTENT-1A | captured Registry snapshot；不得公开 provider/singleton |
-| Resolve reference request/result/fact/failure | Candidate / Not approved | CONTENT-1A | current-document typed query；不得冒充 project-wide |
-| Template definition/instance/parameter/failure | Candidate / internal-first | CONTENT-1B | 无持久化/wire/provider DTO 承诺 |
+| Resolve reference request/result/fact/failure | Candidate / Not approved | CONTENT-1B | current-document typed query；不得冒充 project-wide |
+| Template definition/instance/parameter/failure | Candidate / internal-first | CONTENT-1D | 无持久化/wire/provider DTO 承诺 |
 | CreateSection / ApplyTemplate preview | Candidate / Not approved | CONTENT-1C | deterministic Preview only；无 Apply/Save |
 | Host wire/session/permission DTO | Explicitly deferred | HOST-1 | 必须独立 R4 契约与版本策略 |
 
 当前 production 事实仍为 35 个 exported Experimental types、四项 capability 和五个 Gateway
 方法。`Ra2AutomationFieldRegistrySnapshot.Provider` 明确是进程内对象，不得当作 wire shape。
+
+## 12. CONTENT-1 连续契约预登记（候选，未实施）
+
+权威候选：`AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`。以下清单只有在用户
+确认契约且对应子阶段通过实现门禁后才能从 Candidate 改为 Implemented。
+
+| Stage | API group | Kind | Reason | Expected Next Use | Stability | Planned Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| CONTENT-1A | FieldSchema Query/Failure/Fact/Result/Disposition | DTO/fact/enum/method/capability | 读取 effective schema/trust | 1C/1D/Host | Experimental | trust/priority/immutability/parity/limits | allowlist candidate 40 |
+| CONTENT-1B | ReferenceResolve Query/Failure/Basis/Fact/Result | DTO/fact/enum/method/capability | 解析 source field 当前目标 | 1D/asset binding | Experimental | known/schema/list/duplicate/missing-target/parity | allowlist candidate 45 |
+| CONTENT-1C | SectionCreate Operation/Preview + EditPlan/Preview additions | operation/fact/overload/properties/failure enum tail | 新 Section 进入唯一 Preview | 1D/1E | Experimental | newline/conflict/trust/candidate closure/Host boundary | allowlist candidate 47 |
+| CONTENT-1D | Template domain/compiler | Internal | 先冻结 definition/instance/compiler | 1E | Internal | invariants/arguments/determinism/schema policy | public diff 0 |
+| CONTENT-1E | Template service/descriptors/arguments/results/warnings | service/DTO/fact/enum/method/capability | discovery + expansion to EditPlan | 1F/Host | Experimental | catalog/version/arguments/parity/limits | allowlist candidate 58；首个真实模板需来源 gate |
+| CONTENT-1F | None | IDE internal consumer | 复用 Gateway/Workspace/Transaction | product loop | Internal | loopback/stale/policy/Undo/no-Save | public diff 0 |
+
+候选数字不得驱动 API 膨胀：若实现发现类型没有后续消费者，应保持 internal，并在实现前调整
+Task Card/ledger。不得把 Core provider、SemanticModel、Template definition、Workspace 或 Apply/Save
+公开为捷径。
