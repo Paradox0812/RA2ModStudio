@@ -970,11 +970,13 @@
                                     AutomationProperties.AutomationId="AiAssistant.EmptyStateMessage"
                                     Style="{StaticResource IdeAiAssistantMessageStyle}">
                                     <StackPanel>
-                                    <TextBlock AutomationProperties.AutomationId="AiAssistant.ResponseArea"
+                                    <TextBlock x:Name="AiAssistantEmptyStatePrimaryText"
+                                    AutomationProperties.AutomationId="AiAssistant.ResponseArea"
                                     Style="{StaticResource IdeAiMessageTextStyle}"
                                     Text="可以直接描述需求，例如“帮我设计一个轻型防空车”。默认使用 DeepSeek V4 Flash。"
                                     TextWrapping="Wrap" />
-                                    <TextBlock AutomationProperties.AutomationId="AiAssistant.DraftPreview"
+                                    <TextBlock x:Name="AiAssistantEmptyStateSecondaryText"
+                                    AutomationProperties.AutomationId="AiAssistant.DraftPreview"
                                     Margin="0,4,0,0"
                                     Style="{StaticResource IdeAiMetadataTextStyle}"
                                     Text="回复只作为草稿或建议；发送会联网，但不会修改文件。"
@@ -1012,9 +1014,48 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    
-                                    <TextBox Grid.Row="0"
+
+                                    <Grid Grid.Row="0"
+                                          x:Name="AiAssistantModeSelector"
+                                          AutomationProperties.AutomationId="AiAssistant.ModeSelector"
+                                          Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <RadioButton Grid.Column="0"
+                                                     x:Name="AiAssistantChatModeButton"
+                                                     AutomationProperties.AutomationId="AiAssistant.ChatModeButton"
+                                                     AutomationProperties.Name="聊天模式"
+                                                     GroupName="AiAssistantMode"
+                                                     IsChecked="True"
+                                                     Checked="AiAssistantModeButton_OnChecked"
+                                                     Content="聊天"
+                                                     Style="{StaticResource IdeAiModeSegmentStyle}" />
+                                        <RadioButton Grid.Column="1"
+                                                     x:Name="AiAssistantWorkModeButton"
+                                                     AutomationProperties.AutomationId="AiAssistant.WorkModeButton"
+                                                     AutomationProperties.Name="工作模式"
+                                                     GroupName="AiAssistantMode"
+                                                     Margin="-1,0,0,0"
+                                                     Checked="AiAssistantModeButton_OnChecked"
+                                                     Content="工作"
+                                                     Style="{StaticResource IdeAiModeSegmentStyle}" />
+                                        <TextBlock Grid.Column="2"
+                                                   x:Name="AiAssistantModeSummaryText"
+                                                   AutomationProperties.AutomationId="AiAssistant.ModeSummary"
+                                                   Margin="8,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource UiTextSecondaryBrush}"
+                                                   Text="解释与建议"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap" />
+                                    </Grid>
+
+                                    <TextBox Grid.Row="1"
                                     x:Name="AiAssistantPromptBox"
                                     AutomationProperties.AutomationId="AiAssistant.PromptBox"
                                     AcceptsReturn="True"
@@ -1031,7 +1072,7 @@
                                     TextWrapping="Wrap"
                                     VerticalScrollBarVisibility="Auto" />
                                     
-                                    <Grid Grid.Row="1" Margin="0,4,0,0">
+                                    <Grid Grid.Row="2" Margin="0,4,0,0">
                                     <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -1103,7 +1144,7 @@
                                     </Grid>
                                     </Grid>
 
-                                    <Border Grid.Row="2"
+                                    <Border Grid.Row="3"
                                     AutomationProperties.AutomationId="AiAssistant.AdvancedOptions">
                                     <Border.Style>
                                     <Style TargetType="Border" BasedOn="{StaticResource IdeAiCopilotAdvancedOptionsStyle}">
@@ -1125,6 +1166,7 @@
                                     </Border>
                                     
                                     <TextBlock Grid.Row="2"
+                                    x:Name="AiAssistantSafetyFooterText"
                                     AutomationProperties.AutomationId="AiAssistant.SafetyFooter"
                                     Style="{StaticResource IdeAiR2SafetyTextStyle}"
                                     Text="AI 输出仅供参考；发送会联网，但不会修改文件。"

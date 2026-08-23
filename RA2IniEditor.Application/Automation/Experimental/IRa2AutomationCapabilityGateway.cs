@@ -4,6 +4,18 @@ public interface IRa2AutomationCapabilityGateway
 {
     IReadOnlyList<Ra2AutomationCapabilityDescriptor> GetCapabilities();
 
+    IReadOnlyList<Ra2AutomationTemplateDescriptor> GetTemplates();
+
+    Ra2AutomationFieldSchemaQueryResult GetFieldSchema(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationFieldSchemaQuery request,
+        CancellationToken cancellationToken = default);
+
+    Ra2AutomationReferenceResolveResult ResolveReference(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationReferenceResolveQuery request,
+        CancellationToken cancellationToken = default);
+
     Ra2AutomationSectionQueryResult GetSection(
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationSectionQuery request,
@@ -21,5 +33,10 @@ public interface IRa2AutomationCapabilityGateway
     Ra2AutomationEditPreviewResult Preview(
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationEditPlan plan,
+        CancellationToken cancellationToken = default);
+
+    Ra2AutomationTemplateExpansionResult ExpandTemplate(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
         CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
 using RA2IniEditor.Application.Diagnostics;
+using RA2IniEditor.Application.FieldTrust;
 using RA2IniEditor.Core.Schema;
 using RA2IniEditor.Application.Language;
 
@@ -9,8 +10,303 @@ public sealed class Ra2AutomationDocumentQueryService : IRa2AutomationDocumentQu
     public const int MaximumDocumentCharacters = 8 * 1024 * 1024;
 
     public const int MaximumResultItems = 10_000;
+    public const int MaximumFieldSchemaAllowedValues = 1_024;
+    public const int MaximumFieldSchemaAliases = 256;
+    public const int MaximumFieldSchemaTextCharacters = 64 * 1024;
+    public const int MaximumReferenceTokenLength = 256;
+    public const int MaximumReferenceListTokens = 10_000;
 
     private readonly Ra2DocumentDiagnosticService _diagnosticService = new();
+
+    public Ra2AutomationFieldSchemaQueryResult GetFieldSchema(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationFieldSchemaQuery request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (snapshot.Text.Length > MaximumDocumentCharacters)
+        {
+            return CreateFieldSchemaFailure(
+                snapshot,
+                Ra2AutomationFieldSchemaQueryFailureKind.DocumentTooLarge,
+                "The document exceeds the supported character limit.");
+        }
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!snapshot.FieldRegistry.Provider.TryGetField(
+                    request.SectionKind,
+                    request.Key,
+                    out Ra2FieldDefinition? definition))
+            {
+                return CreateFieldSchemaFailure(
+                    snapshot,
+                    Ra2AutomationFieldSchemaQueryFailureKind.NotFound,
+                    "The requested field schema was not found.");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (definition.ValueMetadata.AllowedValues.Count > MaximumFieldSchemaAllowedValues ||
+                definition.Aliases.Count > MaximumFieldSchemaAliases)
+            {
+                return CreateFieldSchemaFailure(
+                    snapshot,
+                    Ra2AutomationFieldSchemaQueryFailureKind.ResultLimitExceeded,
+                    "The field schema exceeds the supported item limit.");
+            }
+
+            string[] allowedValues = definition.ValueMetadata.AllowedValues
+                .Select(item => item.Value)
+                .ToArray();
+            string[] aliases = definition.Aliases.ToArray();
+            if (allowedValues.Any(value => value.Length > Ra2AutomationEditOperation.MaximumValueLength) ||
+                aliases.Any(alias => alias.Length > Ra2AutomationFieldSchemaQuery.MaximumKeyLength) ||
+                CalculateSchemaTextLength(definition, allowedValues, aliases) > MaximumFieldSchemaTextCharacters)
+            {
+                return CreateFieldSchemaFailure(
+                    snapshot,
+                    Ra2AutomationFieldSchemaQueryFailureKind.ResultLimitExceeded,
+                    "The field schema exceeds the supported text limit.");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Ra2AutomationFieldTrustLevel trustLevel = Ra2AutomationFieldTrustMapper.ToAutomationLevel(
+                Ra2FieldTrustClassifier.Classify(definition).Level);
+            Ra2AutomationFieldSchemaFact fact = new(
+                definition.Key,
+                request.SectionKind,
+                definition.AppliesTo,
+                definition.EditorKind,
+                definition.ValueMetadata.ValueKind,
+                definition.ValueMetadata.BooleanStyle,
+                allowedValues,
+                definition.ValueMetadata.EnumName,
+                definition.ValueMetadata.Separator,
+                definition.DisplayName,
+                definition.Description,
+                aliases,
+                definition.SourceKind,
+                trustLevel,
+                Ra2AutomationFieldTrustMapper.ToAuthoringDisposition(trustLevel));
+            cancellationToken.ThrowIfCancellationRequested();
+            return new Ra2AutomationFieldSchemaQueryResult(
+                snapshot,
+                Ra2AutomationFieldSchemaQueryFailureKind.None,
+                "The field schema query succeeded.",
+                fact);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateFieldSchemaFailure(
+                snapshot,
+                Ra2AutomationFieldSchemaQueryFailureKind.Canceled,
+                "The field schema query was canceled.");
+        }
+        catch (Exception exception) when (!IsFatalException(exception))
+        {
+            return CreateFieldSchemaFailure(
+                snapshot,
+                Ra2AutomationFieldSchemaQueryFailureKind.AnalysisFailed,
+                "The field schema query could not be completed.");
+        }
+    }
+
+    public Ra2AutomationReferenceResolveResult ResolveReference(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationReferenceResolveQuery request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(request);
+        if (snapshot.Text.Length > MaximumDocumentCharacters)
+        {
+            return CreateReferenceResolveFailure(
+                snapshot,
+                Ra2AutomationReferenceResolveFailureKind.DocumentTooLarge,
+                "The document exceeds the supported character limit.");
+        }
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Ra2DocumentSemanticModel model = BuildModel(snapshot);
+            Ra2SectionSymbol[] matchingSections = model.Sections
+                .Where(section => string.Equals(section.Name, request.SectionName, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (!TrySelectOccurrence(
+                    matchingSections,
+                    request.SectionOccurrence,
+                    out Ra2SectionSymbol? section,
+                    out int sectionOccurrence))
+            {
+                return CreateReferenceResolveFailure(
+                    snapshot,
+                    matchingSections.Length == 0 || request.SectionOccurrence is not null
+                        ? Ra2AutomationReferenceResolveFailureKind.SectionNotFound
+                        : Ra2AutomationReferenceResolveFailureKind.AmbiguousSection,
+                    matchingSections.Length == 0 || request.SectionOccurrence is not null
+                        ? "The requested section occurrence was not found."
+                        : "The requested section name has multiple occurrences.");
+            }
+
+            Ra2KeyValueSymbol[] matchingFields = model.KeyValues
+                .Where(field =>
+                    ContainsSpan(section!.BodySpan, field.LineSpan) &&
+                    string.Equals(field.Key, request.Key, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (!TrySelectOccurrence(
+                    matchingFields,
+                    request.FieldOccurrence,
+                    out Ra2KeyValueSymbol? field,
+                    out int fieldOccurrence))
+            {
+                return CreateReferenceResolveFailure(
+                    snapshot,
+                    matchingFields.Length == 0 || request.FieldOccurrence is not null
+                        ? Ra2AutomationReferenceResolveFailureKind.FieldNotFound
+                        : Ra2AutomationReferenceResolveFailureKind.AmbiguousField,
+                    matchingFields.Length == 0 || request.FieldOccurrence is not null
+                        ? "The requested field occurrence was not found."
+                        : "The requested field has multiple occurrences.");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            bool schemaDeclared = snapshot.FieldRegistry.Provider.TryGetField(
+                    section!.Kind,
+                    field!.Key,
+                    out Ra2FieldDefinition? definition) &&
+                definition.ValueMetadata.ValueKind is Ra2FieldValueKind.Reference or Ra2FieldValueKind.ReferenceList;
+
+            Ra2ValueReferenceSymbol? semanticReference = model.References.FirstOrDefault(reference =>
+                reference.LineNumber == field.LineNumber &&
+                string.Equals(reference.SourceSectionName, section.Name, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(reference.SourceKey, field.Key, StringComparison.OrdinalIgnoreCase));
+
+            string token;
+            Ra2TextSpan tokenSpan;
+            Ra2SectionKind declaredTargetKind;
+            Ra2AutomationReferenceResolutionBasis basis;
+            if (semanticReference is not null)
+            {
+                if (request.ReferenceIndex != 0)
+                {
+                    return CreateReferenceResolveFailure(
+                        snapshot,
+                        Ra2AutomationReferenceResolveFailureKind.ReferenceIndexOutOfRange,
+                        "The semantic reference has no token at the requested index.");
+                }
+
+                token = semanticReference.TargetSectionName;
+                tokenSpan = semanticReference.ValueSpan;
+                declaredTargetKind = semanticReference.TargetSectionKind;
+                basis = Ra2AutomationReferenceResolutionBasis.SemanticKnown;
+            }
+            else
+            {
+                if (!schemaDeclared || definition is null)
+                {
+                    return CreateReferenceResolveFailure(
+                        snapshot,
+                        Ra2AutomationReferenceResolveFailureKind.UnsupportedReference,
+                        "The field is not a known or schema-declared reference.");
+                }
+
+                ReferenceTokenization tokenization = TokenizeReferenceValue(
+                    snapshot.Text,
+                    field,
+                    definition.ValueMetadata.Separator,
+                    cancellationToken);
+                if (tokenization.ExceedsLimit)
+                {
+                    return CreateReferenceResolveFailure(
+                        snapshot,
+                        Ra2AutomationReferenceResolveFailureKind.ResultLimitExceeded,
+                        "The reference list exceeds the supported token limit.");
+                }
+                if (request.ReferenceIndex >= tokenization.Tokens.Count)
+                {
+                    return CreateReferenceResolveFailure(
+                        snapshot,
+                        Ra2AutomationReferenceResolveFailureKind.ReferenceIndexOutOfRange,
+                        "The reference list has no token at the requested index.");
+                }
+
+                ReferenceToken selected = tokenization.Tokens[request.ReferenceIndex];
+                if (string.IsNullOrWhiteSpace(selected.Value))
+                {
+                    return CreateReferenceResolveFailure(
+                        snapshot,
+                        Ra2AutomationReferenceResolveFailureKind.EmptyReference,
+                        "The requested reference token is empty.");
+                }
+
+                token = selected.Value;
+                tokenSpan = selected.Span;
+                declaredTargetKind = Ra2SectionKind.Unknown;
+                basis = Ra2AutomationReferenceResolutionBasis.FieldSchemaDeclared;
+            }
+
+            if (token.Length > MaximumReferenceTokenLength)
+            {
+                return CreateReferenceResolveFailure(
+                    snapshot,
+                    Ra2AutomationReferenceResolveFailureKind.ResultLimitExceeded,
+                    "The reference token exceeds the supported length.");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Ra2SectionSymbol[] targets = model.Sections
+                .Where(candidate => string.Equals(candidate.Name, token, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (targets.Length > MaximumResultItems)
+            {
+                return CreateReferenceResolveFailure(
+                    snapshot,
+                    Ra2AutomationReferenceResolveFailureKind.ResultLimitExceeded,
+                    "The reference target count exceeds the supported limit.");
+            }
+
+            Ra2SectionKind targetKind = targets.Length == 1 ? targets[0].Kind : declaredTargetKind;
+            Ra2AutomationReferenceResolutionFact fact = new(
+                section.Name,
+                sectionOccurrence,
+                field.Key,
+                fieldOccurrence,
+                field.LineNumber,
+                ToAutomationSpan(tokenSpan),
+                token,
+                request.ReferenceIndex,
+                token,
+                targetKind,
+                basis,
+                targets.Length > 0,
+                targets.Length,
+                schemaDeclared);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new Ra2AutomationReferenceResolveResult(
+                snapshot,
+                Ra2AutomationReferenceResolveFailureKind.None,
+                "The reference resolution succeeded.",
+                fact);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return CreateReferenceResolveFailure(
+                snapshot,
+                Ra2AutomationReferenceResolveFailureKind.Canceled,
+                "The reference resolution was canceled.");
+        }
+        catch (Exception exception) when (!IsFatalException(exception))
+        {
+            return CreateReferenceResolveFailure(
+                snapshot,
+                Ra2AutomationReferenceResolveFailureKind.AnalysisFailed,
+                "The reference resolution could not be completed.");
+        }
+    }
 
     public Ra2AutomationDocumentDiagnosticsResult Validate(
         Ra2AutomationDocumentSnapshot snapshot,
@@ -326,6 +622,108 @@ public sealed class Ra2AutomationDocumentQueryService : IRa2AutomationDocumentQu
         string message)
         => new(snapshot, failureKind, message, null);
 
+    private static Ra2AutomationFieldSchemaQueryResult CreateFieldSchemaFailure(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationFieldSchemaQueryFailureKind failureKind,
+        string message)
+        => new(snapshot, failureKind, message, null);
+
+    private static Ra2AutomationReferenceResolveResult CreateReferenceResolveFailure(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationReferenceResolveFailureKind failureKind,
+        string message)
+        => new(snapshot, failureKind, message, null);
+
+    private static bool TrySelectOccurrence<T>(
+        IReadOnlyList<T> values,
+        int? requestedOccurrence,
+        out T? value,
+        out int occurrence)
+        where T : class
+    {
+        value = null;
+        occurrence = -1;
+        if (requestedOccurrence is int requested)
+        {
+            if (requested >= values.Count)
+                return false;
+            value = values[requested];
+            occurrence = requested;
+            return true;
+        }
+
+        if (values.Count != 1)
+            return false;
+        value = values[0];
+        occurrence = 0;
+        return true;
+    }
+
+    private static ReferenceTokenization TokenizeReferenceValue(
+        string sourceText,
+        Ra2KeyValueSymbol field,
+        string separator,
+        CancellationToken cancellationToken)
+    {
+        if (field.ValueSpan is not Ra2TextSpan valueSpan)
+            return new ReferenceTokenization([new ReferenceToken(string.Empty, field.LineSpan)], false);
+
+        string raw = sourceText.Substring(valueSpan.Start, valueSpan.Length);
+        string effective = Ra2IniLineParser.GetEffectiveValue(raw);
+        int effectiveOffset = raw.IndexOf(effective, StringComparison.Ordinal);
+        if (effectiveOffset < 0)
+            effectiveOffset = 0;
+
+        string delimiter = string.IsNullOrEmpty(separator) ? "," : separator;
+        List<ReferenceToken> tokens = [];
+        int segmentStart = 0;
+        while (true)
+        {
+            if (tokens.Count >= MaximumReferenceListTokens)
+                return new ReferenceTokenization([], true);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            int delimiterIndex = effective.IndexOf(delimiter, segmentStart, StringComparison.Ordinal);
+            int segmentEnd = delimiterIndex < 0 ? effective.Length : delimiterIndex;
+            string segment = effective[segmentStart..segmentEnd];
+            int leading = 0;
+            while (leading < segment.Length && char.IsWhiteSpace(segment[leading]))
+                leading++;
+            int trailing = segment.Length;
+            while (trailing > leading && char.IsWhiteSpace(segment[trailing - 1]))
+                trailing--;
+            string token = segment[leading..trailing];
+            tokens.Add(new ReferenceToken(
+                token,
+                new Ra2TextSpan(
+                    valueSpan.Start + effectiveOffset + segmentStart + leading,
+                    trailing - leading)));
+
+            if (delimiterIndex < 0)
+                break;
+            segmentStart = delimiterIndex + delimiter.Length;
+        }
+
+        return new ReferenceTokenization(tokens, false);
+    }
+
+    private static long CalculateSchemaTextLength(
+        Ra2FieldDefinition definition,
+        IReadOnlyCollection<string> allowedValues,
+        IReadOnlyCollection<string> aliases)
+    {
+        long length = definition.Key.Length +
+            (definition.ValueMetadata.EnumName?.Length ?? 0) +
+            definition.ValueMetadata.Separator.Length +
+            (definition.DisplayName?.Length ?? 0) +
+            (definition.Description?.Length ?? 0);
+        foreach (string value in allowedValues)
+            length += value.Length;
+        foreach (string alias in aliases)
+            length += alias.Length;
+        return length;
+    }
+
     private static Ra2AutomationReferenceQueryResult CreateReferenceFailure(
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationReferenceQueryFailureKind failureKind,
@@ -349,4 +747,10 @@ public sealed class Ra2AutomationDocumentQueryService : IRa2AutomationDocumentQu
             AccessViolationException or
             AppDomainUnloadedException or
             BadImageFormatException;
+
+    private readonly record struct ReferenceToken(string Value, Ra2TextSpan Span);
+
+    private readonly record struct ReferenceTokenization(
+        IReadOnlyList<ReferenceToken> Tokens,
+        bool ExceedsLimit);
 }

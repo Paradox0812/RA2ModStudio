@@ -1,5 +1,6 @@
 using RA2IniEditor.Core.Schema;
 using RA2IniEditor.IDE.AI;
+using RA2IniEditor.IDE.AuthoringDiff;
 using RA2IniEditor.IDE.Editing;
 using RA2IniEditor.IDE.Language;
 using RA2IniEditor.IDE.Services;
@@ -90,6 +91,23 @@ public sealed class Ra2AiEditProposalViewModelTests
     }
 
     [Fact]
+    public void AuthoringDiff_ProjectsBlockedAndStaleProposalStateWithoutOwningAuthority()
+    {
+        Ra2AiEditProposalViewModel blockedProposal = new(CreateProposal(
+            Ra2AiEditProposalApplyPolicy.Blocked));
+        using TestDiffViewModel blocked = new(blockedProposal);
+        Assert.True(blocked.ViewModel.IsBlocked);
+        Assert.False(blocked.ViewModel.IsApplyEnabled);
+
+        Ra2AiEditProposalViewModel currentProposal = new(CreateProposal(
+            Ra2AiEditProposalApplyPolicy.Normal));
+        using TestDiffViewModel current = new(currentProposal);
+        currentProposal.MarkStale("changed");
+        Assert.True(current.ViewModel.IsStale);
+        Assert.False(current.ViewModel.IsApplyEnabled);
+    }
+
+    [Fact]
     public void ProposalView_UsesModernVirtualizedListAndRequiredAutomationIds()
     {
         string root = TestRepositoryRoot.Find();
@@ -112,6 +130,7 @@ public sealed class Ra2AiEditProposalViewModelTests
                      "AiAssistant.EditProposalCard.Summary",
                      "AiAssistant.EditProposalCard.OperationList",
                      "AiAssistant.EditProposalCard.DiagnosticSummary",
+                     "AiAssistant.EditProposalCard.OpenDiffButton",
                      "AiAssistant.EditProposalCard.ApplyButton",
                      "AiAssistant.EditProposalCard.DismissButton",
                      "AiAssistant.EditProposalCard.ResultMessage"
@@ -159,5 +178,15 @@ public sealed class Ra2AiEditProposalViewModelTests
             new Ra2AddPropertyInsertPlanner()).Preview(snapshot, plan);
         Assert.True(preview.Succeeded);
         return new Ra2AiEditProposal(preview, policy, "risk summary");
+    }
+
+    private sealed class TestDiffViewModel : IDisposable
+    {
+        public TestDiffViewModel(Ra2AiEditProposalViewModel proposal)
+            => ViewModel = new Ra2AuthoringDiffViewModel(proposal);
+
+        public Ra2AuthoringDiffViewModel ViewModel { get; }
+
+        public void Dispose() => ViewModel.Dispose();
     }
 }

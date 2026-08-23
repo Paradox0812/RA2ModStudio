@@ -95,6 +95,9 @@ Use this checklist before publishing or handing off an IDE-only source package.
 
 - [ ] Confirm the AI panel defaults to DeepSeek V4 Flash.
 - [ ] Confirm the model list contains only DeepSeek V4 Flash and DeepSeek V4 Pro.
+- [ ] Confirm the mode selector defaults to Chat, both Chat and Work are keyboard accessible, and switching modes updates the compact summary.
+- [ ] In Chat mode, send an edit-like request and confirm no structured editing tool or proposal is offered.
+- [ ] In Work mode, confirm an unsupported complete-object request fails locally rather than silently returning a skeleton.
 - [ ] Confirm configuration status and the network/cost/no-file-mutation notice are visible without exposing endpoint or API key values.
 - [ ] Confirm an over-8000-character prompt is rejected before a request starts and remains in the input box.
 - [ ] Confirm cancellation/failure preserves received text and does not add the failed pair to later conversation context.
@@ -106,6 +109,17 @@ Use this checklist before publishing or handing off an IDE-only source package.
 - [ ] Confirm provider prose without the required tool call produces a typed failure and no proposal card.
 - [ ] Confirm mixed provider prose cannot alter the operations shown by the locally validated proposal card.
 - [ ] Confirm a proposal that adds an error is blocked, and custom endpoints do not receive the structured-edit tool.
+- [ ] Confirm a successful proposal opens a read-only main-workspace Diff; closing it keeps the proposal and `查看更改` reopens it.
+- [ ] Confirm `应用全部` returns focus to the source editor, creates one Undo unit, and does not save; `放弃修改` cannot be reopened.
+- [ ] Request a current-file Weapon/Projectile/Warhead skeleton with three disposable IDs and confirm only three Sections plus the Weapon `Projectile=`/`Warhead=` relationships are proposed.
+- [ ] Confirm the skeleton does not invent gameplay defaults, registration entries, indexes, or assets.
+- [ ] In Work mode, request a usable direct-fire weapon chain for one unique existing owner and confirm the proposal contains the owner slot plus nonempty Weapon/Projectile/Warhead fields as one atomic 15-operation plan.
+- [ ] Confirm ambiguous/missing owner, wrong owner kind, invalid `Verses`, or an unsupported owner slot fails closed before Apply.
+- [ ] In Work mode, bind an existing disposable Weapon to an Arcing Projectile and confirm the proposal contains `Arcing=yes` but no `ROT`, `Vertical`, `Inviso`, or `Trajectory`.
+- [ ] Bind an existing disposable Weapon to a homing Projectile and confirm `ROT>0`; a request mixing homing and arcing must fail locally.
+- [ ] Create a YR core Warhead preview and confirm 11-slot `Verses` plus core damage fields; repeat in a document containing `[ArmorTypes]` and confirm it is rejected without a proposal.
+- [ ] Confirm the clean output contains exactly 15 bundled `AgentSkills/*/SKILL.md` packages and no bundled Skill `scripts/` directory.
+- [ ] At narrow width, confirm Diff actions remain available and the return-to-source action becomes a compact icon with a tooltip.
 - [ ] Confirm no automatic retry or model fallback occurs.
 
 ## 12. Release Notes

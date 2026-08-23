@@ -336,7 +336,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## Decision: CONTENT-1 模板编译到现有 EditPlan，并诚实保留未知引用类型
 
-- Status: Proposed / awaiting CONTENT-1 contract confirmation
+- Status: Accepted / implemented and verified
 - Date: 2026-08-23
 - Task(s): AUTOMATION-CONTENT-1A..1F
 - Context:
@@ -358,4 +358,165 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 现有 field-only plan 保持兼容；CreateSection/Template 作为 additive Experimental 扩展。
   - 首个真实模板必须通过独立 source gate；无法通过时停止，不以 Mock 模板完成产品阶段。
 - Follow-up:
-  - 用户确认连续契约后从 CONTENT-1A 开始；target-kind enrichment、multi-file 和 asset binding 后置。
+  - CONTENT-1A..1F 已完成；public allowlist 58、catalog 7、Gateway methods 9。
+  - 首个模板通过 source gate，仅生成 Weapon/Projectile/Warhead 关系骨架；target-kind enrichment、
+    multi-file、注册表维护和 asset binding 后置。
+
+## Decision: CONTENT-UI-1 只投影整案 Diff，不创建第二编辑权威
+
+- Status: Accepted / implemented and verified
+- Date: 2026-08-23
+- Task(s): AUTOMATION-CONTENT-UI-1
+- Context:
+  - 用户要求在主视图获得类似现代代码审查界面的可视化编辑预览。
+  - 当前提案和 Apply 已由 Coordinator、Workspace 与 TransactionPort 管理，v1 没有 hunk 级计划模型。
+- Decision:
+  - 在主工作区创建临时 AvalonDock Diff document；源文本和 candidate text 是唯一 Diff 输入。
+  - 关闭 document 只隐藏，AI 提案卡可重新打开；只有 Dismiss 才终止提案。
+  - Apply All 继续调用现有整案、单次、stale-checked Apply；不伪装 per-hunk acceptance。
+  - Diff 采用可取消和资源有界实现，并在 reopen/apply 前重查 document identity、revision 和 stale。
+- Rejected Alternatives:
+  - 直接编辑 Diff 行：会产生第二文本权威并绕过 canonical Preview。
+  - v1 增加逐 hunk 接受：需要重定义 plan、diagnostics、原子性和 Undo，超出已批准阶段。
+  - 关闭即 Dismiss：浮动/停靠文档的普通窗口行为会意外丢失提案。
+- Consequences:
+  - UI 可展示完整结构化改动，但 v1 只能整案 Apply 或 Dismiss。
+  - 8 MiB/200k input lines/20k visual rows/2k hunks 是 fail-closed 上限；超限不阻塞编辑器。
+- Follow-up:
+  - UI-1 已通过有界 Diff、lifecycle、authority、responsive 契约测试和完整 non-UI 回归；
+    物理屏幕/混合 DPI 的最终视觉仍由用户后续人工验收。
+
+## Decision: 普通 DeepSeek 工具模式采用严格语义与有限格式容忍
+
+- Status: Accepted / implemented and verified
+- Date: 2026-08-23
+- Task(s): AI-AUTHORING-NONSTRICT-1 Narrow Boundary Fix
+- Context:
+  - 官方普通 Tool Calls 不保证参数始终严格符合 JSON Schema；实机连续返回无法通过字段工具解析的参数。
+  - 当前适配器把所有结构错误折叠为同一句，提示词要求数值加引号仍不能可靠消除失败。
+- Decision:
+  - 保留唯一 `Ra2AiAuthoringToolAdapter` 和 canonical Preview/Coordinator authority。
+  - 只兼容可唯一解释的格式漂移：尾逗号、由 `operations/message` 唯一推断 outcome、缺失展示摘要、
+    单 operation 对象以及 JSON number -> INI 文本。
+  - 未知属性、重复属性、布尔/null/对象/数组 value、raw INI、Apply/Save 参数和多工具调用继续拒绝。
+  - 结构失败返回不含参数值的分类消息；不得记录或回显完整 provider arguments。
+- Rejected Alternatives:
+  - 只继续调整用户提示词：普通 Tool Calls 仍可能偏离 schema，不能形成可靠产品边界。
+  - 直接切换 DeepSeek Beta strict：需要 `/beta` 端点，且现有条件式 schema 与其限制不兼容。
+  - 通用 JSON 修复或接受未知字段：会掩盖模型幻觉并扩大不可信输入权限。
+- Consequences:
+  - 常见非严格返回可继续进入本地 schema/Preview，但不会自动 Apply 或 Save。
+  - 对真正含糊或复合的参数仍 fail closed，并给出可诊断但不泄漏内容的消息。
+- Follow-up:
+  - 若仍出现拒绝，应依据新的结构分类消息新增一个精确刻画案例；不得进一步无证据放宽。
+
+## Decision: Chat / Work 分离，普通完整对象请求不得退化为骨架
+
+- Status: Accepted / implemented and verified
+- Date: 2026-08-23
+- Task(s): AGENT-MODE-1
+- Context:
+  - Advisory 对话与结构化编辑此前共用隐式路由，用户无法显式控制授权意图。
+  - Weapon 链请求会命中关系 skeleton，导致“搭建可用对象”被错误降级为空骨架。
+- Decision:
+  - UI 显式提供 Chat / Work，默认 Chat；Chat 永远零编辑工具，Work 才能进入既有 Preview 权限链。
+  - 只有明确出现骨架/框架/占位意图才选择 skeleton；普通可用武器链选择 source-gated complete profile。
+  - complete profile 绑定唯一既有 owner，生成非空 Weapon/Projectile/Warhead，并原子进入同一 EditPlan。
+- Consequences:
+  - 新增 public `Ra2AutomationTemplateOutputKind`，allowlist 58 -> 59；不增加 Apply/Save authority。
+  - 不支持的完整对象类型必须本地明确拒绝，不能静默退化为 skeleton。
+
+## Decision: RA2 Skill 是有界知识层，不是插件权限层
+
+- Status: Accepted / implemented and verified
+- Date: 2026-08-23
+- Task(s): AGENT-KNOWLEDGE-1
+- Context:
+  - Agent 需要稳定理解 RA2/YR/Ares/Phobos 的领域依赖，但把全部知识常驻 prompt 会增加噪声和成本。
+  - Field Registry 已拥有字段 schema/trust，Capability Gateway 已拥有可执行边界，二者不能被 Skill 复制。
+- Decision:
+  - 采用标准 `SKILL.md` 形态和 progressive disclosure；v1 只加载仓库内置、只读 Markdown。
+  - 按精确领域选择 primary Skill，按显式 Ares/Phobos 与 field trust 追加辅助 Skill；总注入量有界。
+  - Skill 只描述工作流、依赖顺序和停止条件；Field Registry 是字段事实源，Content Profile 是对象完整度事实源，Host 是 Apply/Save 权限源。
+  - 禁止 scripts、外部根、热更新和 Skill 直接工具调用；这些能力必须经过后续独立安全/版本契约。
+- Consequences:
+  - 已内置 15 个领域 Skill，public API diff 为 0，Gateway/Save/Shell 权限不变。
+  - 领域知识可逐阶段扩充，而不会把提示词文本误当成可靠编辑算法。
+- Follow-up:
+  - CONTENT-2A..2D 把高优先级领域 Skill 逐个落为 source-gated complete profiles；之后再冻结 HOST-1。
+
+## Decision: 双武器完整 profile 与循环开火语义必须分离
+
+- Status: Accepted / implemented
+- Date: 2026-08-23
+- Task(s): CONTENT-2A
+- Decision:
+  - 双武器 profile 只表达现有 Techno 的 Primary/Secondary 两条完整 direct-fire 引用闭包。
+  - `Primary/Secondary` 和 `Burst` 不得被描述为循环/交替开火。
+  - 在 BuiltIn source gate 补齐 Gattling 字段前，循环/交替请求在模型调用前 fail closed。
+- Consequences:
+  - 新增一个 template descriptor，但 public 类型、Gateway 方法、Apply/Undo/Save 权威均不变。
+  - 真正 Gattling/Cycle 进入独立后续契约，不允许内部 hard-code 绕过 Field Registry。
+
+## Decision: Projectile 弹道族拆分，Warhead 完整度限定为 YR Core
+
+- Status: Accepted / implemented and verified
+- Date: 2026-08-23
+- Task(s): CONTENT-2B
+- Context:
+  - 原版 `Arcing` 与非零 `ROT` 组合存在错误行为；Phobos `Trajectory` 也明确排斥
+    `Arcing/ROT/Vertical/Inviso`。
+  - YR `Verses` 是固定 11 槽，而 Ares custom ArmorTypes 使用动态 `Versus.*`。
+- Decision:
+  - Arcing 与 Homing 使用两个独立 template id、capability 和精确 tool schema，不使用条件式大 schema。
+  - YR core Warhead 只覆盖 11 个原生 ArmorTypes；存在 `[ArmorTypes]` 时拒绝，不生成动态 key。
+  - 三个 profile 均只绑定唯一既有 Weapon，并继续进入 canonical Plan/Preview/Host Apply。
+- Consequences:
+  - public allowlist、Gateway、Apply/Undo/Save 与 UI 均不变。
+  - Ares custom armor、Phobos trajectory 与 Airburst/Splits 必须在后续独立 source-backed profile 中实现。
+
+## Decision: Work 采用两阶段模型意图分析与结构化执行
+
+- Status: Accepted / implemented; real-provider acceptance pending
+- Date: 2026-08-23
+- Task(s): AGENT-MODE-2
+- Context:
+  - 中文自然语言中的否定范围、完整对象与骨架意图不能由持续扩张的本地关键词表可靠覆盖。
+  - 原路由会把“其他字段不要修改”误判为全局 advisory，也会因裸 `为/成` 赋值标记错分能力。
+- Decision:
+  - Chat 保持一次 advisory 调用；Work 在同一请求生命周期内先调用 required intent-analysis tool，
+    本地严格校验有界事实包后，再发起 advisory 或既有 required authoring tool 调用。
+  - 第一次调用不输出思维链、不显示、不持久化、不进入聊天历史，也不拥有任何编辑权限。
+  - 本地 capability allowlist、Field Registry、template compiler、snapshot currency、Preview 与显式
+    Apply/Save 权威继续生效；分析包只能选择已存在能力，不能创建能力。
+- Rejected Alternatives:
+  - 继续追加关键词和正则：边界组合会持续增长，无法稳定覆盖自然语言作用域。
+  - 让第一次调用直接生成修改：混合意图判断与执行，失败诊断和权限边界更差。
+  - 解析自由文本或模型思维链：不可稳定校验，也不应作为产品接口。
+- Consequences:
+  - Work 每次正常请求增加一次模型调用、延迟与 token 成本，并新增第一阶段失败点。
+  - 无效/多工具/越界分析包 fail closed；第一阶段失败不会产生第二次请求或部分修改。
+  - 本地自动化只能证明协议和编排，实际模型遵循度仍需真实 DeepSeek 手工验收。
+- Follow-up:
+  - 完成截图原句的真实双调用验收；若 provider 输出漂移，只增加精确分析包适配测试，不放宽能力白名单。
+
+## Decision: 对象注册属于 typed Content Template，不属于 Field Registry
+
+- Status: Accepted / implemented foundation
+- Date: 2026-08-24
+- Task(s): CONTENT-2D-0/1
+- Context:
+  - 新建 Techno/SuperWeapon 等对象需要数字类型列表，而现有模板只支持固定字段 Key。
+  - Field Registry 的职责是字段 schema/trust；把 `0/1/...` 或项目对象 ID 塞入字段库会污染全局字段事实。
+- Decision:
+  - Registration 作为 internal Template Definition 声明，在编译时读取当前 Snapshot 并产生普通
+    `UpsertField` operation；继续复用唯一 Preview/Apply/Undo 链。
+  - 分配规则固定为 `max(existing index) + 1`，保留顺序和空洞；已有唯一注册幂等，畸形或重复列表 fail closed。
+  - `ReferenceReachable`、tuple 和 cross-file artifact 作为不同闭包策略，不用同一个“万能注册”算法处理。
+- Rejected Alternatives:
+  - 在 BuiltIn Field Registry 枚举数字 Key：无法表达索引生命周期且污染 Completion/Hover/Diagnostics。
+  - 让模型直接生成 raw 注册行：绕过确定性冲突、索引和 Snapshot 门禁。
+  - 分别写 rules/art：无法提供原子 Preview、Apply 和 Undo。
+- Consequences:
+  - 2D-1 只提供当前文档内部基础；现有生产 Profile 与 public API 零变化。
+  - 2D-2 必须先定义项目级多文档事务，之后才允许 rules/art 绑定和完整 Techno/SuperWeapon Profile。

@@ -198,6 +198,8 @@ internal sealed class Ra2AiAuthoringCoordinator
         if (preview.AddedErrorCount > 0)
             return Ra2AiEditProposalApplyPolicy.Blocked;
         if (preview.AddedWarningCount > 0 ||
+            preview.SectionCreationPreviews.Any(section =>
+                section.AuthoringDisposition != Ra2AutomationFieldAuthoringDisposition.Normal) ||
             preview.OperationPreviews.Any(operation =>
                 !operation.IsKnownField ||
                 operation.FieldTrustLevel is not (
@@ -218,7 +220,7 @@ internal sealed class Ra2AiAuthoringCoordinator
             Ra2AiEditProposalApplyPolicy.Blocked =>
                 $"阻止应用：候选内容新增 {preview.AddedErrorCount} 个错误。",
             Ra2AiEditProposalApplyPolicy.Caution =>
-                $"需要复核：新增 {preview.AddedWarningCount} 个警告，或包含未完全核验的字段。",
+                $"需要复核：新增 {preview.AddedWarningCount} 个警告，或包含未完全核验的字段/Section 分类。",
             _ => "未发现新增错误、警告或字段可信度风险。"
         };
 

@@ -91,6 +91,51 @@ public sealed class Ra2AutomationEditPlan
         IEnumerable<Ra2AutomationEditOperation> operations,
         string summary,
         string origin)
+        : this(
+            planId,
+            expectedDocumentId,
+            expectedVersion,
+            expectedFieldRegistryRevision,
+            [],
+            operations,
+            summary,
+            origin,
+            requireFieldOperation: true)
+    {
+    }
+
+    public Ra2AutomationEditPlan(
+        Guid planId,
+        Guid expectedDocumentId,
+        int expectedVersion,
+        long expectedFieldRegistryRevision,
+        IEnumerable<Ra2AutomationSectionCreateOperation> sectionCreations,
+        IEnumerable<Ra2AutomationEditOperation> operations,
+        string summary,
+        string origin)
+        : this(
+            planId,
+            expectedDocumentId,
+            expectedVersion,
+            expectedFieldRegistryRevision,
+            sectionCreations,
+            operations,
+            summary,
+            origin,
+            requireFieldOperation: false)
+    {
+    }
+
+    private Ra2AutomationEditPlan(
+        Guid planId,
+        Guid expectedDocumentId,
+        int expectedVersion,
+        long expectedFieldRegistryRevision,
+        IEnumerable<Ra2AutomationSectionCreateOperation> sectionCreations,
+        IEnumerable<Ra2AutomationEditOperation> operations,
+        string summary,
+        string origin,
+        bool requireFieldOperation)
     {
         if (planId == Guid.Empty)
             throw new ArgumentException("Plan identity cannot be empty.", nameof(planId));
@@ -101,15 +146,21 @@ public sealed class Ra2AutomationEditPlan
         if (expectedFieldRegistryRevision <= 0)
             throw new ArgumentOutOfRangeException(nameof(expectedFieldRegistryRevision));
 
+        ArgumentNullException.ThrowIfNull(sectionCreations);
         ArgumentNullException.ThrowIfNull(operations);
+        Ra2AutomationSectionCreateOperation[] sectionCreationArray = sectionCreations.ToArray();
         Ra2AutomationEditOperation[] operationArray = operations.ToArray();
-        if (operationArray.Length is < 1 or > MaximumOperationCount)
+        int totalWork = checked(sectionCreationArray.Length + operationArray.Length);
+        if ((requireFieldOperation && operationArray.Length == 0) ||
+            totalWork is < 1 or > MaximumOperationCount)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(operations),
-                $"A plan must contain between 1 and {MaximumOperationCount} operations.");
+                $"A plan must contain between 1 and {MaximumOperationCount} total work items.");
         }
 
+        if (sectionCreationArray.Any(operation => operation is null))
+            throw new ArgumentException("Plan section creations cannot contain null entries.", nameof(sectionCreations));
         if (operationArray.Any(operation => operation is null))
             throw new ArgumentException("Plan operations cannot contain null entries.", nameof(operations));
 
@@ -117,6 +168,7 @@ public sealed class Ra2AutomationEditPlan
         ExpectedDocumentId = expectedDocumentId;
         ExpectedVersion = expectedVersion;
         ExpectedFieldRegistryRevision = expectedFieldRegistryRevision;
+        SectionCreations = Array.AsReadOnly(sectionCreationArray);
         Operations = Array.AsReadOnly(operationArray);
         Summary = ValidateDisplayText(summary, MaximumSummaryLength, nameof(summary));
         Origin = ValidateDisplayText(origin, MaximumOriginLength, nameof(origin));
@@ -126,6 +178,7 @@ public sealed class Ra2AutomationEditPlan
     public Guid ExpectedDocumentId { get; }
     public int ExpectedVersion { get; }
     public long ExpectedFieldRegistryRevision { get; }
+    public IReadOnlyList<Ra2AutomationSectionCreateOperation> SectionCreations { get; }
     public IReadOnlyList<Ra2AutomationEditOperation> Operations { get; }
     public string Summary { get; }
     public string Origin { get; }
@@ -163,7 +216,11 @@ public enum Ra2AutomationEditPreviewFailureKind
     CandidateAnalysisFailed = 15,
     UnexpectedFailure = 16,
     DocumentTooLarge = 17,
-    ResultLimitExceeded = 18
+    ResultLimitExceeded = 18,
+    SectionAlreadyExists = 19,
+    ConflictingSectionCreations = 20,
+    SectionClassificationMismatch = 21,
+    BlockedFieldTrust = 22
 }
 
 public enum Ra2AutomationEditOperationOutcomeKind
@@ -259,6 +316,33 @@ public sealed class Ra2AutomationEditPreviewResult
         IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews,
         IReadOnlyList<Ra2AutomationDiagnosticFact> addedDiagnostics,
         IReadOnlyList<Ra2AutomationDiagnosticFact> removedDiagnostics)
+        : this(
+            snapshot,
+            plan,
+            failureKind,
+            message,
+            previewId,
+            candidateText,
+            changes,
+            operationPreviews,
+            [],
+            addedDiagnostics,
+            removedDiagnostics)
+    {
+    }
+
+    internal Ra2AutomationEditPreviewResult(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationEditPlan plan,
+        Ra2AutomationEditPreviewFailureKind failureKind,
+        string message,
+        Guid previewId,
+        string? candidateText,
+        IReadOnlyList<Ra2AutomationTextChange> changes,
+        IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews,
+        IReadOnlyList<Ra2AutomationSectionCreatePreview> sectionCreationPreviews,
+        IReadOnlyList<Ra2AutomationDiagnosticFact> addedDiagnostics,
+        IReadOnlyList<Ra2AutomationDiagnosticFact> removedDiagnostics)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(plan);
@@ -268,6 +352,7 @@ public sealed class Ra2AutomationEditPreviewResult
             throw new ArgumentException("A result message is required.", nameof(message));
         ArgumentNullException.ThrowIfNull(changes);
         ArgumentNullException.ThrowIfNull(operationPreviews);
+        ArgumentNullException.ThrowIfNull(sectionCreationPreviews);
         ArgumentNullException.ThrowIfNull(addedDiagnostics);
         ArgumentNullException.ThrowIfNull(removedDiagnostics);
 
@@ -281,9 +366,12 @@ public sealed class Ra2AutomationEditPreviewResult
                 throw new ArgumentException("A successful preview requires at least one text change.", nameof(changes));
             if (operationPreviews.Count != plan.Operations.Count)
                 throw new ArgumentException("Operation preview count must match the edit plan.", nameof(operationPreviews));
+            if (sectionCreationPreviews.Count != plan.SectionCreations.Count)
+                throw new ArgumentException("Section creation preview count must match the edit plan.", nameof(sectionCreationPreviews));
         }
         else if (previewId != Guid.Empty || candidateText is not null || changes.Count != 0 ||
-                 operationPreviews.Count != 0 || addedDiagnostics.Count != 0 || removedDiagnostics.Count != 0)
+                 operationPreviews.Count != 0 || sectionCreationPreviews.Count != 0 ||
+                 addedDiagnostics.Count != 0 || removedDiagnostics.Count != 0)
         {
             throw new ArgumentException("A failed preview cannot contain applicable or partial payload.");
         }
@@ -300,6 +388,7 @@ public sealed class Ra2AutomationEditPreviewResult
         CandidateText = candidateText;
         Changes = Array.AsReadOnly(changes.ToArray());
         OperationPreviews = Array.AsReadOnly(operationPreviews.ToArray());
+        SectionCreationPreviews = Array.AsReadOnly(sectionCreationPreviews.ToArray());
         AddedDiagnostics = Array.AsReadOnly(addedDiagnostics.ToArray());
         RemovedDiagnostics = Array.AsReadOnly(removedDiagnostics.ToArray());
         AddedErrorCount = AddedDiagnostics.Count(diagnostic => diagnostic.Severity == IniIssueSeverity.Error);
@@ -319,6 +408,7 @@ public sealed class Ra2AutomationEditPreviewResult
     public string? CandidateText { get; }
     public IReadOnlyList<Ra2AutomationTextChange> Changes { get; }
     public IReadOnlyList<Ra2AutomationEditOperationPreview> OperationPreviews { get; }
+    public IReadOnlyList<Ra2AutomationSectionCreatePreview> SectionCreationPreviews { get; }
     public IReadOnlyList<Ra2AutomationDiagnosticFact> AddedDiagnostics { get; }
     public IReadOnlyList<Ra2AutomationDiagnosticFact> RemovedDiagnostics { get; }
     public int AddedErrorCount { get; }

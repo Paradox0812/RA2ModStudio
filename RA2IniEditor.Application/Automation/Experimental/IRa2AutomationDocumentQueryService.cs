@@ -2,6 +2,16 @@ namespace RA2IniEditor.Application.Automation.Experimental;
 
 public interface IRa2AutomationDocumentQueryService
 {
+    Ra2AutomationFieldSchemaQueryResult GetFieldSchema(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationFieldSchemaQuery request,
+        CancellationToken cancellationToken = default);
+
+    Ra2AutomationReferenceResolveResult ResolveReference(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationReferenceResolveQuery request,
+        CancellationToken cancellationToken = default);
+
     Ra2AutomationSectionQueryResult GetSection(
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationSectionQuery request,

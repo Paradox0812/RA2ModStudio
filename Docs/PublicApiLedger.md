@@ -1,7 +1,7 @@
 # RA2IniEditor.IDE Public API Ledger
 
 更新时间：2026-08-23
-当前阶段：AUTOMATION-POST-HLI-0 Completed / DocsOnly
+当前阶段：AGENT-MODE-1 / AGENT-KNOWLEDGE-1 Completed / Verified
 
 本台账只记录跨程序集或未来 Gateway 可见的契约。HLI-1A1 已实现首个
 Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定 SDK。
@@ -19,6 +19,14 @@ Experimental Document Query public API；它仍不是 JSON/IPC/MCP/CLI 或稳定
 | HLI-2B | None | Verified：IDE consumer 切换与资源门禁完成；allowlist 精确保持 35 |
 | HLI-2C | None | Verified：复用 Gateway/Coordinator/Workspace；不新增 Agent façade 或 Apply/Save |
 | POST-HLI-0 | None | DocsOnly：裁决 CONTENT-1 先于 HOST-1；候选 API 尚未批准 |
+| CONTENT-1A | 新增 Field Schema Query 精确 5-type allowlist、Gateway 方法和 capability | Implemented / Experimental；allowlist 40，catalog 5 |
+| CONTENT-1B | 新增 Reference Resolve 精确 5-type allowlist、Gateway 方法和 capability | Implemented / Experimental；allowlist 45，catalog 6 |
+| CONTENT-1C | 新增 SectionCreate 精确 2-type allowlist，并 additive 扩展 EditPlan/Result | Implemented / Experimental；allowlist 47，旧构造器保留 |
+| CONTENT-1D | None | Verified：internal template domain/compiler；public diff 0 |
+| CONTENT-1E | 新增 Template service/descriptors/request/result/warning 精确 11-type allowlist、Gateway 方法和 capability | Implemented / Experimental；allowlist 58，catalog 7，Gateway methods 9 |
+| CONTENT-1F / UI-1 | None | Verified：IDE consumer 与 Diff projection 均 internal；Apply/Save public authority 0 change |
+| AGENT-MODE-1 | 新增 `Ra2AutomationTemplateOutputKind`，descriptor 增加 immutable `OutputKind` | Implemented / Experimental；allowlist 59；旧构造/模板继续兼容 |
+| AGENT-KNOWLEDGE-1 | None | Implemented / Internal；15 个 BuiltIn Skill，不增加 capability、Apply/Save 或 wire API |
 
 ## 2. HLI-1A1 已实现 Experimental 查询契约
 
@@ -164,10 +172,9 @@ HLI-2C 首个高层 Agent 闭环只组合既有 public Gateway facts 与 IDE int
 exported allowlist 精确为 35，Gateway catalog/五方法 surface 不变。证据见
 `AUTOMATION-HLI-2C_StageLedger.md`。
 
-## 11. POST-HLI-0 候选登记（未批准）
+## 11. POST-HLI-0 历史候选登记
 
-本轮只读审计没有修改 public API、capability catalog、version 或 exported allowlist。以下候选
-已由 CONTENT-1 连续契约细分到 1A..1E，仍未实施：
+本节是 POST-HLI-0 当时的历史候选。CONTENT-1 已获连续实施授权；当前事实以第 12 节为准。
 
 | Candidate | Status | Earliest Review | Boundary |
 |---|---|---|---|
@@ -177,23 +184,62 @@ exported allowlist 精确为 35，Gateway catalog/五方法 surface 不变。证
 | CreateSection / ApplyTemplate preview | Candidate / Not approved | CONTENT-1C | deterministic Preview only；无 Apply/Save |
 | Host wire/session/permission DTO | Explicitly deferred | HOST-1 | 必须独立 R4 契约与版本策略 |
 
-当前 production 事实仍为 35 个 exported Experimental types、四项 capability 和五个 Gateway
-方法。`Ra2AutomationFieldRegistrySnapshot.Provider` 明确是进程内对象，不得当作 wire shape。
+当前 production 事实已变为 47 个 exported Experimental types、六项 capability 和七个 Gateway
+方法。`Ra2AutomationFieldRegistrySnapshot.Provider` 明确仍是进程内对象，不得当作 wire shape。
 
-## 12. CONTENT-1 连续契约预登记（候选，未实施）
+## 12. CONTENT-1 连续契约当前登记
 
-权威候选：`AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`。以下清单只有在用户
-确认契约且对应子阶段通过实现门禁后才能从 Candidate 改为 Implemented。
+权威契约：`AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`。用户已确认连续执行；
+以下状态按实际实现和验证更新。
 
 | Stage | API group | Kind | Reason | Expected Next Use | Stability | Planned Tests | Notes |
 |---|---|---|---|---|---|---|---|
-| CONTENT-1A | FieldSchema Query/Failure/Fact/Result/Disposition | DTO/fact/enum/method/capability | 读取 effective schema/trust | 1C/1D/Host | Experimental | trust/priority/immutability/parity/limits | allowlist candidate 40 |
-| CONTENT-1B | ReferenceResolve Query/Failure/Basis/Fact/Result | DTO/fact/enum/method/capability | 解析 source field 当前目标 | 1D/asset binding | Experimental | known/schema/list/duplicate/missing-target/parity | allowlist candidate 45 |
-| CONTENT-1C | SectionCreate Operation/Preview + EditPlan/Preview additions | operation/fact/overload/properties/failure enum tail | 新 Section 进入唯一 Preview | 1D/1E | Experimental | newline/conflict/trust/candidate closure/Host boundary | allowlist candidate 47 |
-| CONTENT-1D | Template domain/compiler | Internal | 先冻结 definition/instance/compiler | 1E | Internal | invariants/arguments/determinism/schema policy | public diff 0 |
-| CONTENT-1E | Template service/descriptors/arguments/results/warnings | service/DTO/fact/enum/method/capability | discovery + expansion to EditPlan | 1F/Host | Experimental | catalog/version/arguments/parity/limits | allowlist candidate 58；首个真实模板需来源 gate |
-| CONTENT-1F | None | IDE internal consumer | 复用 Gateway/Workspace/Transaction | product loop | Internal | loopback/stale/policy/Undo/no-Save | public diff 0 |
+| CONTENT-1A | FieldSchema Query/Failure/Fact/Result/Disposition | DTO/fact/enum/method/capability | 读取 effective schema/trust | 1C/1D/Host | Implemented / Experimental | 30/30 + consumer 8/8 | allowlist 40；catalog 5 |
+| CONTENT-1B | ReferenceResolve Query/Failure/Basis/Fact/Result | DTO/fact/enum/method/capability | 解析 source field 当前目标 | 1D/asset binding | Implemented / Experimental | 38/38 + semantic consumer 37/37 | allowlist 45；catalog 6 |
+| CONTENT-1C | SectionCreate Operation/Preview + EditPlan/Preview additions | operation/fact/overload/properties/failure enum tail | 新 Section 进入唯一 Preview | 1D/1E | Implemented / Experimental | 54/54 + IDE/Workspace 48/48 | allowlist 47 |
+| CONTENT-1D | Template domain/compiler | Internal | definition/parameter/compiler/value validation | 1E | Implemented / Internal | Application full 146/146 | public diff 0 |
+| CONTENT-1E | Template service/descriptors/arguments/results/warnings | service/DTO/fact/enum/method/capability | discovery + expansion to EditPlan | 1F/Host | Implemented / Experimental | source gate/catalog/version/arguments/parity/limits | allowlist 58；catalog 7；Gateway methods 9 |
+| CONTENT-1F | None | IDE internal consumer | 复用 Gateway/Workspace/Transaction | product loop | Implemented / Internal | template loop/stale/policy/atomic Apply/no-Save | public diff 0 |
+| CONTENT-UI-1 | None | IDE internal Diff projection/view | 主工作区审阅现有 Preview | product review loop | Implemented / Internal | focused 20/20；full 2568/2568 | public diff 0；无第二 Apply authority |
 
 候选数字不得驱动 API 膨胀：若实现发现类型没有后续消费者，应保持 internal，并在实现前调整
 Task Card/ledger。不得把 Core provider、SemanticModel、Template definition、Workspace 或 Apply/Save
 公开为捷径。
+
+## 13. AGENT-MODE-1 / AGENT-KNOWLEDGE-1 当前登记
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| AGENT-MODE-1 | `Ra2AutomationTemplateOutputKind` | Enum | 机器可读地区分 Skeleton 与 CompleteObject | Mode routing / future Host discovery | Experimental | reflection/catalog/behavior | additive；不表达 Apply 权限 |
+| AGENT-MODE-1 | `Ra2AutomationTemplateDescriptor.OutputKind` | Immutable property | 调用方不再从模板 ID 猜完整度 | IDE route / future wire review | Experimental | constructor/catalog | 既有 descriptor 构造保留 |
+| AGENT-KNOWLEDGE-1 | None | Internal loader + Markdown content | 领域过程知识按需注入，不污染 public Gateway | CONTENT-2 profiles | Internal | loader/selection/prompt/full regression | BuiltIn only；no scripts/external roots |
+
+Application exported Experimental allowlist 精确为 59。Chat/Work route、Skill descriptor/catalog 和
+prompt selection 均保持 IDE internal；Skill 不是 capability，也不改变现有 Gateway catalog 7、methods 9、
+Apply/Undo/Save authority 或 wire shape。
+
+## 14. CONTENT-2A 当前登记
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| CONTENT-2A | None | Existing descriptor data + IDE internal route/schema | 增加 Techno dual-armament complete profile | Experimental / implemented | public allowlist 保持 59；Gateway catalog/methods 不变 |
+
+## 15. CONTENT-2B public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| CONTENT-2B | None | Existing descriptor data + IDE internal route/schema | 增加 Arcing/Homing Projectile 与 YR core Warhead profiles | Experimental / implemented | public allowlist 保持 59；Gateway catalog 7 / methods 9 不变 |
+
+新增 profile id/version/parameter 是既有 `Ra2AutomationTemplateDescriptor` 目录数据，不新增 DTO、
+failure kind、Gateway 方法、wire shape 或 Apply/Save authority。Application 151/151 与完整 IDE
+2601/2601 回归通过。
+
+## 16. CONTENT-2D-0/1 public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| CONTENT-2D-0/1 | None | Application internal model/compiler extension | 对象闭包声明与当前文档数字注册分配 | Internal / implemented | public allowlist 保持 59；Gateway catalog/methods 不变 |
+
+`Ra2ContentTemplateRegistrationSpec`、注册策略、目录、分配状态和新增 compilation failure kinds
+均为 internal；既有 public Template/Gateway/EditPlan/Preview/Apply/Save shape 零变化。证据见
+`Docs/AUTOMATION-CONTENT-2D01_StageLedger.md`。

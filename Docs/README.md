@@ -34,7 +34,13 @@
 | 查看已完成 HLI-2B IDE/AI Gateway consumer | `AUTOMATION-HLI-2B_GatewayConsumerCodeFactAudit.md` + `AUTOMATION-HLI-2B_GatewayConsumerFinalContract.md` + `AUTOMATION-HLI-2B_StageLedger.md` |
 | 查看已完成 HLI-2C 首个高层 Agent 闭环 | `AUTOMATION-HLI-2C_FirstAgentLoopCodeFactAudit.md` + `AUTOMATION-HLI-2C_FirstAgentLoopFinalContract.md` + `AUTOMATION-HLI-2C_StageLedger.md` |
 | 查看语义层、独立 Host 与素材的优先级裁决 | `AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md` |
-| 审阅 CONTENT-1 语义模板连续最终契约候选 | `AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md` |
+| 查看已完成 CONTENT-1 语义模板层 | `AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md` + `AUTOMATION-CONTENT-1_StageLedger.md` |
+| 查看 Chat/Work 模式与完整武器链 | `AGENT-MODE-1_ChatWorkModeFinalContract.md` + `AGENT-MODE-1A_DirectFireCompleteProfileSourceAudit.md` |
+| 查看 RA2 Skill 来源、契约与证据 | `AGENT-KNOWLEDGE-1_Ra2LogicAndSkillSourceAudit.md` + `AGENT-KNOWLEDGE-1_Ra2BuiltInSkillsContinuousFinalContract.md` + `AGENT-KNOWLEDGE-1_StageLedger.md` |
+| 查看 Projectile / Warhead complete profiles | `AUTOMATION-CONTENT-2B_ProjectileWarheadProfilesCodeFactAudit.md` + `AUTOMATION-CONTENT-2B_ProjectileWarheadProfilesFinalContract.md` + `AUTOMATION-CONTENT-2B_StageLedger.md` |
+| 查看 AI Programming Tuple Profiles 当前差距 | `AUTOMATION-CONTENT-2C_AiProgrammingTupleProfilesCodeFactAudit.md`（仅审计；契约与实现延期） |
+| 查看对象闭包与当前文档注册基础 | `AUTOMATION-CONTENT-2D01_ObjectClosureRegistrationFinalContract.md` + `AUTOMATION-CONTENT-2D01_StageLedger.md` |
+| 查看本地已验证 Git 基线 | `GIT-BASELINE-1_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
 ## 3. 状态词

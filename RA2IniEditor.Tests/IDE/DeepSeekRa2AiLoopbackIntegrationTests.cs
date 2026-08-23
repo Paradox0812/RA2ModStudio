@@ -241,6 +241,49 @@ public sealed class DeepSeekRa2AiLoopbackIntegrationTests
     }
 
     [Fact]
+    public async Task Loopback_NonStrictNumericToolArgumentsStillReachCanonicalPreview()
+    {
+        const string arguments = """
+            {
+              "operations": {
+                "kind":"replace_field_value",
+                "section":"E1",
+                "key":"Strength",
+                "value":150,
+              },
+            }
+            """;
+        await using LoopbackServer server = new(async (stream, token) =>
+        {
+            await WriteHeadersAsync(stream, 200, "text/event-stream", token);
+            await WriteUtf8Async(stream, CreateToolCallSse(arguments), token);
+        });
+        Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), CreateClient(server));
+        AuthoringFixture fixture = new();
+
+        Ra2AiAssistantPipelineResult pipelineResult = await pipeline.SendStreamingAsync(
+            "修改当前文件，把 [E1] 下的 Strength 设置为 150",
+            CreateAuthoringContext(),
+            conversationContext: null,
+            currentSubject: null,
+            Ra2AiCapabilityMode.CurrentDocumentEditPreview,
+            static (_, _) => ValueTask.CompletedTask,
+            CancellationToken.None);
+        Ra2AiEditProposalResult proposalResult = fixture.Coordinator.PrepareProposal(
+            new Ra2AiAuthoringRequestContext(fixture.Snapshot),
+            fixture.Snapshot,
+            pipelineResult.Response,
+            CancellationToken.None);
+
+        Assert.Equal(Ra2AiResponseKind.ToolCalls, pipelineResult.Response.Kind);
+        Assert.True(proposalResult.Succeeded, proposalResult.Message);
+        Ra2AiEditProposal proposal = Assert.IsType<Ra2AiEditProposal>(proposalResult.Proposal);
+        Assert.Contains("Strength=150", proposal.Preview.CandidateText, StringComparison.Ordinal);
+        Assert.Equal("AI 结构化修改建议", proposal.Preview.Plan.Summary);
+        Assert.Equal(0, fixture.TransactionPort.CallCount);
+    }
+
+    [Fact]
     public async Task Loopback_RequiredAuthoringWithoutToolCallBecomesTypedFailure()
     {
         await using LoopbackServer server = new(async (stream, token) =>

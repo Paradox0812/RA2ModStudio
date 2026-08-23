@@ -15,6 +15,7 @@ using ICSharpCode.AvalonEdit.Document;
 using Microsoft.Win32;
 using RA2IniEditor.Core.Schema;
 using RA2IniEditor.IDE.AI;
+using RA2IniEditor.IDE.AuthoringDiff;
 using RA2IniEditor.IDE.Controllers.Completion;
 using RA2IniEditor.IDE.Controllers.EditorSession;
 using RA2IniEditor.IDE.Controllers.FieldAnnotations;
@@ -233,8 +234,13 @@ public partial class ShellWindow : Window
     private Ra2AiEditProposalViewModel? _activeAiEditProposalViewModel;
     private Ra2AiEditProposalView? _activeAiEditProposalView;
     private Border? _activeAiEditProposalMessageBorder;
+    private LayoutDocument? _activeAuthoringDiffDocument;
+    private Ra2AuthoringDiffView? _activeAuthoringDiffView;
+    private Ra2AuthoringDiffViewModel? _activeAuthoringDiffViewModel;
+    private CancellationTokenSource? _authoringDiffCancellation;
     private long _aiAuthoringGeneration;
     private bool _isShellClosed;
+    private Ra2AiUserMode _aiUserMode = Ra2AiUserMode.Chat;
 
     public ShellWindow()
     {
@@ -296,6 +302,7 @@ public partial class ShellWindow : Window
         RebindSectionExplorerVisibilitySource();
         AiAssistantModelSelector.ItemsSource = DeepSeekRa2AiModelCatalog.Options;
         AiAssistantModelSelector.SelectedValue = DeepSeekRa2AiModelCatalog.Default;
+        RefreshAiAssistantModePresentation();
         AutomationProperties.SetAutomationId(SourceTextEditor.TextArea, "Shell.SourceEditor.TextArea");
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, SaveCurrentFileCommand_Executed));
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, UndoCurrentFileCommand_Executed, UndoRedoCommand_CanExecute));
@@ -645,6 +652,7 @@ public partial class ShellWindow : Window
         _isApplyingProjectExplorerVisibility = true;
         try
         {
+            CloseAuthoringDiffDocument();
             ShellDockLayoutOperationResult resetResult = _dockLayoutSession.ResetToCompiledDefault();
             if (!resetResult.Succeeded)
             {
@@ -904,19 +912,14 @@ public partial class ShellWindow : Window
 
         Ra2AiInteractionRoute interactionRoute = Ra2AiInteractionRouter.Resolve(
             prompt,
-            editAvailability);
-        if (interactionRoute.Kind == Ra2AiInteractionRouteKind.EditAmbiguous)
-        {
-            ShowLocalAiAuthoringRouteNotice(
-                "请明确当前文件、Section、Key 和目标值；输入内容已保留，尚未发送。");
-            return;
-        }
-        if (interactionRoute.Kind == Ra2AiInteractionRouteKind.EditUnavailable)
+            editAvailability,
+            _aiUserMode);
+        if (_aiUserMode == Ra2AiUserMode.Work &&
+            editAvailability != Ra2AiEditAvailabilityKind.Available)
         {
             ShowLocalAiAuthoringRouteNotice(FormatAiEditUnavailableMessage(editAvailability));
             return;
         }
-
         Ra2AiAssistantPipeline pipeline = CreateAiAssistantPipeline(configurationSnapshot);
 
         if (!_aiAssistantRequestLifecycle.TryStart(out Ra2AiRequestSession? requestSession) || requestSession is null)
@@ -1483,6 +1486,7 @@ public partial class ShellWindow : Window
         };
         view.ApplyRequested += AiEditProposalView_OnApplyRequested;
         view.DismissRequested += AiEditProposalView_OnDismissRequested;
+        view.OpenDiffRequested += AiEditProposalView_OnOpenDiffRequested;
         handle.ResponsePanel.Children.Add(view);
         handle.MessageBorder.DataContext = CreateAiAssistantConversationTurn(
             $"结构化修改建议：{proposal.Preview.Plan.Summary}",
@@ -1490,6 +1494,8 @@ public partial class ShellWindow : Window
         _activeAiEditProposalViewModel = viewModel;
         _activeAiEditProposalView = view;
         _activeAiEditProposalMessageBorder = handle.MessageBorder;
+        UpdateAiAssistantModeAvailability();
+        OpenAuthoringDiffDocument(viewModel);
         AiAssistantChatScrollViewer.ScrollToEnd();
     }
 
@@ -1579,6 +1585,11 @@ public partial class ShellWindow : Window
                     // presentation follow-up and must not reverse the successful apply.
                 }
             }
+            CloseAuthoringDiffDocument();
+            ActivateCurrentSourceDocument();
+            RestoreSourceEditorFocusAtCaret(
+                result.AuthoringResult?.RedoCaretOffset ??
+                viewModel.Proposal.Preview.AutomationResult.Changes[0].Span.Start);
         }
         else if (result.FailureKind == Ra2AiEditProposalFailureKind.RequestContextStale)
         {
@@ -1607,7 +1618,120 @@ public partial class ShellWindow : Window
         else
             viewModel.MarkStale("该修改建议已经失效。");
 
+        CloseAuthoringDiffDocument();
         DetachActiveAiEditProposalView();
+    }
+
+    private void AiEditProposalView_OnOpenDiffRequested(object? sender, EventArgs e)
+    {
+        if (sender is Ra2AiEditProposalView view && ReferenceEquals(view, _activeAiEditProposalView) &&
+            _activeAiEditProposalViewModel is { } viewModel)
+        {
+            OpenAuthoringDiffDocument(viewModel);
+        }
+    }
+
+    private async void OpenAuthoringDiffDocument(Ra2AiEditProposalViewModel proposalViewModel)
+    {
+        if (_activeAuthoringDiffViewModel?.Proposal.ProposalId == proposalViewModel.Proposal.ProposalId &&
+            _activeAuthoringDiffDocument is { } existing &&
+            ShellDockManager.Layout.Descendents().OfType<LayoutDocument>().Contains(existing))
+        {
+            existing.IsActive = true;
+            return;
+        }
+
+        CloseAuthoringDiffDocument();
+        if (FindCurrentSourceDocument()?.Parent is not LayoutDocumentPane pane)
+            return;
+
+        Ra2AuthoringDiffViewModel viewModel = new(proposalViewModel);
+        Ra2AuthoringDiffView view = new() { DataContext = viewModel };
+        view.ApplyAllRequested += AuthoringDiffView_OnApplyAllRequested;
+        view.DismissRequested += AuthoringDiffView_OnDismissRequested;
+        view.ReturnToSourceRequested += AuthoringDiffView_OnReturnToSourceRequested;
+        LayoutDocument document = new()
+        {
+            Title = viewModel.Title,
+            ContentId = "Document.AuthoringDiff",
+            Content = view,
+            CanClose = true
+        };
+        document.Closed += AuthoringDiffDocument_OnClosed;
+        pane.Children.Add(document);
+        _activeAuthoringDiffDocument = document;
+        _activeAuthoringDiffView = view;
+        _activeAuthoringDiffViewModel = viewModel;
+        _authoringDiffCancellation = new CancellationTokenSource();
+        document.IsActive = true;
+
+        try
+        {
+            await viewModel.LoadAsync(_authoringDiffCancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Closing or replacing the projection is an expected cancellation boundary.
+        }
+    }
+
+    private void AuthoringDiffView_OnApplyAllRequested(object? sender, EventArgs e)
+    {
+        if (_activeAiEditProposalView is { } proposalView)
+            AiEditProposalView_OnApplyRequested(proposalView, EventArgs.Empty);
+    }
+
+    private void AuthoringDiffView_OnDismissRequested(object? sender, EventArgs e)
+    {
+        if (_activeAiEditProposalView is { } proposalView)
+            AiEditProposalView_OnDismissRequested(proposalView, EventArgs.Empty);
+    }
+
+    private void AuthoringDiffView_OnReturnToSourceRequested(object? sender, EventArgs e)
+    {
+        ActivateCurrentSourceDocument();
+        SourceTextEditor.Focus();
+    }
+
+    private LayoutDocument? FindCurrentSourceDocument()
+        => _dockLayoutSession.FindContent("Document.Source") as LayoutDocument;
+
+    private void ActivateCurrentSourceDocument()
+    {
+        if (FindCurrentSourceDocument() is { } sourceDocument)
+            sourceDocument.IsActive = true;
+    }
+
+    private void AuthoringDiffDocument_OnClosed(object? sender, EventArgs e)
+        => ReleaseAuthoringDiffView(closeDocument: false);
+
+    private void CloseAuthoringDiffDocument()
+        => ReleaseAuthoringDiffView(closeDocument: true);
+
+    private void ReleaseAuthoringDiffView(bool closeDocument)
+    {
+        LayoutDocument? document = _activeAuthoringDiffDocument;
+        Ra2AuthoringDiffView? view = _activeAuthoringDiffView;
+        Ra2AuthoringDiffViewModel? viewModel = _activeAuthoringDiffViewModel;
+        _activeAuthoringDiffDocument = null;
+        _activeAuthoringDiffView = null;
+        _activeAuthoringDiffViewModel = null;
+        _authoringDiffCancellation?.Cancel();
+        _authoringDiffCancellation?.Dispose();
+        _authoringDiffCancellation = null;
+        if (view is not null)
+        {
+            view.ApplyAllRequested -= AuthoringDiffView_OnApplyAllRequested;
+            view.DismissRequested -= AuthoringDiffView_OnDismissRequested;
+            view.ReturnToSourceRequested -= AuthoringDiffView_OnReturnToSourceRequested;
+        }
+        viewModel?.Dispose();
+        if (document is not null)
+        {
+            document.Closed -= AuthoringDiffDocument_OnClosed;
+            if (closeDocument)
+                document.Close();
+        }
     }
 
     private void InvalidateActiveAiEditProposal(bool markSuperseded)
@@ -1625,7 +1749,10 @@ public partial class ShellWindow : Window
         }
 
         if (invalidated is not null)
+        {
+            CloseAuthoringDiffDocument();
             DetachActiveAiEditProposalView();
+        }
     }
 
     private void DetachActiveAiEditProposalView()
@@ -1634,11 +1761,13 @@ public partial class ShellWindow : Window
         {
             view.ApplyRequested -= AiEditProposalView_OnApplyRequested;
             view.DismissRequested -= AiEditProposalView_OnDismissRequested;
+            view.OpenDiffRequested -= AiEditProposalView_OnOpenDiffRequested;
         }
 
         _activeAiEditProposalView = null;
         _activeAiEditProposalViewModel = null;
         _activeAiEditProposalMessageBorder = null;
+        UpdateAiAssistantModeAvailability();
     }
 
     private void FinalizeFailedAiAssistantStreamingMessage(
@@ -2335,6 +2464,48 @@ public partial class ShellWindow : Window
         AiAssistantCancelButton.IsEnabled = isSending;
         AiAssistantClearButton.IsEnabled = !isSending && HasAiAssistantMessages();
         AiAssistantModelSelector.IsEnabled = !isSending;
+        UpdateAiAssistantModeAvailability();
+    }
+
+    private void AiAssistantModeButton_OnChecked(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized)
+            return;
+
+        _aiUserMode = ReferenceEquals(sender, AiAssistantWorkModeButton)
+            ? Ra2AiUserMode.Work
+            : Ra2AiUserMode.Chat;
+        RefreshAiAssistantModePresentation();
+    }
+
+    private void RefreshAiAssistantModePresentation()
+    {
+        bool isWork = _aiUserMode == Ra2AiUserMode.Work;
+        AiAssistantChatModeButton.IsChecked = !isWork;
+        AiAssistantWorkModeButton.IsChecked = isWork;
+        AiAssistantModeSummaryText.Text = isWork
+            ? "结构化修改 · 预览后应用"
+            : "解释与建议";
+        AiAssistantSafetyFooterText.Text = isWork
+            ? "工作模式只生成本地预览；仅点击应用后修改当前文件，不自动保存。"
+            : "聊天模式只提供解释与建议；发送会联网，不修改文件。";
+        AiAssistantSafetyFooterText.ToolTip = AiAssistantSafetyFooterText.Text;
+        AiAssistantEmptyStatePrimaryText.Text = isWork
+            ? "描述当前文件要完成的修改。"
+            : "询问 INI 规则、字段或当前文档内容。";
+        AiAssistantEmptyStateSecondaryText.Text = isWork
+            ? "先生成结构化 Diff，再由你决定是否应用。"
+            : "不会生成可应用修改。";
+    }
+
+    private void UpdateAiAssistantModeAvailability()
+    {
+        bool canChange = !_aiAssistantRequestLifecycle.IsActive && _activeAiEditProposalViewModel is null;
+        AiAssistantChatModeButton.IsEnabled = canChange;
+        AiAssistantWorkModeButton.IsEnabled = canChange;
+        string? toolTip = canChange ? null : "请等待当前请求结束或先应用/忽略当前修改建议。";
+        AiAssistantChatModeButton.ToolTip = toolTip;
+        AiAssistantWorkModeButton.ToolTip = toolTip;
     }
 
     private bool HasAiAssistantMessages()
@@ -5689,6 +5860,7 @@ public partial class ShellWindow : Window
             return;
         }
 
+        CloseAuthoringDiffDocument();
         PersistCurrentDockLayout("关闭时无法保存窗口布局，已保留上一次有效布局。", reportSuccess: false);
     }
 

@@ -37,6 +37,24 @@ public sealed class Ra2AiAssistantPipelineTests
             route.CapabilityMode);
     }
 
+    [Theory]
+    [InlineData("修改当前文件 [E1] 的 Strength 为 150，其他字段不要修改", (int)Ra2AiInteractionRouteKind.EditExplicit)]
+    [InlineData("把当前文件 [E1] 的 Strength 改成 150，其余内容不要改动", (int)Ra2AiInteractionRouteKind.EditExplicit)]
+    [InlineData("不要修改当前文件，告诉我 Strength 的作用", (int)Ra2AiInteractionRouteKind.Advisory)]
+    [InlineData("为当前文件创建一个完整单位", (int)Ra2AiInteractionRouteKind.UnsupportedWorkCapability)]
+    [InlineData("为当前文件创建一个超级武器", (int)Ra2AiInteractionRouteKind.UnsupportedWorkCapability)]
+    public void InteractionRouter_DistinguishesPositiveEditsFromNegatedScopeAndUnsupportedObjects(
+        string prompt,
+        int expectedKind)
+    {
+        Ra2AiInteractionRoute route = Ra2AiInteractionRouter.Resolve(
+            prompt,
+            Ra2AiEditAvailabilityKind.Available,
+            Ra2AiUserMode.Work);
+
+        Assert.Equal((Ra2AiInteractionRouteKind)expectedKind, route.Kind);
+    }
+
     [Fact]
     public async Task SendAsync_BuildsPromptWithPromptBuilderAndSendsRequestToClient()
     {
@@ -295,9 +313,20 @@ public sealed class Ra2AiAssistantPipelineTests
     }
 
     [Fact]
-    public async Task SendStreamingAsync_RouteOverloadUsesResolvedCapabilityMode()
+    public async Task SendStreamingAsync_WorkRouteUsesValidatedIntentThenResolvedCapability()
     {
-        RecordingAiClient client = new(Ra2AiResponse.CreateSuccess("unused"));
+        SequencedAiClient client = new(
+            IntentAnalysisResponse(
+                "authoring",
+                "current-document-field-edit",
+                "field-schema",
+                "field"),
+            Ra2AiResponse.CreateToolCalls([
+                new Ra2AiToolCall(
+                    "edit-1",
+                    Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName,
+                    """{"outcome":"proposal","summary":"Update","operations":[{"kind":"replace_field_value","section":"E1","key":"Strength","value":"150"}]}""")
+            ]));
         Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), client);
         Ra2AiInteractionRoute route = Ra2AiInteractionRouter.Resolve(
             "把当前文件 [E1] 下的 Strength 修改为 150",
@@ -312,9 +341,68 @@ public sealed class Ra2AiAssistantPipelineTests
             static (_, _) => ValueTask.CompletedTask,
             CancellationToken.None);
 
-        Assert.Equal(Ra2AiCapabilityMode.CurrentDocumentEditPreview, route.CapabilityMode);
-        Assert.Single(result.Request.Tools);
+        Assert.Equal(1, client.NonStreamingCallCount);
+        Assert.Equal(1, client.StreamingCallCount);
+        Assert.Equal(Ra2AiIntentAnalysisStage.ToolName, Assert.Single(client.Requests[0].Tools).Name);
+        Assert.Equal(
+            Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName,
+            Assert.Single(result.Request.Tools).Name);
+        Assert.Equal(Ra2AiCapabilityMode.CurrentDocumentEditPreview, result.ResolvedInteractionRoute?.CapabilityMode);
+        Assert.Contains("Validated Intent Analysis Package", result.Request.UserContentText, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task SendStreamingAsync_InvalidIntentPackageFailsBeforeExecutionCall()
+    {
+        SequencedAiClient client = new(
+            Ra2AiResponse.CreateToolCalls([
+                new Ra2AiToolCall(
+                    "analysis-1",
+                    Ra2AiIntentAnalysisStage.ToolName,
+                    """{"outcome":"authoring","capability_id":"unsupported"}""")
+            ]),
+            Ra2AiResponse.CreateSuccess("must not be used"));
+        Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), client);
+        Ra2AiInteractionRoute route = Ra2AiInteractionRouter.Resolve(
+            "修改当前文件 Strength 为 150",
+            Ra2AiEditAvailabilityKind.Available,
+            Ra2AiUserMode.Work);
+
+        Ra2AiAssistantPipelineResult result = await pipeline.SendStreamingAsync(
+            "修改当前文件 Strength 为 150",
+            CreateContext(),
+            conversationContext: null,
+            currentSubject: null,
+            route,
+            static (_, _) => ValueTask.CompletedTask,
+            CancellationToken.None);
+
+        Assert.Equal(Ra2AiResponseKind.ProviderError, result.Response.Kind);
+        Assert.Equal(1, client.NonStreamingCallCount);
+        Assert.Equal(0, client.StreamingCallCount);
+        Assert.Null(result.IntentAnalysisPackage);
+    }
+
+    private static Ra2AiResponse IntentAnalysisResponse(
+        string outcome,
+        string capabilityId,
+        string domainIntentId,
+        string completionLevel)
+        => Ra2AiResponse.CreateToolCalls([
+            new Ra2AiToolCall(
+                "analysis-1",
+                Ra2AiIntentAnalysisStage.ToolName,
+                $$"""
+                {
+                  "outcome":"{{outcome}}",
+                  "capability_id":"{{capabilityId}}",
+                  "domain_intent_id":"{{domainIntentId}}",
+                  "request_summary":"bounded request summary",
+                  "completion_level":"{{completionLevel}}",
+                  "constraints":[]
+                }
+                """)
+        ]);
 
     private static Ra2AiContext CreateContext()
         => new(
@@ -406,6 +494,42 @@ public sealed class Ra2AiAssistantPipelineTests
                 await onContentDelta(delta, cancellationToken);
 
             return _response;
+        }
+    }
+
+    private sealed class SequencedAiClient : IRa2AiClient
+    {
+        private readonly Queue<Ra2AiResponse> _responses;
+
+        public SequencedAiClient(params Ra2AiResponse[] responses)
+            => _responses = new Queue<Ra2AiResponse>(responses);
+
+        public List<Ra2AiRequest> Requests { get; } = [];
+
+        public int NonStreamingCallCount { get; private set; }
+
+        public int StreamingCallCount { get; private set; }
+
+        public Task<Ra2AiResponse> SendAsync(Ra2AiRequest request, CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            NonStreamingCallCount++;
+            return Task.FromResult(cancellationToken.IsCancellationRequested
+                ? Ra2AiResponse.CreateCancelled()
+                : _responses.Dequeue());
+        }
+
+        public async Task<Ra2AiResponse> SendStreamingAsync(
+            Ra2AiRequest request,
+            Ra2AiContentDeltaHandler onContentDelta,
+            CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+            StreamingCallCount++;
+            await Task.Yield();
+            return cancellationToken.IsCancellationRequested
+                ? Ra2AiResponse.CreateCancelled()
+                : _responses.Dequeue();
         }
     }
 

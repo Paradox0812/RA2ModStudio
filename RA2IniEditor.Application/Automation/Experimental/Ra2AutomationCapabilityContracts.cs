@@ -7,6 +7,9 @@ public static class Ra2AutomationCapabilityIds
     public const string DocumentReferencesFind = "ini.document.references.find";
     public const string DocumentDiagnosticsValidate = "ini.document.diagnostics.validate";
     public const string DocumentEditPreview = "ini.document.edit.preview";
+    public const string DocumentFieldSchemaGet = "ini.document.field-schema.get";
+    public const string DocumentReferenceResolve = "ini.document.reference.resolve";
+    public const string ContentTemplateExpand = "ini.content.template.expand";
 }
 
 public enum Ra2AutomationCapabilityRisk

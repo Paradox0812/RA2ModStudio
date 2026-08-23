@@ -24,7 +24,15 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
-            "Ra2AiInteractionRouteKind.EditUnavailable",
+            "_aiUserMode == Ra2AiUserMode.Work &&",
+            shellCode,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "editAvailability != Ra2AiEditAvailabilityKind.Available",
+            shellCode,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "interactionRoute.Kind == Ra2AiInteractionRouteKind.UnsupportedWorkCapability",
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -122,6 +130,10 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             StringComparison.Ordinal);
         Assert.Contains(
             "AiAssistant.EditProposalCard.DismissButton",
+            proposalXaml,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "AiAssistant.EditProposalCard.OpenDiffButton",
             proposalXaml,
             StringComparison.Ordinal);
         Assert.DoesNotContain("<DataGrid", proposalXaml, StringComparison.Ordinal);

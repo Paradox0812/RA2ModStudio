@@ -151,6 +151,20 @@ internal sealed class Ra2AutomationEditPreviewEngine
                     "The candidate document could not be analyzed.");
             }
 
+            SectionPreviewPlanningResult sectionPreviewPlanning = BuildSectionCreationPreviews(
+                snapshot,
+                plan,
+                candidateAnalysis,
+                planning);
+            if (!sectionPreviewPlanning.Succeeded)
+            {
+                return Failed(
+                    snapshot,
+                    plan,
+                    sectionPreviewPlanning.FailureKind,
+                    sectionPreviewPlanning.FailureMessage!);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             Ra2AutomationDiagnosticDelta delta = Ra2AutomationDiagnosticDeltaCalculator.Compare(
                 currentAnalysis.Diagnostics,
@@ -172,6 +186,7 @@ internal sealed class Ra2AutomationEditPreviewEngine
                         item.Change.Reason))
                     .ToArray(),
                 planning.OperationPreviews,
+                sectionPreviewPlanning.Previews,
                 delta.Added,
                 delta.Removed);
         }
@@ -243,9 +258,39 @@ internal sealed class Ra2AutomationEditPreviewEngine
         Analysis currentAnalysis,
         CancellationToken cancellationToken)
     {
+        Dictionary<string, PlannedSectionCreation> sectionCreations = new(StringComparer.OrdinalIgnoreCase);
+        for (int index = 0; index < plan.SectionCreations.Count; index++)
+        {
+            CheckCancellation(index, cancellationToken);
+            Ra2AutomationSectionCreateOperation creation = plan.SectionCreations[index];
+            if (!sectionCreations.TryAdd(
+                    creation.SectionName,
+                    new PlannedSectionCreation(
+                        index,
+                        creation,
+                        creation.ExpectedSectionKind == Ra2SectionKind.Unknown
+                            ? Ra2AutomationFieldAuthoringDisposition.Caution
+                            : Ra2AutomationFieldAuthoringDisposition.Normal)))
+            {
+                return PlanningResult.Failed(
+                    Ra2AutomationEditPreviewFailureKind.ConflictingSectionCreations,
+                    $"The edit plan creates [{creation.SectionName}] more than once.");
+            }
+
+            if (currentAnalysis.Model.Sections.Any(section =>
+                    string.Equals(section.Name, creation.SectionName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return PlanningResult.Failed(
+                    Ra2AutomationEditPreviewFailureKind.SectionAlreadyExists,
+                    $"The section [{creation.SectionName}] already exists.");
+            }
+        }
+
         HashSet<string> logicalTargets = new(StringComparer.OrdinalIgnoreCase);
         List<IndexedChange> changes = [];
         List<Ra2AutomationEditOperationPreview> operationPreviews = [];
+        Dictionary<string, List<Ra2AutomationEditOperation>> createdSectionFields =
+            new(StringComparer.OrdinalIgnoreCase);
 
         for (int index = 0; index < plan.Operations.Count; index++)
         {
@@ -256,6 +301,53 @@ internal sealed class Ra2AutomationEditPreviewEngine
                 return PlanningResult.Failed(
                     Ra2AutomationEditPreviewFailureKind.ConflictingOperations,
                     $"The edit plan targets [{operation.SectionName}] {operation.Key} more than once.");
+            }
+
+            if (sectionCreations.TryGetValue(operation.SectionName, out PlannedSectionCreation? plannedCreation))
+            {
+                if (operation.Kind != Ra2AutomationEditOperationKind.UpsertField)
+                {
+                    return PlanningResult.Failed(
+                        Ra2AutomationEditPreviewFailureKind.FieldNotFound,
+                        $"The new section [{operation.SectionName}] cannot replace a field that does not exist.");
+                }
+
+                bool createdFieldIsKnown = snapshot.FieldRegistry.Provider.TryGetField(
+                    plannedCreation.Operation.ExpectedSectionKind,
+                    operation.Key,
+                    out Ra2FieldDefinition? createdFieldDefinition);
+                Ra2AutomationFieldTrustLevel createdFieldTrustLevel = Ra2AutomationFieldTrustMapper.ToAutomationLevel(
+                    Ra2FieldTrustClassifier.Classify(createdFieldIsKnown ? createdFieldDefinition : null).Level);
+                Ra2AutomationFieldAuthoringDisposition disposition =
+                    Ra2AutomationFieldTrustMapper.ToAuthoringDisposition(createdFieldTrustLevel);
+                if (disposition == Ra2AutomationFieldAuthoringDisposition.Blocked)
+                {
+                    return PlanningResult.Failed(
+                        Ra2AutomationEditPreviewFailureKind.BlockedFieldTrust,
+                        $"The field [{operation.SectionName}] {operation.Key} is blocked for new-section authoring.");
+                }
+
+                if (disposition == Ra2AutomationFieldAuthoringDisposition.Caution)
+                    plannedCreation.Disposition = Ra2AutomationFieldAuthoringDisposition.Caution;
+
+                if (!createdSectionFields.TryGetValue(
+                        plannedCreation.Operation.SectionName,
+                        out List<Ra2AutomationEditOperation>? createdFields))
+                {
+                    createdFields = [];
+                    createdSectionFields[plannedCreation.Operation.SectionName] = createdFields;
+                }
+                createdFields.Add(operation);
+                operationPreviews.Add(new Ra2AutomationEditOperationPreview(
+                    index,
+                    operation,
+                    Ra2AutomationEditOperationOutcomeKind.Inserted,
+                    plannedCreation.Operation.ExpectedSectionKind,
+                    createdFieldIsKnown,
+                    createdFieldTrustLevel,
+                    new Ra2AutomationTextSpan(snapshot.Text.Length, 0),
+                    $"Will insert {operation.Key} into the new section [{operation.SectionName}]."));
+                continue;
             }
 
             Ra2SectionSymbol[] sections = currentAnalysis.Model.Sections
@@ -334,7 +426,7 @@ internal sealed class Ra2AutomationEditPreviewEngine
                 section.Kind,
                 operation.Key,
                 out Ra2FieldDefinition? definition);
-            Ra2AutomationFieldTrustLevel trustLevel = ToAutomationTrustLevel(
+            Ra2AutomationFieldTrustLevel trustLevel = Ra2AutomationFieldTrustMapper.ToAutomationLevel(
                 Ra2FieldTrustClassifier.Classify(isKnown ? definition : null).Level);
 
             changes.Add(new IndexedChange(index, change));
@@ -351,7 +443,143 @@ internal sealed class Ra2AutomationEditPreviewEngine
                     : $"Will replace the value of [{section.Name}] {operation.Key}."));
         }
 
-        return PlanningResult.Success(changes, operationPreviews);
+        if (plan.SectionCreations.Count > 0)
+        {
+            string newline = ResolveCanonicalNewLine(currentAnalysis.Document);
+            string appendText = BuildSectionAppendText(
+                snapshot.Text,
+                plan.SectionCreations,
+                createdSectionFields,
+                newline);
+            changes.Add(new IndexedChange(
+                plan.Operations.Count + plan.SectionCreations.Count,
+                new Ra2TextChange(
+                    new Ra2TextSpan(snapshot.Text.Length, 0),
+                    appendText,
+                    $"{AuthoringReasonPrefix}:CreateSection")));
+        }
+
+        return PlanningResult.Success(changes, operationPreviews, sectionCreations.Values.ToArray());
+    }
+
+    private static SectionPreviewPlanningResult BuildSectionCreationPreviews(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationEditPlan plan,
+        Analysis candidateAnalysis,
+        PlanningResult planning)
+    {
+        if (plan.SectionCreations.Count == 0)
+            return SectionPreviewPlanningResult.Success([]);
+
+        Dictionary<string, PlannedSectionCreation> planned = planning.SectionCreations
+            .ToDictionary(item => item.Operation.SectionName, StringComparer.OrdinalIgnoreCase);
+        List<Ra2AutomationSectionCreatePreview> previews = [];
+        for (int index = 0; index < plan.SectionCreations.Count; index++)
+        {
+            Ra2AutomationSectionCreateOperation operation = plan.SectionCreations[index];
+            Ra2SectionSymbol[] sections = candidateAnalysis.Model.Sections
+                .Where(section => string.Equals(section.Name, operation.SectionName, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (sections.Length != 1)
+            {
+                return SectionPreviewPlanningResult.Failed(
+                    Ra2AutomationEditPreviewFailureKind.CandidateAnalysisFailed,
+                    $"The candidate section [{operation.SectionName}] could not be resolved uniquely.");
+            }
+
+            Ra2SectionKind actualKind = sections[0].Kind;
+            if (operation.ExpectedSectionKind != Ra2SectionKind.Unknown &&
+                actualKind != Ra2SectionKind.Unknown &&
+                actualKind != operation.ExpectedSectionKind)
+            {
+                return SectionPreviewPlanningResult.Failed(
+                    Ra2AutomationEditPreviewFailureKind.SectionClassificationMismatch,
+                    $"The candidate section [{operation.SectionName}] was classified as {actualKind}, not {operation.ExpectedSectionKind}.");
+            }
+
+            Ra2AutomationFieldAuthoringDisposition disposition = planned[operation.SectionName].Disposition;
+            if (actualKind == Ra2SectionKind.Unknown)
+                disposition = Ra2AutomationFieldAuthoringDisposition.Caution;
+            previews.Add(new Ra2AutomationSectionCreatePreview(
+                index,
+                operation,
+                actualKind,
+                actualKind != Ra2SectionKind.Unknown,
+                disposition,
+                new Ra2AutomationTextSpan(snapshot.Text.Length, 0),
+                actualKind == Ra2SectionKind.Unknown
+                    ? $"Will create [{operation.SectionName}]; classification remains unresolved."
+                    : $"Will create [{operation.SectionName}] as {actualKind}."));
+        }
+
+        return SectionPreviewPlanningResult.Success(previews);
+    }
+
+    private static string BuildSectionAppendText(
+        string sourceText,
+        IReadOnlyList<Ra2AutomationSectionCreateOperation> sectionCreations,
+        IReadOnlyDictionary<string, List<Ra2AutomationEditOperation>> fieldsBySection,
+        string newline)
+    {
+        System.Text.StringBuilder builder = new();
+        if (sourceText.Length > 0)
+        {
+            if (EndsWithTwoLineBreaks(sourceText))
+            {
+                // Existing trailing blank lines are preserved without adding another separator.
+            }
+            else if (EndsWithLineBreak(sourceText))
+            {
+                builder.Append(newline);
+            }
+            else
+            {
+                builder.Append(newline).Append(newline);
+            }
+        }
+
+        for (int index = 0; index < sectionCreations.Count; index++)
+        {
+            if (index > 0)
+                builder.Append(newline);
+            Ra2AutomationSectionCreateOperation creation = sectionCreations[index];
+            builder.Append('[').Append(creation.SectionName).Append(']').Append(newline);
+            if (fieldsBySection.TryGetValue(creation.SectionName, out List<Ra2AutomationEditOperation>? fields))
+            {
+                foreach (Ra2AutomationEditOperation field in fields)
+                    builder.Append(field.Key).Append('=').Append(field.Value).Append(newline);
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static string ResolveCanonicalNewLine(Ra2IniTextDocument document)
+        => document.NewLineKind switch
+        {
+            Ra2IniNewLineKind.CrLf => "\r\n",
+            Ra2IniNewLineKind.Cr => "\r",
+            _ => "\n"
+        };
+
+    private static bool EndsWithLineBreak(string text)
+        => text.EndsWith("\r\n", StringComparison.Ordinal) ||
+            text.EndsWith('\n') ||
+            text.EndsWith('\r');
+
+    private static bool EndsWithTwoLineBreaks(string text)
+    {
+        int firstLength = TrailingLineBreakLength(text, text.Length);
+        return firstLength > 0 && TrailingLineBreakLength(text, text.Length - firstLength) > 0;
+    }
+
+    private static int TrailingLineBreakLength(string text, int end)
+    {
+        if (end <= 0)
+            return 0;
+        if (text[end - 1] == '\n')
+            return end >= 2 && text[end - 2] == '\r' ? 2 : 1;
+        return text[end - 1] == '\r' ? 1 : 0;
     }
 
     private static int FindValueInsertionOffset(string text, Ra2KeyValueSymbol field)
@@ -405,20 +633,6 @@ internal sealed class Ra2AutomationEditPreviewEngine
         return results;
     }
 
-    private static Ra2AutomationFieldTrustLevel ToAutomationTrustLevel(Ra2FieldTrustLevel level)
-        => level switch
-        {
-            Ra2FieldTrustLevel.Verified => Ra2AutomationFieldTrustLevel.Verified,
-            Ra2FieldTrustLevel.VerifiedGuardrail => Ra2AutomationFieldTrustLevel.VerifiedGuardrail,
-            Ra2FieldTrustLevel.Inferred => Ra2AutomationFieldTrustLevel.Inferred,
-            Ra2FieldTrustLevel.ManualCurated => Ra2AutomationFieldTrustLevel.ManualCurated,
-            Ra2FieldTrustLevel.AutoExtracted => Ra2AutomationFieldTrustLevel.AutoExtracted,
-            Ra2FieldTrustLevel.Obsolete => Ra2AutomationFieldTrustLevel.Obsolete,
-            Ra2FieldTrustLevel.NonExistent => Ra2AutomationFieldTrustLevel.NonExistent,
-            Ra2FieldTrustLevel.PseudoField => Ra2AutomationFieldTrustLevel.PseudoField,
-            _ => Ra2AutomationFieldTrustLevel.Unknown
-        };
-
     private static Ra2AutomationTextSpan ToAutomationSpan(Ra2TextSpan span)
         => new(span.Start, span.Length);
 
@@ -432,7 +646,7 @@ internal sealed class Ra2AutomationEditPreviewEngine
         Ra2AutomationEditPlan plan,
         Ra2AutomationEditPreviewFailureKind failureKind,
         string message)
-        => new(snapshot, plan, failureKind, message, Guid.Empty, null, [], [], [], []);
+        => new(snapshot, plan, failureKind, message, Guid.Empty, null, [], [], [], [], []);
 
     private static void CheckCancellation(int index, CancellationToken cancellationToken)
     {
@@ -448,6 +662,23 @@ internal sealed class Ra2AutomationEditPreviewEngine
             StackOverflowException;
 
     private readonly record struct IndexedChange(int OperationIndex, Ra2TextChange Change);
+
+    private sealed class PlannedSectionCreation
+    {
+        public PlannedSectionCreation(
+            int operationIndex,
+            Ra2AutomationSectionCreateOperation operation,
+            Ra2AutomationFieldAuthoringDisposition disposition)
+        {
+            OperationIndex = operationIndex;
+            Operation = operation;
+            Disposition = disposition;
+        }
+
+        public int OperationIndex { get; }
+        public Ra2AutomationSectionCreateOperation Operation { get; }
+        public Ra2AutomationFieldAuthoringDisposition Disposition { get; set; }
+    }
 
     private sealed class Analysis
     {
@@ -472,12 +703,14 @@ internal sealed class Ra2AutomationEditPreviewEngine
             Ra2AutomationEditPreviewFailureKind failureKind,
             string? failureMessage,
             IReadOnlyList<IndexedChange> changes,
-            IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews)
+            IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews,
+            IReadOnlyList<PlannedSectionCreation> sectionCreations)
         {
             FailureKind = failureKind;
             FailureMessage = failureMessage;
             Changes = changes;
             OperationPreviews = operationPreviews;
+            SectionCreations = sectionCreations;
         }
 
         public bool Succeeded => FailureKind == Ra2AutomationEditPreviewFailureKind.None;
@@ -485,15 +718,43 @@ internal sealed class Ra2AutomationEditPreviewEngine
         public string? FailureMessage { get; }
         public IReadOnlyList<IndexedChange> Changes { get; }
         public IReadOnlyList<Ra2AutomationEditOperationPreview> OperationPreviews { get; }
+        public IReadOnlyList<PlannedSectionCreation> SectionCreations { get; }
 
         public static PlanningResult Success(
             IReadOnlyList<IndexedChange> changes,
-            IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews)
-            => new(Ra2AutomationEditPreviewFailureKind.None, null, changes, operationPreviews);
+            IReadOnlyList<Ra2AutomationEditOperationPreview> operationPreviews,
+            IReadOnlyList<PlannedSectionCreation> sectionCreations)
+            => new(Ra2AutomationEditPreviewFailureKind.None, null, changes, operationPreviews, sectionCreations);
 
         public static PlanningResult Failed(
             Ra2AutomationEditPreviewFailureKind failureKind,
             string failureMessage)
-            => new(failureKind, failureMessage, [], []);
+            => new(failureKind, failureMessage, [], [], []);
+    }
+
+    private sealed class SectionPreviewPlanningResult
+    {
+        private SectionPreviewPlanningResult(
+            Ra2AutomationEditPreviewFailureKind failureKind,
+            string? failureMessage,
+            IReadOnlyList<Ra2AutomationSectionCreatePreview> previews)
+        {
+            FailureKind = failureKind;
+            FailureMessage = failureMessage;
+            Previews = previews;
+        }
+
+        public bool Succeeded => FailureKind == Ra2AutomationEditPreviewFailureKind.None;
+        public Ra2AutomationEditPreviewFailureKind FailureKind { get; }
+        public string? FailureMessage { get; }
+        public IReadOnlyList<Ra2AutomationSectionCreatePreview> Previews { get; }
+
+        public static SectionPreviewPlanningResult Success(IReadOnlyList<Ra2AutomationSectionCreatePreview> previews)
+            => new(Ra2AutomationEditPreviewFailureKind.None, null, previews);
+
+        public static SectionPreviewPlanningResult Failed(
+            Ra2AutomationEditPreviewFailureKind failureKind,
+            string failureMessage)
+            => new(failureKind, failureMessage, []);
     }
 }

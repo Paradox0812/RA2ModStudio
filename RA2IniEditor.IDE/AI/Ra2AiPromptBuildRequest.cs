@@ -14,4 +14,10 @@ internal sealed class Ra2AiPromptBuildRequest
 
     public Ra2AiCapabilityMode CapabilityMode { get; init; } =
         Ra2AiCapabilityMode.AdvisoryOnly;
+
+    public Ra2AiUserMode UserMode { get; init; } = Ra2AiUserMode.Chat;
+
+    public string DomainIntentId { get; init; } = "ini-document";
+
+    public Ra2AiIntentAnalysisPackage? IntentAnalysisPackage { get; init; }
 }

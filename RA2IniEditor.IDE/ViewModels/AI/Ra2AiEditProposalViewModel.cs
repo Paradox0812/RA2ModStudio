@@ -42,9 +42,10 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
             : Ra2AiEditProposalState.Ready;
         _resultMessage = proposal.RiskSummary;
         Operations = Array.AsReadOnly(
-            proposal.Preview.OperationPreviews
-                .Select(operation =>
-                    CreateOperation(operation, proposal.Preview.Snapshot.Text))
+            proposal.Preview.SectionCreationPreviews
+                .Select(CreateSectionCreation)
+                .Concat(proposal.Preview.OperationPreviews.Select(operation =>
+                    CreateOperation(operation, proposal.Preview.Snapshot.Text)))
                 .ToArray());
     }
 
@@ -156,6 +157,19 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
             action,
             $"[{operation.SectionName}] {operation.Key}",
             change,
+            evidence);
+    }
+
+    private static Ra2AiEditProposalOperationViewModel CreateSectionCreation(
+        Ra2AutomationSectionCreatePreview preview)
+    {
+        string evidence = preview.IsClassificationResolved
+            ? $"实际分类：{preview.ActualSectionKind}"
+            : $"预期分类：{preview.Operation.ExpectedSectionKind} · 当前尚未由文档引用解析";
+        return new Ra2AiEditProposalOperationViewModel(
+            "创建 Section",
+            $"[{preview.Operation.SectionName}]",
+            $"新增空 Section（{preview.Operation.ExpectedSectionKind}）",
             evidence);
     }
 

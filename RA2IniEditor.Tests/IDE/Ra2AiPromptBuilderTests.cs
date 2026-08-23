@@ -466,6 +466,8 @@ public sealed class Ra2AiPromptBuilderTests
         Assert.Contains("## Current Document Edit Preview Tool", request.PromptText);
         Assert.Contains("exactly once", request.PromptText);
         Assert.Contains("only proposes a local preview", request.PromptText);
+        Assert.Contains("non-empty summary and an operations array", request.PromptText);
+        Assert.Contains("value must be a JSON string even when the INI value is numeric", request.PromptText);
         Assert.DoesNotContain("run tools, or call shell commands", request.PromptText);
     }
 

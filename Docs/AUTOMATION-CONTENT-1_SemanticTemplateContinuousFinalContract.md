@@ -1,8 +1,9 @@
 # AUTOMATION-CONTENT-1 Semantic Template Continuous Final Contract
 
 契约日期：2026-08-23
-状态：Final contract candidate / Awaiting user confirmation / Not implemented
+状态：Completed / Verified（视觉人工验收待用户后续执行）
 前置审计：`Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`
+UI 子契约：`Docs/AUTOMATION-CONTENT-UI-1_MainWorkspaceChangePreviewFinalContract.md`
 
 ## 1. 阶段目标
 
@@ -22,8 +23,8 @@ Field Registry snapshot
 生成新 Section/模板计划、获得确定性 Preview，并经既有 IDE 权限边界显式应用。仍不能宣称支持
 跨文件原子提交、自动 Save、独立 Agent Host、素材生成或任意对象模板库。
 
-本契约把前置审计中的 1A..1D 细分为 1A..1F，以隔离 public query、Preview engine、模板模型
-和 IDE Host 风险；路线方向不变。
+本契约把前置审计中的 1A..1D 细分为 1A..1F，并在其后增加独立的 `CONTENT-UI-1`，
+以隔离 public query、Preview engine、模板模型、IDE Host 和主工作区视觉风险；路线方向不变。
 
 ## 2. 总体风险与授权
 
@@ -34,10 +35,11 @@ Field Registry snapshot
 | CONTENT-1C | R3 | 扩展 canonical EditPlan/Preview engine 支持 Section creation | 确认本契约后允许，必须阶段审查 |
 | CONTENT-1D | R3 | 新 internal template domain/compiler 与字段信任策略 | 确认本契约后允许，public API 0 change |
 | CONTENT-1E | R2/R3 | Template discovery/expansion public API + 首个真实模板 gate | 确认本契约后允许；模板来源不可靠时停止 |
-| CONTENT-1F | R3 | 既有 AI/Workspace/Host consumer 接入；不改变 Apply authority | 确认本契约后允许，UI 视觉改动另行审批 |
+| CONTENT-1F | R3 | 既有 AI/Workspace/Host consumer 接入；不改变 Apply authority | 已授权；仍不在本阶段修改视觉 |
+| CONTENT-UI-1 | R3 | 主工作区只读 Diff 文档、提案显示/恢复/失效接线 | 2026-08-23 用户明确授权连续实施；严格服从独立 UI 契约 |
 
 Governance mode：连续实施时使用 Deferred；每个子阶段记录 checkpoint，1C、1E、1F 完成后和
-整个包停止时刷新 Stage Ledger、PublicApiLedger、DecisionLog、CurrentPhase 与 Compact Context。
+CONTENT-UI-1 和整个包停止时刷新 Stage Ledger、PublicApiLedger、DecisionLog、CurrentPhase 与 Compact Context。
 
 下列事项属于 R4，明确不由本契约授权：wire/JSON/IPC、模板持久化格式、字段库 ownership/priority、
 项目快照、多文档原子提交、Save/Backup/Rollback、外部工具权限和素材 Artifact commit。
@@ -75,6 +77,7 @@ Governance mode：连续实施时使用 Deferred；每个子阶段记录 checkpo
 | Template arguments/instance | caller request | 单次 expansion | 仅 CLR contract，不承诺 JSON |
 | EditPlan/Preview | Application semantic authoring | document/version/revision-bound | 进程内 Experimental contract |
 | Active preview/Apply | IDE Workspace/TransactionPort | single-use active editor lifetime | 不序列化、不跨进程 |
+| Main-workspace Diff projection | IDE presentation | active proposal lifetime，关闭可重建 | 不序列化、不写回源文档 |
 
 ### 3.5 资源上限
 
@@ -553,8 +556,7 @@ Docs/*                                                (contract/ledger/status)
 ### 12.2 禁止区域
 
 ```text
-ShellWindow.xaml
-ShellWindow.xaml.cs，除非后续 1F 审计证明无法避免且另行明确批准
+ShellWindow.xaml / ShellWindow.xaml.cs，除 `CONTENT-UI-1` 独立契约逐项列出的最小宿主接线
 Field Registry JSON/packs/priority/load/apply/rollback
 Core parser/serializer/save semantics
 Diagnostics rule behavior
@@ -591,13 +593,16 @@ code-fact recheck
 -> 1D Internal Template Domain/Compiler
 -> 1E Template Gateway + first real template gate
 -> 1F IDE Agent Integration
+-> CONTENT-UI-1 Main Workspace Change Preview
 ```
 
-在用户确认本最终契约后，1A..1F 可连续推进，不需要每阶段再次等待批准；但以下 stop condition
+用户已于 2026-08-23 确认修订后的连续执行方向；1A..1F 与 CONTENT-UI-1 可连续推进，
+不需要每阶段再次等待批准；但以下 stop condition
 仍强制停止：
 
 - public type/method/count 与本契约不一致；
-- 需要修改 parser、diagnostics、Field Registry priority/data、Save 或 Shell UI；
+- 需要修改 parser、diagnostics、Field Registry priority/data 或 Save；
+- Shell/UI 修改超出 `AUTOMATION-CONTENT-UI-1` 精确文件和视觉契约；
 - 1E 无法选出 source-backed 真实模板；
 - 任何 required build/test/reflection/parity gate 失败且修复超出本阶段；
 - 实现需要 wire、persistence、multi-file、raw patch 或外部付费调用；
@@ -614,23 +619,23 @@ dotnet test .\RA2IniEditor.Application.Tests\RA2IniEditor.Application.Tests.cspr
 dotnet test .\RA2IniEditor.Tests\RA2IniEditor.Tests.csproj -c Debug --no-build --filter <stage focused filter>
 ```
 
-1F/package stop point额外：
+UI-1/package stop point额外：
 
 ```powershell
 dotnet test .\RA2IniEditor.Tests\RA2IniEditor.Tests.csproj -c Debug --no-build
 powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profile IdeOnly
 ```
 
-| Gate | 1A | 1B | 1C | 1D | 1E | 1F |
-|---|---:|---:|---:|---:|---:|---:|
-| Build | Required | Required | Required | Required | Required | Required |
-| Application targeted/full | Required | Required | Required | Required | Required | Required |
-| Gateway parity/reflection | Required | Required | Required | No public diff | Required | Required |
-| Existing semantic parity | Required | Required | Required | Required | Required | Required |
-| Host/Workspace focused | NotRun | NotRun | Required | NotRun | Preview only | Required |
-| Full non-UI | Package checkpoint | Package checkpoint | Required | Package checkpoint | Required | Required |
-| Clean package | NotRun | NotRun | Checkpoint | NotRun | Checkpoint | Required |
-| Computer/UI smoke | NotRun | NotRun | NotRun | NotRun | NotRun | User optional only |
+| Gate | 1A | 1B | 1C | 1D | 1E | 1F | UI-1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Build | Required | Required | Required | Required | Required | Required | Required |
+| Application targeted/full | Required | Required | Required | Required | Required | Required | Parity |
+| Gateway parity/reflection | Required | Required | Required | No public diff | Required | Required | No public diff |
+| Existing semantic parity | Required | Required | Required | Required | Required | Required | Required |
+| Host/Workspace focused | NotRun | NotRun | Required | NotRun | Preview only | Required | Required |
+| Full non-UI | Package checkpoint | Package checkpoint | Required | Package checkpoint | Required | Required | Required |
+| Clean package | NotRun | NotRun | Checkpoint | NotRun | Checkpoint | Required | Required |
+| Computer/UI smoke | NotRun | NotRun | NotRun | NotRun | NotRun | NotRun | User optional only |
 
 不通过的 required gate 不能以较弱测试替代。测试数量只记录实际结果，不在契约中预写虚假计数。
 
@@ -644,6 +649,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profi
 | 1D | None | internal-first model/compiler | 1E | Internal | public diff 0 |
 | 1E | Template service/descriptor/request/result/warnings | Gateway discovery/expansion | 1F/Host | Experimental | additive；allowlist 58 |
 | 1F | None | IDE consumer 接入既有 APIs | product loop | Internal | public diff 0 |
+| UI-1 | None | 主工作区 Diff 投影与提案生命周期呈现 | product review loop | Internal | public diff 0 |
 
 数字以精确类型清单为约束。若实现发现某个新增 public type 没有明确 1C/1D/1F/Host 消费者，
 应保持 internal 并相应下调 allowlist；不得为满足预写数字制造 public API。任何调整必须先更新
@@ -667,14 +673,14 @@ Asset Provider 直接写 `Image=`、Art Section 或文件路径来绕过 CONTENT
 
 只有全部满足时，`CONTENT-1` 才能标记 Completed：
 
-1. 1A..1F 所有 required gates 通过；
+1. 1A..1F 与 CONTENT-UI-1 所有 required gates 通过；
 2. Field Registry priority/data/load semantics 零变化；
 3. schema/resolve/create/template 均通过 explicit snapshot/revision；
 4. current-document template request 能形成真实 plan、Preview、diagnostic delta 和 proposal；
 5. explicit Apply 为一个 Undo 单元，成功后 refresh，不自动 Save；
 6. ordinary Upsert/Replace、FindReferences、Diagnostics 行为保持兼容；
 7. Application public surface 与 ledger 最终清单一致；
-8. legacy、Shell layout、XAML、依赖和项目文件未恢复/未扩张；
+8. legacy、全局 Dock 布局、依赖和项目文件未恢复/未扩张；Shell/XAML 仅有 UI-1 契约列出的接线；
 9. Stage Ledger、DecisionLog、PublicApiLedger、CurrentPhase、Compact Context 与 clean package 收口；
 10. 不能把 test template、Unknown target kind 或 slice output 夸大为完整对象/素材生产。
 
@@ -686,9 +692,22 @@ Asset Provider 直接写 `Image=`、Art Section 或文件路径来绕过 CONTENT
 - Compatibility：通过。既有构造器和 field-only plan 保留；enum 只尾部追加。
 - Failure atomicity：通过。任何失败无 partial plan/candidate/apply payload。
 - Field Registry honesty：通过。不把字段库当对象模板，也不猜测 reference target kind/provenance。
-- UI/Shell：通过。CONTENT 核心不依赖 WPF；1F 不批准视觉重构。
+- UI/Shell：通过。CONTENT 核心不依赖 WPF；UI-1 只增加派生 Diff 文档，不改变编辑与保存权威。
 - Anti-rework：通过。先查询事实，再扩展 canonical plan，最后模板/Host consumer；不提前冻结 wire/persistence。
 - Remaining controlled risk：首个真实模板的具体内容必须在 1E-0 来源审计中选择；这是数据包选择，
   不改变已冻结的 engine/public contract。
 
-本契约确认前不得实施。确认后从 `CONTENT-1A Field Schema Query` 开始连续推进。
+## 19. 实施结果
+
+- CONTENT-1A..1F 与 CONTENT-UI-1 已按本契约连续实现。
+- Application Experimental allowlist 精确为 58；Gateway catalog 7，公开方法 9。
+- 首个生产模板为 `weapon-projectile-warhead-skeleton` v1；来源门禁见
+  `AUTOMATION-CONTENT-1E0_BuiltInTemplateSourceAudit.md`。
+- 主工作区使用临时只读 AvalonDock Diff document；整体 Apply/Dismiss 仍只经既有 Coordinator。
+- 资源门禁覆盖 8 MiB、200,000 输入行、20,000 可视行、2,000 hunks 与 cancellation，超限不返回部分结果。
+- 2026-08-23 初始验证：Debug build 0 warning / 0 error，Application 146/146，non-UI 2568/2568；
+  后续 `AI-AUTHORING-NONSTRICT-1` 窄边界修复后 non-UI 2576/2576。
+- 电脑操控、真实 DeepSeek 和物理 DPI 视觉验收未运行；不影响代码/契约完成判定，但保留为人工产品验收项。
+
+本修订连续包已完成；下一安全入口是 `HOST-1 Independent Agent Host Boundary` 的代码事实审计与契约，
+不是直接实现 wire、自动 Apply/Save 或素材 provider。

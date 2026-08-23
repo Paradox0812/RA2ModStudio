@@ -114,6 +114,13 @@
                        Margin="0,8,0,0"
                        HorizontalAlignment="Right">
                 <Button Margin="0,0,6,0"
+                        Content="查看更改"
+                        IsEnabled="{Binding IsDismissEnabled}"
+                        Style="{StaticResource IdeWorkspaceCommandButtonStyle}"
+                        Click="OpenDiffButton_OnClick"
+                        AutomationProperties.AutomationId="AiAssistant.EditProposalCard.OpenDiffButton"
+                        AutomationProperties.Name="在主工作区查看更改" />
+                <Button Margin="0,0,6,0"
                         Content="{Binding ApplyButtonText}"
                         IsEnabled="{Binding IsApplyEnabled}"
                         Style="{StaticResource IdeBlueCompactButtonStyle}"

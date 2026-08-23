@@ -163,9 +163,9 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
         Assert.Equal(Ra2AutomationEditPreviewService.MaximumDocumentCharacters, descriptor.MaximumDocumentCharacters);
         Assert.Equal(Ra2AutomationEditPreviewService.MaximumDiagnosticItems, descriptor.MaximumResultItems);
         Assert.Equal(Ra2IniEditPlan.MaximumOperationCount, descriptor.MaximumOperations);
-        Assert.Equal(35, typeof(Ra2AutomationCapabilityGateway).Assembly.GetExportedTypes().Length);
+        Assert.Equal(59, typeof(Ra2AutomationCapabilityGateway).Assembly.GetExportedTypes().Length);
         Assert.Equal(
-            ["FindReferences", "GetCapabilities", "GetSection", "Preview", "Validate"],
+            ["ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "ResolveReference", "Validate"],
             typeof(IRa2AutomationCapabilityGateway).GetMethods().Select(method => method.Name).Order().ToArray());
     }
 
@@ -234,6 +234,21 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
         public IReadOnlyList<Ra2AutomationCapabilityDescriptor> GetCapabilities()
             => _inner.GetCapabilities();
 
+        public IReadOnlyList<Ra2AutomationTemplateDescriptor> GetTemplates()
+            => _inner.GetTemplates();
+
+        public Ra2AutomationFieldSchemaQueryResult GetFieldSchema(
+            Ra2AutomationDocumentSnapshot snapshot,
+            Ra2AutomationFieldSchemaQuery request,
+            CancellationToken cancellationToken = default)
+            => _inner.GetFieldSchema(snapshot, request, cancellationToken);
+
+        public Ra2AutomationReferenceResolveResult ResolveReference(
+            Ra2AutomationDocumentSnapshot snapshot,
+            Ra2AutomationReferenceResolveQuery request,
+            CancellationToken cancellationToken = default)
+            => _inner.ResolveReference(snapshot, request, cancellationToken);
+
         public Ra2AutomationSectionQueryResult GetSection(
             Ra2AutomationDocumentSnapshot snapshot,
             Ra2AutomationSectionQuery request,
@@ -259,6 +274,12 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
             PreviewCallCount++;
             return _inner.Preview(snapshot, plan, cancellationToken);
         }
+
+        public Ra2AutomationTemplateExpansionResult ExpandTemplate(
+            Ra2AutomationDocumentSnapshot snapshot,
+            Ra2AutomationTemplateExpansionRequest request,
+            CancellationToken cancellationToken = default)
+            => _inner.ExpandTemplate(snapshot, request, cancellationToken);
     }
 
     private sealed class RecordingTransactionPort : IRa2EditorTransactionPort

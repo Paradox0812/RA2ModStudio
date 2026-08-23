@@ -111,8 +111,16 @@ UI automation tests live in `RA2IniEditor.UiAutomationTests` and should remain o
 - Prompt preparation uses shared outbound sanitization and deterministic per-section/total budgets. Prompts over 8000 characters are rejected before request-session creation.
 - Response construction is factory-controlled, request diagnostics are request-local, and callback consumer failures must propagate unchanged.
 - Existing Pipeline overloads are advisory-only. Shell may select `CurrentDocumentEditPreview` only for a ready official endpoint and a successfully captured editable `Ra2AuthoringSnapshot`.
-- `preview_ini_edit_plan` is the only A4 tool. Its arguments stay untrusted until the strict adapter rejects malformed JSON, duplicate/unknown properties, unsupported operations, and snapshot mismatch.
+- `preview_ini_edit_plan` handles bounded field operations; `expand_ini_content_template` handles only the reviewed current-document template contract. Both argument shapes stay untrusted until the strict adapter rejects malformed JSON, duplicate/unknown properties, unsupported operations, version/argument errors, and snapshot mismatch.
 - `Ra2AiAuthoringCoordinator` owns one active proposal and reuses the A3 Preview/apply transaction. Added errors block Apply; Apply always requires explicit confirmation and never calls Save or disk IO.
+- Ordinary DeepSeek Tool Calls are not strict-schema guaranteed. The adapter may normalize only unambiguous presentation drift (trailing comma, inferable outcome, missing display summary, one operation object, numeric scalar value). Template arguments additionally accept the declared named object, numeric scalars, boolean-to-Yes/No conversion, and a numeric version string. Unknown/duplicate properties, null/composite template values, and boolean/null/composite field-operation values remain rejected; never add a general JSON repair path.
+- A proposal may include the schema-declared bounded string `message` alongside executable arguments. Validate and discard it; it is presentation-only and must never override template identity, version, arguments, Preview, Apply, or Save authority. Clarification still requires a non-empty message and never executes proposal payload.
+- An explicit `needs_clarification` outcome remains non-authoring even if a non-strict provider echoes proposal-shaped fields. Return only the validated bounded message and keep every echoed template field inert. For explicit complete-object requests, prompt the provider to choose conservative visible draft tuning values when only gameplay tuning is omitted; clarification is reserved for unresolved owner, slot, or object identity.
+- `Ra2AutomationTemplateService` exposes one source-audited Weapon/Projectile/Warhead relationship skeleton. Internal template definitions compile only into the canonical EditPlan; do not add raw section bodies, gameplay defaults, registration edits, persistence, or a parallel Apply service.
+- `Ra2AutomationTemplateService` also exposes one source-audited direct-fire complete profile. It must bind one unique existing compatible owner, validate its complete argument set, and compile into the same canonical EditPlan; only explicit skeleton language may route to the sparse profile.
+- `Ra2AgentSkillCatalog` loads only bundled `AgentSkills/*/SKILL.md` packages, validates bounded metadata/content, rejects scripts, and selects exact domain plus optional extension/trust guidance. Skills are prompt knowledge, never capabilities or authorization. External roots, hot reload and executable Skills require a later security/versioning contract.
+- `Ra2AiUserMode.Chat` is the safe default and exposes zero authoring tools. `Work` enables only the already admitted current-document routes. Mode state is window/process-local and does not change provider, endpoint, Apply, Undo or Save authority.
+- `Ra2AuthoringDiffProjectionBuilder` is an internal presentation projection over the successful Preview change set. Keep it cancellable and bounded (8 MiB / 200k input lines / 20k rows / 2k hunks); it must validate the candidate and never own editor or transaction authority.
 - Document/session/Field Registry/chat lifecycle changes invalidate both coordinator authority and the visible proposal card. Custom endpoints remain advisory-only.
 - Automatic retry, model fallback, thinking-mode selection, and AI persistence remain out of scope.
 
@@ -138,9 +146,13 @@ The governing boundary is documented in
 - IDE-host ownership of active editor capture, Apply, Undo and Save;
 - later Gateway/CLI/Job/Asset consumers using the same canonical implementation.
 
-HLI-0B and HLI-1A/1B are implemented through the documented vertical slices. The next
-safe stage is HLI-1C Host Boundary Confirmation. Do not add public Apply/Save, a
-Gateway, CLI, wire DTO, or a second Preview authority without its own approved contract.
+HLI-0B, HLI-1A/1B/1C, HLI-2A/2B/2C, CONTENT-1, AGENT-MODE-1, AGENT-KNOWLEDGE-1 and the first
+CONTENT-2A Techno dual-armament and CONTENT-2B Projectile/Warhead slices are implemented through the documented vertical slices. The dual profile
+creates two closed direct-fire chains for one existing owner; it does not claim cyclic fire. CONTENT-2B adds separate
+Arcing/Homing Projectile profiles and one YR-core Warhead profile, without claiming Phobos trajectories or Ares custom armor. The next safe stage is
+CONTENT-2C AI programming tuples, followed by the remaining source-gated content profiles before HOST-1. Do not add
+public Apply/Save, CLI/wire DTO, session/permission authority, external/executable Skills, or a second Preview path
+without the corresponding contract.
 
 ## 12. Documentation Authority
 

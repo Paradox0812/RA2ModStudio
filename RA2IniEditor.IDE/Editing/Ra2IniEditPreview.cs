@@ -74,7 +74,9 @@ internal sealed class Ra2IniEditPreview
         bool succeeded = automationResult.Succeeded;
         if (succeeded != (changeSet is not null) ||
             succeeded != (automationResult.CandidateText is not null) ||
-            (!succeeded && (operationPreviews.Count != 0 || addedDiagnostics.Count != 0 || removedDiagnostics.Count != 0)))
+            (!succeeded && (operationPreviews.Count != 0 ||
+                automationResult.SectionCreationPreviews.Count != 0 ||
+                addedDiagnostics.Count != 0 || removedDiagnostics.Count != 0)))
         {
             throw new ArgumentException("Host preview projection state is inconsistent.");
         }
@@ -94,6 +96,8 @@ internal sealed class Ra2IniEditPreview
     public Ra2TextChangeSet? ChangeSet { get; }
     public string? CandidateText => AutomationResult.CandidateText;
     public IReadOnlyList<Ra2IniEditOperationPreview> OperationPreviews { get; }
+    public IReadOnlyList<Ra2AutomationSectionCreatePreview> SectionCreationPreviews
+        => AutomationResult.SectionCreationPreviews;
     public IReadOnlyList<Ra2DiagnosticFact> AddedDiagnostics { get; }
     public IReadOnlyList<Ra2DiagnosticFact> RemovedDiagnostics { get; }
     public int AddedErrorCount => AutomationResult.AddedErrorCount;
@@ -132,6 +136,7 @@ internal sealed class Ra2IniEditPreview
         }
 
         ValidateOperationEvidence(snapshot, plan, result);
+        ValidateSectionCreationEvidence(snapshot, plan, result);
 
         Ra2TextChangeSet changeSet = new(result.Changes.Select(change => new Ra2TextChange(
             new Ra2TextSpan(change.Span.Start, change.Span.Length),
@@ -171,7 +176,7 @@ internal sealed class Ra2IniEditPreview
             snapshot,
             plan,
             result,
-            $"已生成 {operationPreviews.Count} 项结构化编辑预览，尚未修改文档。",
+            $"已生成 {operationPreviews.Count + result.SectionCreationPreviews.Count} 项结构化编辑预览，尚未修改文档。",
             changeSet,
             operationPreviews,
             addedDiagnostics,
@@ -210,6 +215,35 @@ internal sealed class Ra2IniEditPreview
             {
                 throw new ArgumentException(
                     "Automation preview operation evidence is outside the Host snapshot.",
+                    nameof(result));
+            }
+        }
+    }
+
+    private static void ValidateSectionCreationEvidence(
+        Ra2AuthoringSnapshot snapshot,
+        Ra2IniEditPlan plan,
+        Ra2AutomationEditPreviewResult result)
+    {
+        if (result.SectionCreationPreviews.Count != plan.SectionCreations.Count)
+        {
+            throw new ArgumentException(
+                "Automation preview section creation evidence does not match the Host plan.",
+                nameof(result));
+        }
+
+        for (int index = 0; index < plan.SectionCreations.Count; index++)
+        {
+            Ra2AutomationSectionCreateOperation expected = plan.SectionCreations[index];
+            Ra2AutomationSectionCreatePreview actual = result.SectionCreationPreviews[index];
+            if (actual.OperationIndex != index ||
+                !string.Equals(actual.Operation.SectionName, expected.SectionName, StringComparison.Ordinal) ||
+                actual.Operation.ExpectedSectionKind != expected.ExpectedSectionKind ||
+                actual.AffectedOriginalSpan.Start > snapshot.Text.Length ||
+                actual.AffectedOriginalSpan.End > snapshot.Text.Length)
+            {
+                throw new ArgumentException(
+                    "Automation preview section creation evidence does not match the Host plan.",
                     nameof(result));
             }
         }
@@ -303,6 +337,10 @@ internal sealed class Ra2IniEditPreview
             Ra2IniEditPreviewFailureKind.CandidateAnalysisFailed => "无法分析候选文档，未生成可确认的编辑预览。",
             Ra2IniEditPreviewFailureKind.DocumentTooLarge => "文档超过结构化编辑预览的资源上限。",
             Ra2IniEditPreviewFailureKind.ResultLimitExceeded => "诊断结果超过结构化编辑预览的资源上限。",
+            Ra2IniEditPreviewFailureKind.SectionAlreadyExists => "要创建的 Section 已存在。",
+            Ra2IniEditPreviewFailureKind.ConflictingSectionCreations => "编辑计划重复创建同一 Section。",
+            Ra2IniEditPreviewFailureKind.SectionClassificationMismatch => "新 Section 的实际分类与计划不一致。",
+            Ra2IniEditPreviewFailureKind.BlockedFieldTrust => "新 Section 包含字段库阻止自动写入的字段。",
             _ => "生成结构化编辑预览时发生意外错误。"
         };
 }

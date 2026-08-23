@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE — Compact Codex Context
 
-更新时间：2026-08-23
+更新时间：2026-08-24
 用途：为新任务恢复足够但不重复历史的工程上下文。历史阶段细节应读取对应
 Contract/Stage Ledger，不再追加到本文件。
 
@@ -48,7 +48,17 @@ VOX/VXL 和 SHP 产物。当前项目只完成了真实 INI IDE 与受限当前�
 | HLI-2C 完成证据 | `Docs/AUTOMATION-HLI-2C_StageLedger.md` |
 | POST-HLI 优先级审计 | `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md` |
 | CONTENT-1 连续契约 | `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md` |
-| 下一安全入口 | 确认 CONTENT-1 连续最终契约候选 |
+| CONTENT-1 完成证据 | `Docs/AUTOMATION-CONTENT-1_StageLedger.md` |
+| Chat / Work 最终契约 | `Docs/AGENT-MODE-1_ChatWorkModeFinalContract.md` |
+| Work 两阶段意图/执行契约 | `Docs/AGENT-MODE-2_TwoStageIntentExecutionFinalContract.md` |
+| RA2 Skill 来源审计 | `Docs/AGENT-KNOWLEDGE-1_Ra2LogicAndSkillSourceAudit.md` |
+| RA2 Skill 连续契约 | `Docs/AGENT-KNOWLEDGE-1_Ra2BuiltInSkillsContinuousFinalContract.md` |
+| 最新 Mode / Skill 证据 | `Docs/AGENT-KNOWLEDGE-1_StageLedger.md` |
+| CONTENT-2B 契约与证据 | `Docs/AUTOMATION-CONTENT-2B_ProjectileWarheadProfilesFinalContract.md` + `Docs/AUTOMATION-CONTENT-2B_StageLedger.md` |
+| CONTENT-2C 代码事实审计 | `Docs/AUTOMATION-CONTENT-2C_AiProgrammingTupleProfilesCodeFactAudit.md`；契约与实现按用户要求延期 |
+| CONTENT-2D-0/1 注册基础 | `Docs/AUTOMATION-CONTENT-2D01_ObjectClosureRegistrationFinalContract.md` + `Docs/AUTOMATION-CONTENT-2D01_StageLedger.md` |
+| 本地 Git 已验证基线 | `Docs/GIT-BASELINE-1_StageLedger.md`；分支 `codex/content-2d-baseline`，标签 `content-2d01-verified` |
+| 下一安全入口 | `CONTENT-2D-2 Project Multi-Document Transaction` 代码事实审计与最终契约；CONTENT-2C AI 写入继续冻结 |
 | Public API 候选与状态 | `Docs/PublicApiLedger.md` |
 
 ## 3. Solution 与所有权
@@ -88,13 +98,50 @@ Host adapter 消费同一 Gateway，并在 provider 前执行 descriptor-driven 
   明确编辑在 provider 前本地拒绝，public API 保持 35。
 - HLI-2C：Gateway Query/Validate、provider structured plan、Preview、explicit Apply、Problems
   refresh 和 updated-snapshot Validate 已形成确定性闭环；public API 保持 35，不自动 Save。
+- CONTENT-1：Field Schema、Reference Resolve、CreateSection、internal template compiler、首个
+  source-backed Weapon/Projectile/Warhead 关系骨架、AI template tool 和主工作区 Diff 已完成；
+  public allowlist 58、catalog 7、Gateway methods 9，仍不自动 Save。
+- CONTENT-UI-1 VISUAL-FIX1：Diff 宿主改为从 layout session 获取恢复后的当前
+  `Document.Source`，修复提案自动打开及“查看更改”在持久化布局恢复后无响应；默认 Dock 拓扑、
+  比例与 layout schema 不变。定向 13/13、完整 IDE non-UI 2576/2576、clean package 1147 files；
+  实际 WPF 视觉复验仍待用户执行。
+- AI-AUTHORING-NONSTRICT-1：字段工具只对可唯一解释的非严格 JSON 形态做有限规范化；未知属性、
+  复合 value 和任何 Apply/Save 权限仍 fail closed。聚焦 88/88、non-UI 2576/2576。
+- AGENT-MODE-1：AI 面板显式区分 Chat / Work 并默认 Chat；普通“搭建可用武器链”进入
+  direct-fire complete profile，只有明确骨架意图进入 skeleton。完整 profile 绑定唯一既有 owner，
+  创建非空 Weapon/Projectile/Warhead，形成 15 项原子 Preview 操作。
+- AGENT-KNOWLEDGE-1：基于联网来源审计与本地代码事实，内置 15 个 RA2/YR/Ares/Phobos
+  领域 Skill；按需注入、内容有界、禁止 scripts/external roots，不增加 capability 或写入权限。
+- AGENT-MODE-1-R1：Work 模式本身即当前文档 authoring scope，不再要求用户重复写“当前文件”；
+  补齐“构筑/建立/生成/组装/装配/加装”等构建动词。用户报告的 HTNK 同轴机枪原句已通过路由回归。
+- AGENT-MODE-1-R2：complete-profile provider schema 已改为命名对象和原生 scalar；template adapter
+  可安全归一化省略 outcome、字符串版本、number/boolean 与尾逗号。Release focused 70/70、
+  IDE non-UI 2585/2585；真实 DeepSeek 复验待用户重启新构建后执行。
+- AGENT-MODE-1-R3：两次最小真实 DeepSeek 探针确认完整 proposal 会附带非空 `message`；adapter 现与
+  已声明 schema 对齐，只验证后丢弃该旁路字符串。Release focused 167/167、IDE non-UI 2587/2587；
+  未改变模板、字段库、Preview、Apply、Undo 或 Save 权限。
+- AGENT-MODE-1-R4：clarification 混入 proposal 参数时改为安全显示 message 并保持参数惰性；完整对象
+  缺省调参改用保守草案。最新真实探针得到 proposal + 15 参数；focused 71/71、IDE non-UI 2588/2588。
+- AGENT-MODE-2：Work 使用同一生命周期内的两次 DeepSeek 调用：先返回有界意图事实包并由本地
+  capability allowlist 校验，再执行既有结构化工具或 advisory；Chat 仍单调用。第一次结果不显示、
+  不落盘、不进入对话历史，第二次仍受 canonical Preview/显式 Apply 约束。Debug build、86/86 与
+  409/409 已通过；真实 provider 验收待执行。
+- CONTENT-2A/2B：现有 Techno 可生成双 direct-fire 链；现有 Weapon 可绑定 Arcing/Homing Projectile
+  或 YR core Warhead。弹道族互斥，Ares custom armor/Phobos trajectory 继续 fail closed。
+- AGENT-MODE-2 真实 DeepSeek Work 双调用已经用户验收通过。
+- CONTENT-2D-0/1：Application internal Template Definition 已支持显式注册声明；编译器从当前
+  Snapshot 验证数字注册列表并用 `max + 1` 稳定追加，幂等/重复/畸形/溢出均有确定性处置。
+  现有生产 Profile 尚未启用注册，public API 与用户可见行为不变。
+- GIT-BASELINE-1：上述已验证实现已形成独立本地分支和注释标签；版本控制卫生与凭据门禁通过。
+  当前仍无 Git remote，未向任何外部仓库推送。
 
 精确边界与证据见 `Docs/CurrentCapabilities.md`。
 
 ## 5. 当前不存在的能力
 
 - CLI 或外部 Agent host。
-- 通用模板、新对象/Section 完整创建、多文件语义事务、自动 Apply/Save。
+- 通用/持久化模板库、AI/SuperWeapon/Faction 完整 profile、注册列表维护、多文件语义事务、自动 Apply/Save。
+- 生产 Profile 尚未启用 2D-1 注册基础；`rulesmd.ini`/`artmd.ini` 仍不能统一事务处理。
 - Job/Event/Artifact Runtime。
 - Cameo/Icon、VOX/SliceStack/VXL、SHP 生成与自动绑定。
 - RA2TestHost / IRuntimeAdapter / deterministic runtime regression。
@@ -112,6 +159,10 @@ User/policy = external cost, overwrite and final commit authority
 - INI/MAP/真实素材文件是事实源；索引和 Manifest 是投影/产物记录。
 - Model/Agent 不直接写文件、不持有 UI 控件、不解析全局 mutable singleton。
 - 当前 A4 编辑只支持明确的当前文件字段 Upsert/Replace。
+- 当前模板目录含 skeleton、single/dual direct-fire、Arcing/Homing Projectile 与 YR core Warhead；
+  complete profile 均要求唯一既有 owner 和完整参数集。
+- BuiltIn Skill 只提供过程知识；Field Registry 继续拥有字段 schema/trust，Content Profile 拥有对象完整度，
+  IDE Host 拥有 Apply/Undo，Save pipeline 拥有磁盘写入。
 - 自动重试、模型 fallback 和 custom endpoint tool 均未授权。
 
 ## 7. Field Registry 当前基线
@@ -217,12 +268,30 @@ POST-HLI-0 已完成：当前 Gateway 是可无头进程内消费但不可直接
 独立 Host 尚缺 wire/session/permission，CONTENT-1 则可复用现有 schema/query/reference/
 diagnostics/Preview/Apply 链。路线已裁决为 `CONTENT-1 -> HOST-1 -> ASSET`。
 
-CONTENT-1 连续最终契约候选已生成：1A Field Schema、1B Reference Resolve、1C Section
-Creation Preview、1D internal Template Domain、1E Template Gateway、1F IDE Agent integration。
-字段库继续是 effective schema/trust 事实源，但不承担对象模板或 reference target-kind 推断。
+CONTENT-1 已完成：1A Field Schema、1B Reference Resolve、1C Section Creation、1D internal compiler、
+1E Template Gateway、1F IDE Agent integration 和 CONTENT-UI-1 主工作区 Diff 均已实现验证。
+Application public allowlist 58、Gateway catalog 7、methods 9；字段库继续是 effective schema/trust
+事实源，但不承担对象模板或 reference target-kind 推断。Debug build 0/0，Application 146/146，
+non-UI 初始 2568/2568；非严格工具兼容修复后 non-UI 2576/2576。电脑操控、自动真实 DeepSeek
+和物理 DPI 视觉验收未运行。
 
-下一安全入口是用户确认该契约候选；确认后从 CONTENT-1A 连续实施。确认前不得修改生产代码，
-也不得直接公开 Apply/Save，或跳到 wire、持久化模板、multi-file、Job/Event/Artifact 和素材实现。
+AGENT-MODE-1 / AGENT-KNOWLEDGE-1 已完成：Chat/Work 显式模式、direct-fire complete profile、
+15 个 BuiltIn RA2 Skill 和按领域注入均已实现。Application allowlist 59，Application 147/147、
+IDE non-UI 2580/2580、clean package 1171 files；未运行真实 DeepSeek、电脑操控或物理视觉验收。
+
+MODE-1-R1 窄修复后 Release focused 41/41、IDE non-UI 2583/2583。Debug 输出被正在运行的 IDE/Visual
+Studio 锁定，未强制关闭用户进程；真实 provider 的 required-tool 复验仍待用户手工执行。
+
+CONTENT-2A/2B 已实现双 direct-fire、原版 Arcing/Homing Projectile 与 YR core Warhead profiles。
+CONTENT-2D-0/1 已实现 internal 对象闭包/数字注册基础，门禁为 build 0/0、Compiler/Template 37/37、
+Application 162/162、IDE focused 106/106、IDE non-UI 2610/2610；现有生产 Profile 尚未启用注册。
+CONTENT-2C AI 写入继续按用户要求冻结。下一步必须先完成 CONTENT-2D-2 多文档事务契约，之后
+才能实现 rules/art binding、完整 Techno 与 SuperWeapon/Faction；不得直接公开 Apply/Save，或跳到
+wire、外部可执行 Skill、Job/Event/Artifact 和素材 provider。
+
+MODE-1-R5 已修复 Work 路由的否定意图误判：“不要使用循环或交替开火”允许进入现有 complete
+direct-fire profile；正向循环/交替或混合“不要循环、但要交替”仍 fail closed。该修复不新增
+循环开火能力，不改变模板、Gateway、Apply/Save 或 public API。
 
 停止条件：若需要改变 parser、diagnostics、Field Registry priority、Save、
 Apply ownership、public API、程序集方向或持久化格式，必须先形成对应风险契约。

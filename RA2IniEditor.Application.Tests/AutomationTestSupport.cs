@@ -10,13 +10,14 @@ internal static class AutomationTestSupport
         string text,
         IRa2FieldDefinitionProvider? provider = null,
         string filePath = "rulesmd.ini",
-        int version = 1)
+        int version = 1,
+        bool isEditable = false)
         => new(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
             version,
             filePath,
             text,
-            isEditable: false,
+            isEditable,
             new Ra2AutomationFieldRegistrySnapshot(provider ?? new EmptyFieldDefinitionProvider(), 7));
 
     public static string Slice(string text, Ra2AutomationTextSpan span)

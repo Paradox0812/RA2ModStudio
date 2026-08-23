@@ -17,6 +17,7 @@ internal enum Ra2AiEditProposalFailureKind
     PreviewRejected,
     PreviewCancelled,
     ApplyBlocked,
+    TemplateExpansionRejected,
     UnexpectedFailure
 }
 

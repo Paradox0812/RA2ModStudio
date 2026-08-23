@@ -77,11 +77,16 @@ The legacy table-style editor is intentionally not included in this package. The
 ## 9. AI Assistant
 
 - The production AI path uses DeepSeek V4 Flash or DeepSeek V4 Pro; V4 Flash is the default.
+- The panel has explicit Chat and Work modes. Chat is the safe default and exposes no editing tool; Work is required for structured current-document proposals.
 - Sending is always explicit and can incur network usage and provider cost.
 - Only bounded current-editor context, evidence, diagnostics summaries, and eligible recent conversation turns can enter a request; outbound text is sanitized before transmission.
 - Prompts longer than 8000 characters are rejected before a request starts and remain available for editing.
 - Streaming cancellation, timeout, provider failures, and incomplete output preserve received text while keeping failed turns out of future conversation context.
 - On the official endpoint, an editable current document can expose one bounded preview-only structured-edit tool. A returned proposal is validated locally, previewed against the exact request snapshot, and shown as an inline review card.
+- An explicit skeleton request can use `weapon-projectile-warhead-skeleton` v1. An ordinary request to build a usable direct-fire weapon chain uses the reviewed single-slot complete profile. A request for complete Primary and Secondary armaments can use a separate profile that creates two closed chains in one 30-operation proposal. Neither profile adds type-list registration or assets, and dual slots are not presented as cyclic or alternating fire.
+- Work mode can also bind an existing Weapon to a new original-game Arcing or ROT-homing Projectile, or to a YR-core Warhead. These are separate source-gated profiles: trajectory families are never mixed, unsupported Phobos/Vertical/Airburst variants fail locally, and the YR Warhead profile refuses documents with `[ArmorTypes]` rather than pretending to cover Ares custom armor.
+- Fifteen bundled RA2 domain Skills provide selectively loaded authoring guidance for RA2/YR/Ares/Phobos. They are read-only prompt knowledge: they cannot grant file, Apply, Save, network, or shell authority.
+- Every successful structured proposal opens a temporary read-only unified Diff document in the main workspace. Closing it preserves the proposal and the inline card can reopen it; Apply All and Dismiss still use the existing proposal authority.
 - A structured proposal cannot apply itself. The user must click Apply; added errors block Apply, riskier evidence is marked for review, and stale proposals are rejected.
 - Applying a proposal changes only the current in-memory editor session, creates one Undo unit, and never saves. Custom endpoints and read-only/no-document states remain advisory-only.
 - Automatic retry and model fallback are intentionally not implemented.
@@ -103,7 +108,7 @@ It must not restore or ship:
 - A valid mod-specific field may appear as Unknown Key after low-evidence fallback rows are quarantined; add verified Project/Global metadata instead of treating every warning as proof that the field is invalid.
 - UI automation tests are opt-in and are not part of the ordinary unit test command.
 - Project search and current-file Replace All are implemented. Project-level/multi-file replace and recursive disk search remain intentionally unavailable.
-- AI structured edits support only bounded field upsert/value replacement in the current document. Generic patches, project-wide edits, automatic Apply/Save, and custom-endpoint tools are intentionally unavailable.
+- AI structured edits support bounded field upsert/value replacement, the reviewed relationship skeleton, and one direct-fire complete weapon-chain profile in the current document. Generic patches, arbitrary complete-object libraries, project-wide edits, automatic Apply/Save, external Skills, and custom-endpoint tools are intentionally unavailable.
 - AvalonDock's floating child-HWND currently prevents the automation harness from traversing into hosted Search controls; this is tracked separately from normal visual/interaction behavior.
 - Historical handoff documents may still mention older behavior; the current product-facing overview is this IDE-only direction.
 
@@ -111,6 +116,6 @@ It must not restore or ship:
 
 The accepted destination is a high-level Agent that can turn natural-language mod
 requirements into reviewable INI, Cameo/Icon, VOX/VXL and SHP artifacts and bind them
-together. Those asset pipelines, an independent Capability Gateway, CLI/Agent host,
+together. Those asset pipelines, an independent CLI/Agent host,
 multi-file transactions and runtime test host are **not current features**. Their
 staged implementation path is maintained in `Docs/DevelopmentRoadmap.md`.

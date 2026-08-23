@@ -125,7 +125,11 @@ Field learning / import preview helps inspect parsed fields before applying regi
 
 ## 11. Use The AI Assistant
 
-Open the AI tab and enter a request only when you intend to send it to DeepSeek. The model list contains DeepSeek V4 Flash and DeepSeek V4 Pro; V4 Flash is selected by default.
+Open the AI tab and choose a mode before sending. `Chat` is the default and only answers or analyses; it never receives structured editing tools. Choose `Work` when you want a reviewable current-document modification. The model list contains DeepSeek V4 Flash and DeepSeek V4 Pro; V4 Flash is selected by default.
+
+`Work` uses two provider calls for each send. The first call returns a bounded intent package that the IDE validates locally; the second call performs the selected advisory or structured-preview task. Only the second response is shown. If intent analysis fails, the execution call is not sent. This increases Work-mode latency and provider usage, but it does not grant automatic Apply or Save authority.
+
+Work mode already scopes supported authoring requests to the active current document, so the prompt does not need to repeat “当前文件”. It must still identify the target Section/object and describe a supported operation clearly.
 
 Before sending, remember:
 
@@ -142,10 +146,16 @@ assistant can return a bounded structured-edit proposal:
 
 1. State explicitly that you want to modify the **current file**, and identify the target Section, key, and value where possible; for example: `把当前文件 [E1] 下的 Strength 修改为 150`.
 2. If the request is ambiguous, the IDE asks you to clarify locally and preserves the prompt instead of treating generated INI text as an edit.
-3. Review every operation, its old/new value, field evidence, and risk status in the inline proposal card.
-4. If the proposal is marked blocked, fix the request or document; it cannot be applied.
-5. Click Apply only after review, or Dismiss to discard it.
-6. Applying changes only the current in-memory document. Use Ctrl+Z to undo, then save normally if satisfied.
+3. Review the automatically opened `修改预览：<文件名>` document in the main workspace. It shows a read-only unified Diff; closing the tab does not discard the proposal, and `查看更改` on the inline card reopens it.
+4. Review every operation, old/new line, field evidence, diagnostics count, and risk status. If the proposal is blocked, fix the request or document; it cannot be applied.
+5. Click `应用全部` only after review, or `放弃修改` to discard it. Partial hunk acceptance is not available.
+6. Applying changes only the current in-memory document, returns to the source editor, creates one Undo unit, and does not save. Use Ctrl+Z to undo, then save normally if satisfied.
+
+Template routing distinguishes intent. If you explicitly ask for a skeleton/framework, the request must supply all three IDs and the proposal creates only the three Sections plus the Weapon `Projectile=` and `Warhead=` relationships. For an ordinary request to build a usable direct-fire weapon chain, Work mode uses the single-slot complete profile. If you explicitly request complete Primary and Secondary armaments, it can instead create two closed direct-fire chains in one atomic 30-operation proposal. `Primary`/`Secondary` do not guarantee alternating fire: requests that explicitly demand cyclic/alternating fire are currently rejected before sending until the Gattling field/profile source gate is implemented. These profiles still do not add type-list registration, indexes, art, icons, voxels, or SHP assets.
+
+Work mode also supports three focused requests against one existing Weapon: create an original-game curved/Arcing Projectile, create a positive-ROT homing Projectile, or create a YR-core Warhead. State the existing Weapon ID, the new Section ID, and the intended targeting/damage behavior. Arcing and homing are intentionally separate; requests that mix them or ask for unsupported Phobos/Vertical/Airburst trajectories are rejected locally. The YR-core Warhead profile uses the original 11-slot `Verses` layout and refuses a document containing `[ArmorTypes]`; Ares custom armor overrides require a later dedicated profile.
+
+The assistant also selects from 15 bundled RA2 domain Skills according to the request. These Skills improve terminology, dependency order, validation and fail-closed behavior; they do not install code, call tools, write files, apply changes, or save the document.
 
 Editing or switching the document, reloading field metadata, clearing chat, or
 receiving a newer proposal invalidates the old proposal. The tool cannot save,
@@ -161,6 +171,8 @@ proposal or accepted conversation state.
 - Some features may be conservative or preview-first by design to avoid unsafe writes.
 - Search is on-demand rather than a persistent background index. Files above the current 8 MB preview boundary are skipped and reported in Search status.
 - Replace All is current-file only; project-level or multi-file replace is not available.
+- Production complete-object coverage is currently limited to one direct-fire Weapon/Projectile/Warhead profile. Techno, AI, SuperWeapon, faction, registration-list, multi-file and asset profiles remain unavailable.
+- Diff projection fails closed above 8 MiB, 200,000 input lines, 20,000 visible rows, or 2,000 hunks; the inline proposal remains available for whole-plan review/apply.
 - Floating Search content has a known AvalonDock child-window UI Automation provider limitation; the visible controls remain usable normally, but the current automation probe cannot traverse that hosted subtree.
 - Physical compact-resolution and non-100% DPI visual checks may still require manual verification on matching hardware.
 - Historical handoff documents may describe older implementation phases; use this guide for current product-facing IDE usage.

@@ -27,8 +27,16 @@
 | HLI-2B | 内置 AI 改为 Gateway consumer | 唯一 Host adapter、public budget、发送前成本门禁 | Completed / Verified |
 | HLI-2C | 首个高层 Agent 闭环 | 自然语言 -> query -> preview -> 用户 Apply -> diagnostics | Completed / Verified |
 | POST-HLI-0 | Semantic / Host 优先级审计 | 代码事实、复用矩阵、语义优先路线 | Completed / DocsOnly |
-| CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、Section Preview、模板编译、IDE Apply | Final contract candidate / awaiting confirmation |
-| HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after CONTENT-1 |
+| CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、Section Preview、模板编译、IDE Apply | Completed / Verified |
+| AGENT-MODE-1 | Chat / Work 与完整度路由 | 显式模式、skeleton/complete split、direct-fire complete profile | Completed / Verified |
+| AGENT-KNOWLEDGE-1 | BuiltIn RA2 Skill 层 | 15 个按需领域 Skill、来源审计、prompt 边界 | Completed / Verified |
+| CONTENT-2A | Techno Complete Profile | 现有 Techno Primary/Secondary 两条完整 direct-fire 链 | Completed / Verified |
+| CONTENT-2B | Projectile / Warhead Profiles | Arcing/Homing Projectile 与 YR core Warhead | Completed / Verified |
+| CONTENT-2C | AI Programming Tuple Profiles | 代码事实审计完成；typed tuple/动态 key/引用闭包契约与实现延期 | Audit completed / deferred by user |
+| CONTENT-2D-0/1 | 对象闭包与当前文档注册 | internal closure model + deterministic numbered registration allocator | Completed / verified |
+| CONTENT-2D-2 | 项目级多文档事务 | rules/art unified Preview、atomic Apply/rollback、compound Undo | Next / contract required |
+| CONTENT-2D-3+ | 完整对象 Profile 扩展 | Rules–Art binding、Techno、SuperWeapon/Faction | Future / source-gated |
+| HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after stable CONTENT profiles |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
 | ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
 | ASSET-SHP-1 | SHP 动画流水线 | frame spec、palette、anchor、preview、export adapter | Deferred |
@@ -97,6 +105,27 @@
 
 完整证据见 `Docs/AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md`。
 
+### AGENT-MODE-1 / AGENT-KNOWLEDGE-1（已完成）
+
+- Chat 默认零编辑工具；Work 只进入既有结构化 Preview/Apply 边界。
+- 明确“骨架/框架”才使用 skeleton；普通可用 direct-fire 武器链使用 complete profile。
+- 15 个 BuiltIn RA2 Skill 按领域渐进披露，禁止 scripts、外部根和直接工具权限。
+- Field Registry 继续是字段 schema/trust 事实源，Content Profile 是对象完整度事实源，Host 是写入权限源。
+- 最新门禁：Application 147/147、IDE non-UI 2580/2580、clean package 1171 files。
+
+### CONTENT-2A（已完成）
+
+- 新增现有 Techno Primary/Secondary 双 direct-fire 完整 profile：27 参数、6 Sections、30 operations。
+- 循环/交替意图在模型调用前 fail closed；不把双槽或 Burst 冒充 Gattling/Cycle。
+- 最新门禁：Application 148/148、IDE non-UI 2591/2591、clean package 1174 files。
+
+### CONTENT-2B（已完成）
+
+- 新增 Arcing Projectile、Homing Projectile 与 YR core Warhead 三个独立 complete profile。
+- 弹道族互斥；Phobos/Vertical/Airburst 等未支持机制在 provider 前拒绝。
+- YR core Warhead 遇到 `[ArmorTypes]` fail closed，不冒充 Ares custom-armor profile。
+- 最新门禁：Application 151/151、IDE non-UI 2601/2601、clean package 1177 files。
+
 ## 4. 素材路线
 
 ### ASSET-ICON-1
@@ -146,13 +175,16 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 
 ## 7. 下一安全入口
 
-当前下一入口是：
+当前停止点是：
 
 ```text
-确认 AUTOMATION-CONTENT-1 连续最终契约候选
+CONTENT-2D-0/1 Object Closure + Current-Document Registration completed
 ```
 
-连续契约候选见 `Docs/AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md`，已把
-CONTENT-1 细分为 1A Field Schema、1B Reference Resolve、1C Section Preview、1D Template
-Domain、1E Template Gateway 和 1F IDE integration。确认前不得实施；wire、持久化模板、
-multi-file、public Apply/Save、Job Runtime 和素材写入仍不在范围内。
+CONTENT-2A/2B 已把双武器、原版 Arcing/Homing Projectile 与 YR core Warhead 固化为
+source-gated complete profiles。2D-0/1 已增加 internal typed registration 基础，但尚无生产 Profile
+启用。下一步先冻结 2D-2 多文档 Snapshot/Preview/Apply/Undo 契约，再实现 rules/art binding、
+Techno 和 SuperWeapon/Faction complete profiles。CONTENT-2C AI 写入继续按用户要求冻结。
+HOST-1 在这些高优先级语义面稳定后
+冻结 wire/session/permission。持久化模板、外部/可执行 Skill、multi-file、public Apply/Save、
+Job Runtime 和素材写入仍不在范围内。

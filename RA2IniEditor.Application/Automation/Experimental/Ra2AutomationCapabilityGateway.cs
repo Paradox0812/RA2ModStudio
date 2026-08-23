@@ -36,14 +36,54 @@ public sealed class Ra2AutomationCapabilityGateway : IRa2AutomationCapabilityGat
                 Ra2AutomationCapabilityStability.Experimental,
                 Ra2AutomationEditPreviewService.MaximumDocumentCharacters,
                 Ra2AutomationEditPreviewService.MaximumDiagnosticItems,
+                Ra2AutomationEditPlan.MaximumOperationCount),
+            new(
+                Ra2AutomationCapabilityIds.DocumentFieldSchemaGet,
+                Ra2AutomationCapabilityIds.CurrentVersion,
+                Ra2AutomationCapabilityRisk.Query,
+                Ra2AutomationCapabilityStability.Experimental,
+                Ra2AutomationDocumentQueryService.MaximumDocumentCharacters,
+                1,
+                null),
+            new(
+                Ra2AutomationCapabilityIds.DocumentReferenceResolve,
+                Ra2AutomationCapabilityIds.CurrentVersion,
+                Ra2AutomationCapabilityRisk.Query,
+                Ra2AutomationCapabilityStability.Experimental,
+                Ra2AutomationDocumentQueryService.MaximumDocumentCharacters,
+                1,
+                null),
+            new(
+                Ra2AutomationCapabilityIds.ContentTemplateExpand,
+                Ra2AutomationCapabilityIds.CurrentVersion,
+                Ra2AutomationCapabilityRisk.Edit,
+                Ra2AutomationCapabilityStability.Experimental,
+                Ra2AutomationDocumentQueryService.MaximumDocumentCharacters,
+                null,
                 Ra2AutomationEditPlan.MaximumOperationCount)
         ]);
 
     private readonly Ra2AutomationDocumentQueryService _queryService = new();
     private readonly Ra2AutomationEditPreviewService _editPreviewService = new();
+    private readonly Ra2AutomationTemplateService _templateService = new();
 
     public IReadOnlyList<Ra2AutomationCapabilityDescriptor> GetCapabilities()
         => Capabilities;
+
+    public IReadOnlyList<Ra2AutomationTemplateDescriptor> GetTemplates()
+        => _templateService.GetTemplates();
+
+    public Ra2AutomationFieldSchemaQueryResult GetFieldSchema(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationFieldSchemaQuery request,
+        CancellationToken cancellationToken = default)
+        => _queryService.GetFieldSchema(snapshot, request, cancellationToken);
+
+    public Ra2AutomationReferenceResolveResult ResolveReference(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationReferenceResolveQuery request,
+        CancellationToken cancellationToken = default)
+        => _queryService.ResolveReference(snapshot, request, cancellationToken);
 
     public Ra2AutomationSectionQueryResult GetSection(
         Ra2AutomationDocumentSnapshot snapshot,
@@ -67,4 +107,10 @@ public sealed class Ra2AutomationCapabilityGateway : IRa2AutomationCapabilityGat
         Ra2AutomationEditPlan plan,
         CancellationToken cancellationToken = default)
         => _editPreviewService.Preview(snapshot, plan, cancellationToken);
+
+    public Ra2AutomationTemplateExpansionResult ExpandTemplate(
+        Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
+        CancellationToken cancellationToken = default)
+        => _templateService.ExpandTemplate(snapshot, request, cancellationToken);
 }

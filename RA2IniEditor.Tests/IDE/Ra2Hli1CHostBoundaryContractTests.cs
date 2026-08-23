@@ -30,7 +30,7 @@ public sealed class Ra2Hli1CHostBoundaryContractTests
         Assert.Equal(
             ["ExplicitConfirmationGranted", "PreviewId"],
             typeof(Ra2IniEditApplyRequest).GetProperties().Select(property => property.Name).Order().ToArray());
-        Assert.Equal(35, typeof(Ra2AutomationEditPreviewService).Assembly.GetExportedTypes().Length);
+        Assert.Equal(59, typeof(Ra2AutomationEditPreviewService).Assembly.GetExportedTypes().Length);
     }
 
     [Fact]

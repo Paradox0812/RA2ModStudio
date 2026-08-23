@@ -55,6 +55,38 @@ public sealed class Ra2AiAuthoringToolAdapterTests
     }
 
     [Fact]
+    public void TryCreatePlan_NormalizesUnambiguousNonStrictProviderDrift()
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            """
+            {
+              "operations": {
+                "kind": "replace_field_value",
+                "section": "E1",
+                "key": "Strength",
+                "value": 150,
+              },
+            }
+            """);
+
+        Assert.True(result.Succeeded, result.Message);
+        Ra2IniEditPlan plan = Assert.IsType<Ra2IniEditPlan>(result.Plan);
+        Ra2IniEditOperation operation = Assert.Single(plan.Operations);
+        Assert.Equal("150", operation.Value);
+        Assert.Equal("AI 结构化修改建议", plan.Summary);
+    }
+
+    [Fact]
+    public void TryCreatePlan_InfersClarificationOnlyFromUnambiguousMessageShape()
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            """{"message":"请提供目标 Section。"}""");
+
+        Assert.True(result.NeedsClarification);
+        Assert.Equal("请提供目标 Section。", result.Message);
+    }
+
+    [Fact]
     public void TryCreatePlan_RejectsUnsupportedTool()
     {
         Ra2AiToolCall call = new("call-1", "apply_file", "{}");
@@ -181,6 +213,44 @@ public sealed class Ra2AiAuthoringToolAdapterTests
 
         Assert.Equal(Ra2AiToolAdaptationOutcomeKind.Failed, result.OutcomeKind);
         Assert.NotEqual(Ra2AiEditProposalFailureKind.None, result.FailureKind);
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    public void TryCreatePlan_StillRejectsAmbiguousOrCompositeValues(string valueJson)
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            $$"""
+            {
+              "outcome":"proposal",
+              "summary":"x",
+              "operations":[{
+                "kind":"replace_field_value",
+                "section":"E1",
+                "key":"Strength",
+                "value":{{valueJson}}
+              }]
+            }
+            """);
+
+        Assert.Equal(Ra2AiEditProposalFailureKind.InvalidArgumentsJson, result.FailureKind);
+        Assert.Contains("value", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(result.Plan);
+    }
+
+    [Fact]
+    public void TryCreatePlan_ReportsSanitizedStructuralFailureWithoutEchoingArguments()
+    {
+        const string secret = "ds-do-not-echo-this";
+        Ra2AiEditPlanCreationResult result = Parse(
+            $$"""{"outcome":"proposal","summary":"{{secret}}"}""");
+
+        Assert.Equal(Ra2AiEditProposalFailureKind.InvalidArgumentsJson, result.FailureKind);
+        Assert.Contains("operations", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(secret, result.Message, StringComparison.Ordinal);
     }
 
     private Ra2AiEditPlanCreationResult Parse(string arguments)

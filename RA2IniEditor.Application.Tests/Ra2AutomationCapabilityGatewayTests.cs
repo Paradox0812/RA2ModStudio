@@ -1,5 +1,6 @@
 using System.Reflection;
 using RA2IniEditor.Application.Automation.Experimental;
+using RA2IniEditor.Core.Schema;
 using Xunit;
 
 namespace RA2IniEditor.Application.Tests;
@@ -12,14 +13,17 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Ra2AutomationCapabilityDescriptor[] capabilities =
             new Ra2AutomationCapabilityGateway().GetCapabilities().ToArray();
 
-        Assert.Equal(4, capabilities.Length);
+        Assert.Equal(7, capabilities.Length);
         Assert.Equal(
             new[]
             {
                 Ra2AutomationCapabilityIds.DocumentSectionGet,
                 Ra2AutomationCapabilityIds.DocumentReferencesFind,
                 Ra2AutomationCapabilityIds.DocumentDiagnosticsValidate,
-                Ra2AutomationCapabilityIds.DocumentEditPreview
+                Ra2AutomationCapabilityIds.DocumentEditPreview,
+                Ra2AutomationCapabilityIds.DocumentFieldSchemaGet,
+                Ra2AutomationCapabilityIds.DocumentReferenceResolve,
+                Ra2AutomationCapabilityIds.ContentTemplateExpand
             },
             capabilities.Select(capability => capability.Id));
         Assert.All(capabilities, capability =>
@@ -35,14 +39,23 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[1].Risk);
         Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[2].Risk);
         Assert.Equal(Ra2AutomationCapabilityRisk.Edit, capabilities[3].Risk);
+        Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[4].Risk);
+        Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[5].Risk);
+        Assert.Equal(Ra2AutomationCapabilityRisk.Edit, capabilities[6].Risk);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[0].MaximumResultItems);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[1].MaximumResultItems);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[2].MaximumResultItems);
         Assert.Equal(Ra2AutomationEditPreviewService.MaximumDiagnosticItems, capabilities[3].MaximumResultItems);
+        Assert.Equal(1, capabilities[4].MaximumResultItems);
+        Assert.Equal(1, capabilities[5].MaximumResultItems);
+        Assert.Null(capabilities[6].MaximumResultItems);
         Assert.Null(capabilities[0].MaximumOperations);
         Assert.Null(capabilities[1].MaximumOperations);
         Assert.Null(capabilities[2].MaximumOperations);
         Assert.Equal(Ra2AutomationEditPlan.MaximumOperationCount, capabilities[3].MaximumOperations);
+        Assert.Null(capabilities[4].MaximumOperations);
+        Assert.Null(capabilities[5].MaximumOperations);
+        Assert.Equal(Ra2AutomationEditPlan.MaximumOperationCount, capabilities[6].MaximumOperations);
     }
 
     [Fact]
@@ -57,7 +70,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.True(list.IsReadOnly);
         Assert.Throws<NotSupportedException>(() => list.Clear());
         Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
-        Assert.Equal(4, first.Count);
+        Assert.Equal(7, first.Count);
     }
 
     [Fact]
@@ -98,7 +111,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         FieldInfo[] fields = typeof(Ra2AutomationCapabilityIds)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        Assert.Equal(5, fields.Length);
+        Assert.Equal(8, fields.Length);
         Assert.All(fields, field => Assert.True(field.IsLiteral));
         Assert.Equal(1, (int)fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.CurrentVersion))
             .GetRawConstantValue()!);
@@ -118,6 +131,18 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             "ini.document.edit.preview",
             fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.DocumentEditPreview))
                 .GetRawConstantValue());
+        Assert.Equal(
+            "ini.document.field-schema.get",
+            fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.DocumentFieldSchemaGet))
+                .GetRawConstantValue());
+        Assert.Equal(
+            "ini.document.reference.resolve",
+            fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.DocumentReferenceResolve))
+                .GetRawConstantValue());
+        Assert.Equal(
+            "ini.content.template.expand",
+            fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.ContentTemplateExpand))
+                .GetRawConstantValue());
     }
 
     [Fact]
@@ -127,6 +152,24 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             typeof(IRa2AutomationCapabilityGateway),
             nameof(IRa2AutomationCapabilityGateway.GetCapabilities),
             typeof(IReadOnlyList<Ra2AutomationCapabilityDescriptor>));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.GetTemplates),
+            typeof(IReadOnlyList<Ra2AutomationTemplateDescriptor>));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.GetFieldSchema),
+            typeof(Ra2AutomationFieldSchemaQueryResult),
+            typeof(Ra2AutomationDocumentSnapshot),
+            typeof(Ra2AutomationFieldSchemaQuery),
+            typeof(CancellationToken));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.ResolveReference),
+            typeof(Ra2AutomationReferenceResolveResult),
+            typeof(Ra2AutomationDocumentSnapshot),
+            typeof(Ra2AutomationReferenceResolveQuery),
+            typeof(CancellationToken));
         AssertMethod(
             typeof(IRa2AutomationCapabilityGateway),
             nameof(IRa2AutomationCapabilityGateway.GetSection),
@@ -154,6 +197,13 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             typeof(Ra2AutomationDocumentSnapshot),
             typeof(Ra2AutomationEditPlan),
             typeof(CancellationToken));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.ExpandTemplate),
+            typeof(Ra2AutomationTemplateExpansionResult),
+            typeof(Ra2AutomationDocumentSnapshot),
+            typeof(Ra2AutomationTemplateExpansionRequest),
+            typeof(CancellationToken));
 
         Type gateway = typeof(Ra2AutomationCapabilityGateway);
         Assert.True(gateway.IsSealed);
@@ -161,7 +211,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         ConstructorInfo constructor = Assert.Single(gateway.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
         Assert.Empty(constructor.GetParameters());
         Assert.Equal(
-            new[] { "FindReferences", "GetCapabilities", "GetSection", "Preview", "Validate" },
+            new[] { "ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "ResolveReference", "Validate" },
             gateway.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Select(method => method.Name)
                 .OrderBy(name => name, StringComparer.Ordinal));
@@ -187,6 +237,25 @@ public sealed class Ra2AutomationCapabilityGatewayTests
     }
 
     [Fact]
+    public void GetFieldSchema_MatchesDirectServiceForSuccessFailureAndCancellation()
+    {
+        Ra2AutomationDocumentSnapshot snapshot = AutomationTestSupport.Snapshot("[E1]\nStrength=100\n");
+        Ra2AutomationFieldSchemaQuery request = new(Ra2SectionKind.Techno, "Strength");
+        Ra2AutomationCapabilityGateway gateway = new();
+        Ra2AutomationDocumentQueryService direct = new();
+
+        AssertFieldSchemaResultEqual(direct.GetFieldSchema(snapshot, request), gateway.GetFieldSchema(snapshot, request));
+        Ra2AutomationFieldSchemaQuery missing = new(Ra2SectionKind.Techno, "Missing");
+        AssertFieldSchemaResultEqual(direct.GetFieldSchema(snapshot, missing), gateway.GetFieldSchema(snapshot, missing));
+
+        using CancellationTokenSource source = new();
+        source.Cancel();
+        AssertFieldSchemaResultEqual(
+            direct.GetFieldSchema(snapshot, request, source.Token),
+            gateway.GetFieldSchema(snapshot, request, source.Token));
+    }
+
+    [Fact]
     public void FindReferences_MatchesDirectServiceForSuccessFailureAndCancellation()
     {
         const string text = "[E1]\nPrimary=Weapon\n[Weapon]\nDamage=90\n";
@@ -204,6 +273,26 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         AssertReferenceResultEqual(
             direct.FindReferences(snapshot, request, source.Token),
             gateway.FindReferences(snapshot, request, source.Token));
+    }
+
+    [Fact]
+    public void ResolveReference_MatchesDirectServiceForSuccessFailureAndCancellation()
+    {
+        const string text = "[E1]\nPrimary=Weapon\n[Weapon]\nDamage=90\n";
+        Ra2AutomationDocumentSnapshot snapshot = AutomationTestSupport.Snapshot(text);
+        Ra2AutomationReferenceResolveQuery request = new("E1", "Primary");
+        Ra2AutomationCapabilityGateway gateway = new();
+        Ra2AutomationDocumentQueryService direct = new();
+
+        AssertResolveResultEqual(direct.ResolveReference(snapshot, request), gateway.ResolveReference(snapshot, request));
+        Ra2AutomationReferenceResolveQuery missing = new("Missing", "Primary");
+        AssertResolveResultEqual(direct.ResolveReference(snapshot, missing), gateway.ResolveReference(snapshot, missing));
+
+        using CancellationTokenSource source = new();
+        source.Cancel();
+        AssertResolveResultEqual(
+            direct.ResolveReference(snapshot, request, source.Token),
+            gateway.ResolveReference(snapshot, request, source.Token));
     }
 
     [Fact]
@@ -264,8 +353,14 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             Ra2AutomationSectionQueryFailureKind.DocumentTooLarge,
             gateway.GetSection(snapshot, new Ra2AutomationSectionQuery("E1")).FailureKind);
         Assert.Equal(
+            Ra2AutomationFieldSchemaQueryFailureKind.DocumentTooLarge,
+            gateway.GetFieldSchema(snapshot, new Ra2AutomationFieldSchemaQuery(Ra2SectionKind.Techno, "Strength")).FailureKind);
+        Assert.Equal(
             Ra2AutomationReferenceQueryFailureKind.DocumentTooLarge,
             gateway.FindReferences(snapshot, new Ra2AutomationReferenceQuery(0)).FailureKind);
+        Assert.Equal(
+            Ra2AutomationReferenceResolveFailureKind.DocumentTooLarge,
+            gateway.ResolveReference(snapshot, new Ra2AutomationReferenceResolveQuery("E1", "Primary")).FailureKind);
         Assert.Equal(Ra2AutomationDocumentDiagnosticsFailureKind.DocumentTooLarge, gateway.Validate(snapshot).FailureKind);
         Assert.Equal(Ra2AutomationEditPreviewFailureKind.DocumentTooLarge, gateway.Preview(snapshot, plan).FailureKind);
     }
@@ -374,6 +469,41 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         }
     }
 
+    private static void AssertFieldSchemaResultEqual(
+        Ra2AutomationFieldSchemaQueryResult expected,
+        Ra2AutomationFieldSchemaQueryResult actual)
+    {
+        Assert.Equal(expected.Succeeded, actual.Succeeded);
+        Assert.Equal(expected.FailureKind, actual.FailureKind);
+        Assert.Equal(expected.Message, actual.Message);
+        Assert.Equal(expected.DocumentId, actual.DocumentId);
+        Assert.Equal(expected.Version, actual.Version);
+        Assert.Equal(expected.FilePath, actual.FilePath);
+        Assert.Equal(expected.FieldRegistryRevision, actual.FieldRegistryRevision);
+        if (expected.Fact is null)
+        {
+            Assert.Null(actual.Fact);
+            return;
+        }
+
+        Assert.NotNull(actual.Fact);
+        Assert.Equal(expected.Fact.Key, actual.Fact!.Key);
+        Assert.Equal(expected.Fact.SectionKind, actual.Fact.SectionKind);
+        Assert.Equal(expected.Fact.AppliesTo, actual.Fact.AppliesTo);
+        Assert.Equal(expected.Fact.EditorKind, actual.Fact.EditorKind);
+        Assert.Equal(expected.Fact.ValueKind, actual.Fact.ValueKind);
+        Assert.Equal(expected.Fact.BooleanStyle, actual.Fact.BooleanStyle);
+        Assert.Equal(expected.Fact.AllowedValues, actual.Fact.AllowedValues);
+        Assert.Equal(expected.Fact.EnumName, actual.Fact.EnumName);
+        Assert.Equal(expected.Fact.Separator, actual.Fact.Separator);
+        Assert.Equal(expected.Fact.DisplayName, actual.Fact.DisplayName);
+        Assert.Equal(expected.Fact.Description, actual.Fact.Description);
+        Assert.Equal(expected.Fact.Aliases, actual.Fact.Aliases);
+        Assert.Equal(expected.Fact.SourceKind, actual.Fact.SourceKind);
+        Assert.Equal(expected.Fact.TrustLevel, actual.Fact.TrustLevel);
+        Assert.Equal(expected.Fact.AuthoringDisposition, actual.Fact.AuthoringDisposition);
+    }
+
     private static void AssertReferenceResultEqual(
         Ra2AutomationReferenceQueryResult expected,
         Ra2AutomationReferenceQueryResult actual)
@@ -406,6 +536,40 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             Assert.Equal(left.LineSpan, right.LineSpan);
             Assert.Equal(left.ValueSpan, right.ValueSpan);
         }
+    }
+
+    private static void AssertResolveResultEqual(
+        Ra2AutomationReferenceResolveResult expected,
+        Ra2AutomationReferenceResolveResult actual)
+    {
+        Assert.Equal(expected.Succeeded, actual.Succeeded);
+        Assert.Equal(expected.FailureKind, actual.FailureKind);
+        Assert.Equal(expected.Message, actual.Message);
+        Assert.Equal(expected.DocumentId, actual.DocumentId);
+        Assert.Equal(expected.Version, actual.Version);
+        Assert.Equal(expected.FilePath, actual.FilePath);
+        Assert.Equal(expected.FieldRegistryRevision, actual.FieldRegistryRevision);
+        if (expected.Fact is null)
+        {
+            Assert.Null(actual.Fact);
+            return;
+        }
+
+        Assert.NotNull(actual.Fact);
+        Assert.Equal(expected.Fact.SourceSectionName, actual.Fact!.SourceSectionName);
+        Assert.Equal(expected.Fact.SourceSectionOccurrence, actual.Fact.SourceSectionOccurrence);
+        Assert.Equal(expected.Fact.SourceKey, actual.Fact.SourceKey);
+        Assert.Equal(expected.Fact.SourceFieldOccurrence, actual.Fact.SourceFieldOccurrence);
+        Assert.Equal(expected.Fact.SourceLineNumber, actual.Fact.SourceLineNumber);
+        Assert.Equal(expected.Fact.SourceSpan, actual.Fact.SourceSpan);
+        Assert.Equal(expected.Fact.RawEffectiveToken, actual.Fact.RawEffectiveToken);
+        Assert.Equal(expected.Fact.ReferenceIndex, actual.Fact.ReferenceIndex);
+        Assert.Equal(expected.Fact.TargetSectionName, actual.Fact.TargetSectionName);
+        Assert.Equal(expected.Fact.TargetSectionKind, actual.Fact.TargetSectionKind);
+        Assert.Equal(expected.Fact.Basis, actual.Fact.Basis);
+        Assert.Equal(expected.Fact.IsTargetDefined, actual.Fact.IsTargetDefined);
+        Assert.Equal(expected.Fact.TargetDefinitionCount, actual.Fact.TargetDefinitionCount);
+        Assert.Equal(expected.Fact.IsSchemaDeclaredReference, actual.Fact.IsSchemaDeclaredReference);
     }
 
     private static void AssertDiagnosticsResultEqual(
@@ -452,6 +616,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Equal(expected.CandidateText, actual.CandidateText);
         Assert.Equal(expected.Changes.Count, actual.Changes.Count);
         Assert.Equal(expected.OperationPreviews.Count, actual.OperationPreviews.Count);
+        Assert.Equal(expected.SectionCreationPreviews.Count, actual.SectionCreationPreviews.Count);
         Assert.Equal(expected.AddedDiagnostics.Count, actual.AddedDiagnostics.Count);
         Assert.Equal(expected.RemovedDiagnostics.Count, actual.RemovedDiagnostics.Count);
         Assert.Equal(expected.AddedErrorCount, actual.AddedErrorCount);
