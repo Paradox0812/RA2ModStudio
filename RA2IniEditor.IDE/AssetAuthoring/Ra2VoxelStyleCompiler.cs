@@ -60,7 +60,7 @@ internal sealed record Ra2VoxelStyleCompilationContext(
     string CompilerRevision = "voxel-style-compiler/1",
     string ColourMetricId = "srgb-squared-v1");
 
-internal sealed class Ra2VoxelStyleCompiler
+internal sealed partial class Ra2VoxelStyleCompiler
 {
     internal const string ToolName = "compile_ra2_voxel_style";
     private const int MaximumArgumentsCharacters = 64 * 1024;

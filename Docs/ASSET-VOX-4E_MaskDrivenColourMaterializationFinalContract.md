@@ -1,7 +1,7 @@
 # ASSET-VOX-4E — Mask-Driven Colour Materialization Final Contract Rev.3
 
 日期：2026-08-30
-状态：Approved / 4E-1 implemented and focused-verified / 4E-2..4E-5 not started
+状态：Approved / 4E-1..4E-2 implemented and focused-verified / 4E-3..4E-5 not started
 实现风险：R4
 治理模式：StopForReview
 前置审计：`Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`
@@ -115,7 +115,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\package-source-clean.ps1 -Profi
 
 ### 2.7 实现批准状态
 
-用户已于 2026-08-31 明确批准本 Rev.3。4E-1 已按本合同实现并通过聚焦自动化验证；4E-2..4E-5 仍须逐阶段满足
+用户已于 2026-08-31 明确批准本 Rev.3。4E-1..4E-2 已按本合同实现并通过聚焦自动化验证；4E-3..4E-5 仍须逐阶段满足
 停止门。任何超出本合同的 UI、持久化、public API、Apply/Save 或 writer 变更仍必须另行立约。
 
 ## 3. 核心架构决策
@@ -848,7 +848,7 @@ Provider unavailable/timeout/malformed 继续沿用现有 compiler failure。失
 | 阶段 | 目标 | 停止门 |
 |---|---|---|
 | 4E-1 | UnitClass evidence/proposal/confirmation + BaseColour/Technique/policy + requirements/binding models + specialist Skill packages | Application focused tests |
-| 4E-2 | classification/cache + exact Skill router + Provider style compiler/cache v2 + normalization identity | IDE classifier/compiler/cache focused tests |
+| 4E-2 | classification/cache + exact Skill router + Provider style compiler/cache v2 + normalization identity | Completed；26/26 focused + 107/107 affected IDE |
 | 4E-3 | Base-centred deterministic integration + policy-aware contrast/quality evaluator | correctness/quality focused tests |
 | 4E-4 | Exact approved classification/confirmation/base/technique UI + selected Skill/quality projection | XAML compile + UI contract tests + screenshot/manual request |
 | 4E-5 | Full verification, package, physical acceptance | all mandatory gates and user smoke |
@@ -860,8 +860,8 @@ Provider unavailable/timeout/malformed 继续沿用现有 compiler failure。失
 
 自审范围：从 UI/session input → Provider cache → local normalization → semantic materialization → quality admission →
 freeze/export/invalidation 做正向和反向走查，并与现有 style contracts、colourizer rule order、contrast optimizer、
-4E-R1 ground/air evidence 和 4D authority boundary 对照。4E-1 行仅代表 internal contracts/catalogs/Skills 已验证；
-不代表 4E-2..4E-5 运行时、UI 或物理视觉已经实现或验证。
+4E-R1 ground/air evidence 和 4D authority boundary 对照。4E-1..4E-2 仅代表 contracts/Skills 与
+classifier/router/compiler/cache v2 已验证；不代表 4E-3..4E-5 materialization、UI 或物理视觉已经实现或验证。
 
 | 审查项 | 结论 | Rev.3 证据/裁决 |
 |---|---|---|
@@ -879,7 +879,7 @@ freeze/export/invalidation 做正向和反向走查，并与现有 style contrac
 | 质量状态诚实性 | Pass | 无 opaque 总分；ReviewReady 仅技术可固化；VisualAcceptance 单独 Pending/人工确认 |
 | UI 可执行性 | Contract pass / physical NotRun | 显式判型、证据、人工确认/纠正、selected Skill、三个 selector 和 AutomationIds 已精确定义 |
 | Persistence/Shell/writer | Pass | session-only；不写 4D sidecar；不改 Shell、项目 Save、VOX/VXL/HVA writer |
-| 自动/人工验证 | 4E-1 focused Pass / 4E-2..5 Pending | contract/catalog/Skill tests 已通过；真实 ground/air/large-surface 验收仍未运行 |
+| 自动/人工验证 | 4E-1..2 focused Pass / 4E-3..5 Pending | contract/catalog/Skill、classifier/router/compiler/cache tests 已通过；真实 ground/air/large-surface 验收仍未运行 |
 
 Rev.3 保留了 Rev.2 对固定 air underside 方向、contrast allowlist/全局阈值冲突、template-only 无颜色来源、
 Provider cache 与本地候选 identity 混用及 PaintedSurface/Top+Under 覆盖缺陷的修正，并进一步消除了四类风险：
@@ -898,14 +898,14 @@ Provider cache 与本地候选 identity 混用及 PaintedSurface/Top+Under 覆�
 - 三个专用 colouring Skill 和 classifier Skill 已创建并通过 bundled catalog/内容契约测试，但尚未经过真实 DeepSeek
   与真实 ground/air/large-surface 模型的行为回归。
 - v1 只有一个全模型基准色；多部件独立涂装、VXL/HVA、normal、游戏光照和 GameReady 均未解决。
-- 4E-1 internal contracts/Skill diff、聚焦测试和 Debug build 已有证据；classification/style Provider、实际
-  materialization、WPF 截图、真实 DeepSeek 和游戏实测仍无证据，必须在 4E-2 至 4E-5 分阶段产生。
+- 4E-1 contracts/Skills 与 4E-2 classification/style cache/router/compiler v2 已有聚焦证据；实际 materialization、
+  WPF 接线/截图、真实 DeepSeek 和游戏实测仍无证据，必须在 4E-3 至 4E-5 分阶段产生。
 
 ### 15.2 自审结论
 
 ```text
 Contract architecture: Approved
-Runtime implementation: Partial (4E-1 contracts/catalogs/Skills only)
+Runtime implementation: Partial (4E-1 contracts/catalogs/Skills + 4E-2 classifier/router/compiler/cache v2；UI 尚未接线)
 Automated verification: FocusedPassed (see ASSET-VOX-4E_StageLedger.md)
 Physical visual acceptance: NotRun
 GameReady: OutOfScope
@@ -913,9 +913,8 @@ GameReady: OutOfScope
 
 ## 16. 批准门
 
-本 Rev.3 已批准，4E-1 已完成。后续门禁：
+本 Rev.3 已批准，4E-1..4E-2 已完成。后续门禁：
 
-- 4E-2 只能接入 classification/cache、exact Skill router 和 style compiler/cache v2；
 - 4E-3 只能在 4E-2 验证通过后接入本地 materialization/quality；
 - 4E-4 必须严格按第 9 节 UI 契约实现，并请求截图/人工验收；
 - 4E-5 才执行全量验证、clean package 和真实模型物理验收。

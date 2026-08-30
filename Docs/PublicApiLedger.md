@@ -514,3 +514,12 @@ serialized provider protocol, plugin API or persisted authoring history requires
 
 All new C# types remain internal and session/derived-only. Skill/Technique Markdown is bundled content, not a public .NET,
 plugin or persistence API. Promotion to a public façade or serialized workspace format requires a separate compatibility review.
+
+## 42. ASSET-VOX-4E-2 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| ASSET-VOX-4E-2 | None | IDE-internal classifier/cache/router/style compiler v2/binding and normalization identity | Implement the approved two-stage proposal path without changing external contracts | 4E-3 local materialization；4E-4 exact UI wiring | Internal / experimental / focused-verified | 26/26 focused；49/49 affected Application；107/107 affected IDE | No public type, project serialization, 4D sidecar, Provider/AssetHost protocol, project write, writer or XAML delta |
+
+All new caches are discardable local derived data. Their JSON envelopes are not project persistence or public interchange
+formats. Public promotion or cross-version cache compatibility would require a separate ledger and compatibility review.

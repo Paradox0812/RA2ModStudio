@@ -1805,7 +1805,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## 2026-08-30 — DeepSeek proposes unit class before one class-specific colouring Skill is routed
 
-- Status: Accepted 2026-08-31 / 4E-1 implemented and focused-verified
+- Status: Accepted 2026-08-31 / 4E-1..4E-2 implemented and focused-verified
 - Task: ASSET-VOX-4E FinalContract Rev.3
 - Context:
   - Ground, air and large-surface units need materially different shading and readability techniques, while the model
@@ -1835,5 +1835,10 @@ CurrentPhase 和对应 Stage Ledger 负责。
     failure and cancellation evidence.
   - 4E-1 now provides internal evidence/proposal/confirmation contracts, typed policy routing, classifier/class-specific
     Skills and focused tests without Provider, runtime colourization or XAML integration.
+  - 4E-2 implements independent classification/style cache results, Host-only exact routing, bounded semantic bindings and
+    style cache v2 on the existing compiler. Proposal cannot route by API shape; only confirmation is accepted.
+  - The v2 raw plan may be reused when evidence changes but confirmed class/Skill/requirement shape stays equal; the local
+    normalization identity still changes with evidence/confirmation and carries adaptation identity for 4E-3.
 - Follow-up:
-  - Continue only with 4E-2 classification/cache, exact Skill router and style compiler/cache v2; XAML remains deferred to 4E-4.
+  - Continue only with 4E-3 deterministic base-centred materialization, contrast and quality admission; XAML remains
+    deferred to 4E-4.

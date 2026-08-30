@@ -73,12 +73,14 @@ User/policy           = external cost, overwrite and final commit authority
 - `3A/3B/3C`：生成编排、显式固化/VOX 导出、working-geometry continuity。
 - `4A/4B/FIX2/STROKE-1`：Agent 初始语义、人工区域/体素覆盖、精确表面命中和连续笔划。
 - `4D`：项目内 `.semantic.json` v1 的显式保存/载入与三重哈希绑定；用户已报告真实 Save/Import 通过。
-- `4E`：FinalContract Rev.3 已批准；`4E-1` internal contracts/policies/Skill packages 已实现并聚焦验证。DeepSeek
-  将在 4E-2 根据有界证据提出
+- `4E`：FinalContract Rev.3 已批准；`4E-1..4E-2` contracts/Skills 与 classifier/cache/exact router/compiler cache v2 已实现并聚焦验证。DeepSeek
+  将根据有界证据提出
   Ground/Air/LargeSurface/Unknown，人工确认/纠正后 Host 只装载对应的一个专用 colouring Skill。人工还必须从
   active palette 选择 opaque/non-remap 基准 index，主体明暗家族以该 index 为不可移动锚点；五个技法只决定
   层次。4E-1 已提供 evidence/proposal/confirmation、BaseColour、technique/adaptation、requirements/binding、
-  classifier/Ground/Air/LargeSurface Skills；classification/style cache、materialization、UI 和物理验证仍未开始。
+  classifier/Ground/Air/LargeSurface Skills；4E-2 已提供独立 classification/style cache 结果、只接受 confirmation 的
+  exact single-Skill route、semantic binding cache v2 和 normalization identity。实际 materialization/quality、UI 接线和
+  物理验证仍未开始。
 - `4E-R1`：8 个用户 ZIP + VXLSE III `RA2/unittem.pal` + 公开教程/许可明确 VOX 模型的上色研究已完成；
   新增 Chat-only `ra2-voxel-colour-techniques` 供通用 DeepSeek 选择，聚焦测试 16/16 通过。专用 4E style
   compiler 尚未接入该 Skill；全量测试、package 和真实模型调用未运行。
@@ -137,8 +139,8 @@ Wrong-model / dirty / DPI: NotRun or Unknown
 这些是阶段完成时的可信证据，不代表后续文档任务重新运行了测试或 Provider。
 
 4E-1 最新验证（`Docs/ASSET-VOX-4E_StageLedger.md`）：13/13 新 contract、45/45 affected Application、
-18/18 Skill catalog、88/88 affected IDE、Debug solution build 1 pre-existing CS8602 warning/0 error。全量 suites、package、真实 DeepSeek、
-WPF 和真实模型视觉均 NotRun。
+18/18 Skill catalog、88/88 affected IDE。4E-2：26/26 classifier/router/compiler/cache、49/49 affected Application、
+107/107 affected IDE；final Debug solution build 0 warning/0 error。全量 suites、package、真实 DeepSeek、WPF、materialization 和真实模型视觉均 NotRun。
 
 ## 8. 当前明确不足
 
@@ -161,9 +163,9 @@ WPF 和真实模型视觉均 NotRun。
 
 ## 10. 下一安全入口
 
-`ASSET-VOX-4E-1` 已完成。下一安全阶段是 `4E-2`：只接入 classification/cache、人工 confirmation 后的 exact
-single-Skill router 和 style compiler/cache v2。实际 base-centred materialization/quality 属于 4E-3，XAML 和截图/
-人工验收属于 4E-4，full verification/package/真实模型属于 4E-5。
+`ASSET-VOX-4E-2` 已完成。下一安全阶段是 `4E-3`：只接入以人工 BaseColour 为不可移动锚点的 deterministic
+normalization/materialization、policy-aware contrast 和 quality admission，并复用现有 plan compiler/colourizer。
+XAML/ViewModel 和截图/人工验收属于 4E-4，full verification/package/真实模型属于 4E-5。
 
 4D 的错模型、dirty confirmation 和 DPI 指针项仍需补验，不得推断为通过。4E 不包含 VXL/HVA、
 项目 Apply/Save 或 GameReady。

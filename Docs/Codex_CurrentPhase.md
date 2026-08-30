@@ -39,15 +39,16 @@ Upstream:   origin/codex/content-2d-baseline
 - 不保存几何、色板、RGB、相机、undo/redo 或临时笔划。
 - 不支持自动保存/发现、跨 canonical hash 迁移、强制载入或部分恢复。
 
-`ASSET-VOX-4E Mask-Driven Colour Materialization` Rev.3 已批准，`4E-1` internal contracts/policies/Skill packages
-已实现并通过聚焦自动化验证。Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
+`ASSET-VOX-4E Mask-Driven Colour Materialization` Rev.3 已批准，`4E-1..4E-2` contracts/Skills 与
+classification/cache/exact router/style compiler cache v2 已实现并通过聚焦自动化验证。Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
 Ground/Air/LargeSurface/Unknown，人工确认或纠正后，Host 只装载对应的一个专用 colouring Skill；模型提案不能
 直接取得路由权。人工仍须从 active palette 选择 opaque/non-remap 基准 index，主体明暗家族以该 index 为不可
 移动锚点，五个技法只决定层次。合同分离 classification/style 两阶段模型调用与 cache，并保留
 BodyGeometryFamily、薄面 DualSurfacePolicy、policy-aware contrast 和多维质量/人工视觉门。
 4E-1 已建立 evidence/proposal/confirmation、BaseColour、五个 technique、四个 class-derived adaptation、semantic
-requirements/binding 和四个专用 Skill；Provider/cache、实际 materialization、WPF/真实模型和游戏视觉仍为
-NotStarted/NotRun。
+requirements/binding 和四个专用 Skill；4E-2 已增加独立 classifier cache、仅接受 confirmation 的 Host exact
+single-Skill router、existing compiler 的 semantic binding/cache v2 入口和 normalization identity。现有 ViewModel/UI
+尚未接线；实际 materialization、quality、WPF/真实模型和游戏视觉仍为 NotStarted/NotRun。
 
 `ASSET-VOX-4E-R1 Ground/Air Colour Technique Research` 已完成：只读分析用户提供的 8 个 ZIP，按用户说明并
 经 VXLSE III 源码复核采用 `RA2/unittem.pal`，结合公开教程和许可证明确的公开 VOX 模型提炼地面、空中及
@@ -119,6 +120,10 @@ Full suites/package:     NotRun (4E-5 gate)
 Real DeepSeek/WPF/model: NotRun
 ```
 
+4E-2 最新证据（同一 Stage Ledger）：classifier/router/compiler/cache focused 26/26，affected Application 49/49，
+affected IDE 107/107，final Debug solution build 0 warning / 0 error。测试只使用 fake clients；真实 DeepSeek、WPF、materialization、
+full suites 和 package 均 NotRun。
+
 ## 5. 当前关键边界
 
 - Legacy root solution、legacy MainWindow 和旧表格编辑器不得恢复。
@@ -138,11 +143,11 @@ Real DeepSeek/WPF/model: NotRun
 
 ## 7. 下一安全入口
 
-`ASSET-VOX-4E-1` 已完成并验证。下一安全阶段是 `4E-2`：
+`ASSET-VOX-4E-2` 已完成并验证。下一安全阶段是 `4E-3`：
 
-1. 接入独立 classification request/cache 和 typed proposal validator；不在模型加载时静默调用 Provider。
-2. 人工 confirmation 后由 Host exact route 一个 colouring Skill，并接入 style compiler/cache v2。
-3. 本阶段不得接入实际 palette materialization、contrast/quality 或 XAML；它们分别属于 4E-3/4E-4。
+1. 只接入人工 BaseColour 为不可移动锚点的 body family selector 和本地 deterministic normalization/materialization。
+2. 在同一 colourizer/contrast path 上实现 policy-aware correctness/quality admission，不引入第二套 painter。
+3. 本阶段不得修改 XAML/ViewModel；classification/confirmation/base/technique UI 仍属于 4E-4。
 
 4D 的错模型拒绝、未保存确认和 100%/125% DPI 指针体验仍应补测，但不得把这些未确认项写成通过；
 4E 仍不得宣称 VXL/HVA 或 GameReady。
