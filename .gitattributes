@@ -1,0 +1,29 @@
+# Keep repository text deterministic across Windows and non-Windows tools.
+* text=auto eol=lf
+
+# Windows command shells are safest with CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Visual Studio solution files conventionally use CRLF.
+*.sln text eol=crlf
+
+# Binary assets and archives must never receive line-ending conversion.
+*.7z binary
+*.dll binary
+*.exe binary
+*.glb binary
+*.hva binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.nupkg binary
+*.pal binary
+*.pdb binary
+*.png binary
+*.rar binary
+*.shp binary
+*.snupkg binary
+*.vox binary
+*.vxl binary
+*.zip binary

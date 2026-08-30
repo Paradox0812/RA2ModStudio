@@ -150,6 +150,21 @@ public sealed class Ra2FieldSchemaTests
         Assert.Equal(keys.Length, keys.Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
 
+    [Theory]
+    [InlineData("Cameo", FieldEditorKind.Reference)]
+    [InlineData("AltCameo", FieldEditorKind.Reference)]
+    [InlineData("Voxel", FieldEditorKind.Boolean)]
+    [InlineData("Remapable", FieldEditorKind.Boolean)]
+    public void BuiltInProvider_ExposesMinimalArtObjectAuthoringGate(string key, FieldEditorKind editorKind)
+    {
+        BuiltInRa2FieldDefinitionProvider provider = new();
+
+        Assert.True(provider.TryGetField(Ra2SectionKind.ArtObject, key, out Ra2FieldDefinition definition));
+        Assert.Equal(editorKind, definition.EditorKind);
+        Assert.Equal([Ra2SectionKind.ArtObject], definition.AppliesTo);
+        Assert.False(provider.TryGetField(Ra2SectionKind.Techno, key, out _));
+    }
+
     [Fact]
     public void BuiltInProvider_AbstractUnitAndTechnoDefinitionsApplyToConcreteKinds()
     {

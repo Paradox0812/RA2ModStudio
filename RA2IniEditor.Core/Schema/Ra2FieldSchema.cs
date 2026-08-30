@@ -695,11 +695,20 @@ public sealed class BuiltInRa2FieldDefinitionProvider : IRa2FieldDefinitionProvi
         Ra2SectionKind.Unit
     ];
 
+    private static readonly Ra2SectionKind[] ArtObjectKinds =
+    [
+        Ra2SectionKind.ArtObject
+    ];
+
     private static readonly IReadOnlyList<Ra2FieldDefinition> Definitions =
     [
         Define("Name", FieldEditorKind.Text, "Internal object name."),
         Define("UIName", FieldEditorKind.Text, "CSF display name key."),
         Define("Image", FieldEditorKind.Reference, "Art image section reference."),
+        Define("Cameo", FieldEditorKind.Reference, "Sidebar cameo resource reference.", ArtObjectKinds),
+        Define("AltCameo", FieldEditorKind.Reference, "Alternate sidebar cameo resource reference.", ArtObjectKinds),
+        Define("Voxel", FieldEditorKind.Boolean, "Whether this art object uses VXL/HVA voxel graphics.", ArtObjectKinds),
+        Define("Remapable", FieldEditorKind.Boolean, "Whether this art object uses owner-color remapping.", ArtObjectKinds),
         Define("Owner", FieldEditorKind.MultiSelect, "Allowed owning houses.", TechnoKinds),
         Define("Prerequisite", FieldEditorKind.MultiSelect, "Build prerequisite list.", TechnoKinds),
         Define("Strength", FieldEditorKind.Integer, "Object hit points.", TechnoKinds),

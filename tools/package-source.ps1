@@ -34,17 +34,35 @@ $excludedFilePatterns = @(
     "*.orig",
     "*_wpftmp*",
     "*.nupkg",
-    "*.snupkg"
+    "*.snupkg",
+    "secrets.json",
+    "*.secrets.json",
+    "appsettings.Local.json",
+    "appsettings.*.Local.json"
+)
+
+$allowedEnvironmentTemplateNames = @(
+    ".env.example",
+    ".env.sample",
+    ".env.template"
 )
 
 function Test-IsExcludedDirectory {
     param([System.IO.DirectoryInfo]$Directory)
 
-    return $excludedDirectories -contains $Directory.Name
+    return ($excludedDirectories -contains $Directory.Name) -or $Directory.Name -like ".verify-*"
 }
 
 function Test-IsExcludedFile {
     param([System.IO.FileInfo]$File)
+
+    if ($allowedEnvironmentTemplateNames -contains $File.Name) {
+        return $false
+    }
+
+    if ($File.Name -eq ".env" -or $File.Name -like ".env.*") {
+        return $true
+    }
 
     foreach ($pattern in $excludedFilePatterns) {
         if ($File.Name -like $pattern) {
@@ -58,12 +76,10 @@ function Test-IsExcludedFile {
 function Remove-ExcludedContent {
     param([string]$Path)
 
-    foreach ($directoryName in $excludedDirectories) {
-        Get-ChildItem -Path $Path -Directory -Recurse -Force -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -eq $directoryName } |
-            Sort-Object FullName -Descending |
-            Remove-Item -Recurse -Force
-    }
+    Get-ChildItem -Path $Path -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+        Where-Object { Test-IsExcludedDirectory -Directory $_ } |
+        Sort-Object FullName -Descending |
+        Remove-Item -Recurse -Force
 
     Get-ChildItem -Path $Path -File -Recurse -Force -ErrorAction SilentlyContinue |
         Where-Object { Test-IsExcludedFile -File $_ } |
@@ -89,7 +105,7 @@ try {
     } | ForEach-Object {
         $destination = Join-Path $stagingRoot $_.Name
         if ($_.PSIsContainer) {
-            Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force -Container -Exclude $excludedFilePatterns
+            Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force -Container
             Remove-ExcludedContent -Path $destination
         }
         else {

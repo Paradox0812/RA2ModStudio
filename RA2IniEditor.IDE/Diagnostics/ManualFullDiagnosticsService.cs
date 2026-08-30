@@ -94,6 +94,9 @@ internal sealed class ManualFullDiagnosticsService
 
     private string ResolveText(ManualFullDiagnosticsRequest request, ReadonlyIniFileDescriptor file)
     {
+        if (request.DocumentOverrides.TryGetValue(file.FilePath, out ManualFullDiagnosticsDocumentOverride? documentOverride))
+            return documentOverride.Text;
+
         if (request.CurrentSnapshot is not null &&
             string.Equals(request.CurrentSnapshot.FilePath, file.FilePath, StringComparison.OrdinalIgnoreCase))
         {
@@ -104,7 +107,9 @@ internal sealed class ManualFullDiagnosticsService
     }
 
     private static int ResolveVersion(ManualFullDiagnosticsRequest request, ReadonlyIniFileDescriptor file)
-        => request.CurrentSnapshot is not null &&
+        => request.DocumentOverrides.TryGetValue(file.FilePath, out ManualFullDiagnosticsDocumentOverride? documentOverride)
+            ? documentOverride.Version
+            : request.CurrentSnapshot is not null &&
            string.Equals(request.CurrentSnapshot.FilePath, file.FilePath, StringComparison.OrdinalIgnoreCase)
             ? request.CurrentSnapshot.Version
             : 0;
@@ -161,13 +166,17 @@ internal sealed class ManualFullDiagnosticsRequest
         IReadOnlyList<ReadonlyIniFileDescriptor> files,
         CurrentSourceSnapshot? currentSnapshot,
         string currentEditorText,
-        IRa2FieldDefinitionProvider? fieldProvider = null)
+        IRa2FieldDefinitionProvider? fieldProvider = null,
+        IReadOnlyDictionary<string, ManualFullDiagnosticsDocumentOverride>? documentOverrides = null)
     {
         ProjectRootPath = projectRootPath;
         Files = files;
         CurrentSnapshot = currentSnapshot;
         CurrentEditorText = currentEditorText;
         FieldProvider = fieldProvider;
+        DocumentOverrides = documentOverrides is null
+            ? new Dictionary<string, ManualFullDiagnosticsDocumentOverride>(StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, ManualFullDiagnosticsDocumentOverride>(documentOverrides, StringComparer.OrdinalIgnoreCase);
     }
 
     public string ProjectRootPath { get; }
@@ -179,6 +188,25 @@ internal sealed class ManualFullDiagnosticsRequest
     public string CurrentEditorText { get; }
 
     public IRa2FieldDefinitionProvider? FieldProvider { get; }
+
+    public IReadOnlyDictionary<string, ManualFullDiagnosticsDocumentOverride> DocumentOverrides { get; }
+}
+
+internal sealed record ManualFullDiagnosticsDocumentOverride
+{
+    public ManualFullDiagnosticsDocumentOverride(string text, int version)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (version < 0)
+            throw new ArgumentOutOfRangeException(nameof(version));
+
+        Text = text;
+        Version = version;
+    }
+
+    public string Text { get; }
+
+    public int Version { get; }
 }
 
 internal sealed class ManualFullDiagnosticsResult

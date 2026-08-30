@@ -9,5 +9,6 @@ internal enum Ra2AiResponseKind
     ProviderError,
     MissingConfiguration,
     ToolCalls,
-    AuthoringToolNotInvoked
+    AuthoringToolNotInvoked,
+    LocalRejection
 }

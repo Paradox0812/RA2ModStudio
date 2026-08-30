@@ -5,6 +5,11 @@ TestResults/
 artifacts/
 .coverage/
 coverage/
+coverage.*
+*.coverage
+*.coveragexml
+*.trx
+BenchmarkDotNet.Artifacts/
 *.user
 *.suo
 *.rsuser
@@ -12,6 +17,16 @@ coverage/
 *.sln.docstates
 *.vsidx
 *.DotSettings.user
+*.pubxml.user
+
+# Local verification/build sandboxes
+.verify-*/
+
+# IDE-local metadata
+.idea/
+.fleet/
+_ReSharper*/
+*.resharper.user
 
 # Logs
 Logs/
@@ -33,6 +48,28 @@ publish/
 *.bak
 *.orig
 *_wpftmp*
+*.dmp
+*.stackdump
+*.swp
+*.swo
+*~
+~$*
+
+# Local credentials and machine-specific overrides
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+secrets.json
+*.secrets.json
+appsettings.Local.json
+appsettings.*.Local.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
 
 # optional local IDE metadata
 .ra2ide/local/

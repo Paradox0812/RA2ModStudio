@@ -243,3 +243,265 @@ failure kind、Gateway 方法、wire shape 或 Apply/Save authority。Applicatio
 `Ra2ContentTemplateRegistrationSpec`、注册策略、目录、分配状态和新增 compilation failure kinds
 均为 internal；既有 public Template/Gateway/EditPlan/Preview/Apply/Save shape 零变化。证据见
 `Docs/AUTOMATION-CONTENT-2D01_StageLedger.md`。
+
+## 17. CONTENT-2D-2 Experimental API
+
+状态：Implemented / verified；R4 architecture review 与用户确认已完成，当前 allowlist 为 63。
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Planned Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| CONTENT-2D-2 | `Ra2AutomationProjectSnapshot` | Immutable DTO | 绑定同一 project-session/revision 的文档集合 | rules/art、完整 Techno/SuperWeapon、future Host | Experimental | constructor/identity/path/limits/immutability；24/24 focused | 只包装现有 DocumentSnapshot；不是写权限 |
+| CONTENT-2D-2 | `Ra2AutomationProjectEditPlan` | Immutable DTO | 将多个现有 EditPlan 绑定为一个有序原子意图 | project Preview | Experimental | membership/order/work limits；24/24 focused | 不携带任意目标路径 |
+| CONTENT-2D-2 | `Ra2AutomationProjectEditPreviewFailureKind` | Failure enum | 区分项目/成员/stale/resource/cancel failure | Host diagnostics | Experimental | exact values/no-partial；Application 167/167 | 叶失败另投影既有 failure |
+| CONTENT-2D-2 | `Ra2AutomationProjectEditPreviewResult` | Result DTO | 成功态返回有序叶 Preview，失败态保证无 partial payload | project Diff/Host Apply | Experimental | state matrix/no-partial/parity；Application 167/167 | 不包含 Apply/Undo/Save |
+| CONTENT-2D-2 | `IRa2AutomationCapabilityGateway.PreviewProject` + `ini.project.edit.preview` | Method/capability | 从唯一 Gateway 调用项目 Preview | built-in Agent/future Host | Experimental | reflection/catalog/delegation/cancel；methods 10/catalog 8 | interface additive compatibility risk；仓库实现均已更新 |
+
+实际 Application exported allowlist 为 63、Gateway catalog 8、methods 10；没有公开 Apply、Undo、
+Save、session store 或文件系统能力。
+
+## 18. CONTENT-2D-3 / ASSET-MANIFEST-1 Experimental API
+
+状态：Implemented / verified；当前 allowlist 69、Gateway catalog 9、methods 11。
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| CONTENT-2D-3 | `IRa2AutomationTemplateService.ExpandProjectTemplate`、Gateway 同名方法、`ini.project.content.template.expand` | Method/capability | 从唯一模板/Gateway 入口产生跨文档 Project Plan | Host/AI project proposal | Experimental | pairing/version/cancel/no-partial/Gateway parity | 不公开 Apply/Save |
+| CONTENT-2D-3 | `Ra2AutomationProjectTemplateExpansionResult` | Immutable result | 将 Project Plan、Manifest 与失败证据绑定到同一 project revision | Preview/Host | Experimental | state/snapshot/immutability | 失败态零 partial payload |
+| ASSET-MANIFEST-1 | `Ra2AutomationAssetManifest`、`Ra2AutomationAssetRequirement`、`Ra2AutomationAssetBindingFact` | Immutable facts | 描述后续素材提供器输入与 INI 绑定证据 | SHP/Cameo/VXL providers | Experimental | limits/path/duplicate/closure | Manifest 无写权限 |
+| ASSET-MANIFEST-1 | `Ra2AutomationAssetKind`、`Ra2AutomationAssetBindingState` | Enum | 区分资产家族与 Proposed/PendingSchema 状态 | provider routing/review | Experimental | exact enum/reflection | PendingSchema 不产生 INI operation |
+
+`Ra2AutomationTemplateDescriptor` additive 增加 `IsProjectTemplate`、`ProducesAssetManifest`，
+`Ra2AutomationTemplateOutputKind` 追加 `ProjectBinding`；现有六个模板均保持 document-only。
+
+## 19. ASSET-PROVIDER-1 Experimental API
+
+状态：Implemented / verified；Application exported allowlist 69 -> 77。Gateway catalog 9、methods 11
+保持不变。
+
+| API | Kind | Reason | Expected Next Use | Stability | Notes |
+|---|---|---|---|---|---|
+| `IRa2AutomationAssetProvider`、`Ra2AutomationExistingAssetProvider` | Interface/service | 把 Asset Manifest 解析为有界内存 Artifact | provider plugins、Asset Host | Experimental | 不读写文件、不进入 INI Gateway |
+| `Ra2AutomationAssetProviderDescriptor` | Immutable descriptor | provider identity/version/supported kinds | provider routing | Experimental | public constructor；supported kinds readonly |
+| `Ra2AutomationAssetSource` | Immutable input | Host 显式提交素材内容 | existing asset import | Experimental | 每项 16 MiB；防御性复制 |
+| `Ra2AutomationAssetArtifact` | Immutable output | 返回 content length/SHA-256/有限验证级别 | Host persistence/review | Experimental | hash 由内容计算；`CopyContent` 返回副本 |
+| `Ra2AutomationAssetProviderResult` | Result/fact | 成功或零产物失败证据 | Host/provider orchestration | Experimental | public success/failure factories；Manifest closure enforced |
+| `Ra2AutomationAssetProviderFailureKind`、`Ra2AutomationAssetVerificationLevel` | Enums | 稳定区分失败与有限验证保证 | UI/Host diagnostics | Experimental | 不声称格式/尺寸/调色板已解析 |
+
+Public interface 的 Descriptor、Artifact 和 Result 工厂均可由外部实现消费；不存在“公开接口但无法
+构造返回值”的伪扩展点。Apply/Save、文件路径、wire/serialization、Job/Event/Registry 未公开。
+
+### ASSET-VOX-1C candidate boundary
+
+状态：Implemented / automated verified；无 public API 变化。
+
+1C 完成后 Application exported allowlist 仍保持 77；新 AssetHost 类型在首个真实 provider 认证前保持
+internal。子进程 protocol v1 是版本化 compatibility contract，但不是 Application public API，也不是插件
+承诺。若未来需要第三方程序集实现 Provider，必须在独立阶段重新执行 public API review，而不是直接把
+1C internal 类型改为 public。
+
+修订契约冻结的 `IRa2VoxelGenerationHost`、`ProbeAsync`、`RunAsync` 和
+`IRa2GenerationWorkspaceLease : IAsyncDisposable` 仍全部是程序集 internal。它们是 1C 实现门禁，
+不是第三方扩展承诺；自动门禁确认 Application public allowlist 为 77，AssetHost exported public types 为 0。
+
+## 20. CONTENT-PROJECT-UI-1-NF6 Experimental Preview 语义调整
+
+状态：Implemented / verified；public signature、DTO、enum shape、Gateway catalog/method 数均无变化。
+
+| API | Change Kind | Previous behavior | Current behavior | Stability | Tests |
+|---|---|---|---|---|---|
+| `Ra2AutomationEditPreviewService.Preview` / `Ra2AutomationEditPreviewFailureKind.BlockedFieldTrust` | Semantic-only | 新 Section 的字段被 Registry 标为 Blocked 时一律失败 | 当 operation evidence 的 `ExpectedSectionKind=Unknown` 时保留 Caution 而不失败；具体 SectionKind 仍 fail closed | Experimental | `Ra2AutomationSectionCreationPreviewTests` + generic project integration |
+
+该变化服务于模型主导的通用 Work Project Plan：Field Registry 不再拥有未知 Section 内容的否决权。
+它不增加文件范围、Apply/Save 权限或路径输入；现有强类型 headless template 仍保留旧行为。
+
+## 21. AGENT-KNOWLEDGE-1-R2 public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| AGENT-KNOWLEDGE-1-R2 | None | IDE internal Skill data + selection | 为 Work rules/art 项目注入 source-backed 跨文档绑定知识 | Internal / implemented | public allowlist、Gateway catalog/methods、DTO、wire shape 与 Apply/Save authority 不变 |
+
+新增第 16 个 BuiltIn Skill 并更新 `ra2-field-schema-trust` 文本；Skill descriptor、catalog、选择和 prompt
+仍全部 IDE internal、瞬态且非序列化。
+
+## 22. AGENT-SKILL-ROUTING-2 public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| AGENT-SKILL-ROUTING-2 | None | IDE-internal catalog manifest, intent JSON and prompt orchestration | 让 Work 第一轮推荐 Skill、Host 解析后注入第二轮 | Internal .NET / Experimental provider JSON | Application allowlist、Gateway catalog/methods、Apply/Save authority 不变 |
+
+Provider-visible `analyze_ra2_authoring_intent` 参数结果新增必填 `selected_skill_ids` 与 `knowledge_gaps`；
+它们仅存在于一次请求的瞬态意图包，不持久化、不导出为 Application API。Manifest、resolution、
+PromptBuilder interface extension 与 pipeline result 均为 IDE internal。
+
+## 23. AGENT-CONTEXT-3 public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| AGENT-CONTEXT-3 | None | IDE-internal request projection, provider JSON and orchestration | 在现有两调用 Work 中共享上下文并执行有界 HLI 查询 | Internal .NET / Experimental provider JSON | Application exported API、Gateway catalog/methods、Apply/Save authority 均不变 |
+
+Provider-visible `analyze_ra2_authoring_intent` 结果新增必填 `context_queries`，Host 兼容缺失该字段的旧有效包并视为空列表。
+该字段只接受 `current/rules/art` 符号目标及 `get_section/resolve_reference`；所有投影、请求和结果类型均为 IDE internal、
+request-lifetime、非持久化对象。复用现有 `IRa2AutomationCapabilityGateway`，没有新增 public query surface。
+
+## 24. CONTENT-2E public API 收口
+
+状态：Implemented / automated verified。
+
+| Task/Stage | API | Kind | Reason | Expected Stability | Stop rule |
+|---|---|---|---|---|---|
+| CONTENT-2E | None | Existing descriptor data + Application/IDE internal compiler/route/Skill | 增加两个 typed SuperWeapon profiles 与 generic fallback | Application exported API、Gateway method/catalog、持久化和 Apply/Save authority 零变化 | Application 196/196、IDE 2722/2722 |
+
+provider-visible intent capability enum 已 additive 增加三个 ID，但它仍属于 IDE internal Experimental wire shape；
+schema/parse/route 回归已通过并记录在 Stage Ledger。模板目录数据增加两个 descriptor；没有新增 exported
+type/method/enum、Gateway method、持久化字段、filesystem/path/Apply/Save 权限。
+
+## 25. AGENT-QUERY-2 public API 零变更确认
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| AGENT-QUERY-2 | None | IDE-internal provider JSON + request-lifetime retrieval facts | 为 Work 增加本地对象搜索和最多两轮补查 | Internal .NET / Experimental provider JSON | Application exported allowlist、Gateway catalog/methods、Apply/Save authority 不变 |
+
+Provider-visible `context_queries` additive 增加 `search_objects`、`search_text`、`entity_role`、
+`accepted_kinds` 与 `maximum_results`；Host parser 继续兼容旧 `get_section/resolve_reference` 精确载荷。
+新增 canonical binding、retrieval attempt/stop reason 和 pipeline result 均为 IDE internal、非序列化、
+request-lifetime 数据。搜索复用 Application internal semantic builder，没有增加 public HLI query method。
+
+## 26. AGENT-WORK-ENTRY-1 provider contract correction
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| AGENT-WORK-ENTRY-1 | None exported | IDE-internal parse result + Experimental provider tool guidance | 将描述元数据与最低安全权限分离 | Internal .NET / Experimental provider JSON | No Application API, persistence, Apply/Save or path authority change |
+
+Provider-visible intent capability guidance additive 增加 `project-rules-art-edit`; context-query item schema 只要求
+`kind/target`，其它字段保持可选有界提示。Host 接受附加属性和缺省描述字段，但仍只执行捕获快照中的
+`current/rules/art`。`Ra2AiIntentAnalysisParseResult` 与 recovery notes 为 IDE internal、request-lifetime、
+非序列化数据。所有生产 current-document typed routes 的第二轮工具改为既有 generic Document Plan，生产
+typed SuperWeapon route 改为既有 generic Project Plan；旧 template API 仅保留 headless compatibility；
+没有新增 exported type/method、文件格式、任意路径、Apply 或 Save 权限。Generic proposal 的
+`summary/message` 明确降为非权威展示元数据：无效 summary 使用本地默认，message 忽略；clarification
+仍要求可读 message。该变化不改变 executable operation shape 或 Host authority。
+
+## 27. ASSET-VOX-1C-P1 public API candidate audit
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1C-P1 | None | External provider adapter using existing internal protocol | Certify one real Hunyuan3D-2mini shape-only provider | Not implemented / authorization blocked | Existing Host interface, protocol v1, Application allowlist 77 and AssetHost exported public type count 0 remain frozen |
+
+P1-0 is docs-only. The proposed adapter is a separately deployable implementation of the existing internal child-process
+protocol, not a public provider SDK or plugin contract. No public API candidate is queued until a real provider proves
+the boundary and a separate promotion decision is approved.
+
+## 28. ASSET-VOX-1C-P2 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1C-P2 | None | Internal executable adapter for existing child-process protocol | Tencent Hunyuan 3D remote Geometry candidate | Internal / provider-specific | AssetHost interface/protocol unchanged; provider exported types 0 |
+
+The adapter's HTTP payloads and provider evidence JSON are private implementation/wire details, not application public
+API or project persistence. No Application exported type, Gateway, Shell, editor, save or voxel-core surface changed.
+
+## 29. ASSET-VOX-1D public API candidate audit
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1D | None | Internal GLB reader, transient mesh facts and canonical voxel converter | Bridge certified GLB geometry into the existing 1B single-part truth | Implemented / R4 / verified | Application allowlist remains 77; AssetHost exports remain 0; no Gateway, persistence or project-write surface |
+
+The proposed bridge consumes caller-owned bytes and returns existing internal canonical snapshot/facts. Product composition
+between an AssetHost lease and Application remains a later separately reviewed seam; it is not a reason to expose 1D
+implementation types or add a friend assembly.
+
+## 30. ASSET-VOX-1E public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1E | None | Application/IDE-internal style source, compiler, cache, plan, colourizer and review artifacts | Compile natural-language palette intent into deterministic headless voxel recolouring | Internal / implemented / verified | Application allowlist remains 77; AssetHost exports remain 0; no Gateway, project-write or UI surface |
+
+`VOXEL_STYLE.md` and cache schema v1 are versioned authoring/derived-data conventions, not public .NET APIs. The dedicated
+compiler reuses the internal AI client but is not registered in the INI Work route. All plan, mask, result and artifact
+types stay internal; promoting them to a plugin/third-party contract requires a separate public API review.
+
+## 31. ASSET-VOX-1E-UI public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1E-UI | None | IDE-internal coordinator, view model, view and Shell composition | Expose existing 1E review artifacts in one product workspace | Internal / implemented / verified | Application allowlist unchanged; no provider, Gateway, persistence, project-write or plugin API delta |
+
+`Document.VoxelStyle` and `VoxelStyle.*` are internal Shell/UI automation identities, not external extension APIs. Any
+future accepted-preview handoff to AssetHost, a plugin, project persistence or VXL/HVA production requires a new ledger
+entry and compatibility review.
+
+## 32. ASSET-VOX-1E-UI-R2 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-1E-UI-R2 | None | IDE-internal input adapter and proposal normalization | Reuse existing Stage 1B VOX/VXL/PAL readers and Stage 1E plan compiler | Internal / implemented / verified | Application allowlist remains 77; no codec, provider, Gateway, persistence, project-write or plugin API delta |
+
+## 33. ASSET-VOX-2A public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-2A | None | Application/IDE-internal quality facts, candidates and bounded AI coordinator | Improve conversion, symmetry review and palette contrast | Internal / implemented / verified | No exported API, serialized format, provider protocol, persistence or project-write delta |
+
+All new data is request/session lifetime. `Ra2VoxelSceneSnapshot` remains the sole voxel truth; the AI coordinator cache
+is process-memory only. Public promotion, plugin consumption or project materialization requires a later ledger review.
+
+## 34. ASSET-VOX-2A-UI public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-2A-UI | None | IDE-internal candidate transaction, review projection and session composition | Expose existing 2A geometry/contrast candidates in the existing workspace | Internal / implemented / verified | No exported API, serializer, provider protocol, project write or persistence delta |
+
+The new result/provenance records, ViewModel modes, presentation rows and `VoxelStyle.Quality.*` AutomationIds are
+IDE-internal. `Ra2VoxelSceneSnapshot` remains the canonical data authority. Promotion to an extension API or persisted
+workspace/project format requires a separate compatibility review.
+
+## 35. ASSET-VOX-2A connectivity correction public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-2A connectivity correction | None | Internal candidate admission and existing-fact UI projection | Replace an absolute component-count rejection with dominant-body evidence | Internal / implemented | No exported type, serialized shape, snapshot schema, provider protocol, persistence or project-write delta |
+
+## 36. ASSET-VOX-2B public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-2B | None | Internal derived evidence, compiler, partition, executor and workspace projection | Add explicit review-first semantic symmetry without making model output geometry authority | Internal / implemented | No exported type, serialized shape, multimodal/provider protocol, persistence, project write, VXL/HVA or Shell delta |
+| ASSET-VOX-2B physical-sample correction | None | Internal region aggregation fact and typed IDE-local evidence result | Keep real fragmented geometry within the existing bounded classifier contract without dropping coordinates | Internal / implemented | No exported type, serialization, provider/tool schema, persistence, project write, VXL/HVA or Shell delta |
+| ASSET-VOX-2B visual/provider correction | None | Internal candidate selection, tool-response normalization and presentation semantics | Make admitted refinement and explicit structure recognition usable without changing geometry authority | Internal / implemented | No exported API, serialized shape, provider tool schema, persistence, writer, VXL/HVA or Shell delta |
+
+## 37. ASSET-VOX-3A experimental mesh-generation façade
+
+| Task/Stage | API | Kind | Reason | Stability | Tests |
+|---|---|---|---|---|---|
+| ASSET-VOX-3A | `Ra2MeshGenerationFacade` plus request/result/progress/failure/image-format family | Public experimental in-process façade | Let the IDE use the existing out-of-process Host without exposing protocol DTOs, workspace paths or leases | Experimental / implemented | AssetHost 50/50; IDE 2831/2831 |
+
+The façade accepts exactly one bounded PNG/JPEG reference, returns at most one owned GLB plus optional PNG, and disposes
+the internal workspace lease before returning. It is not a persistence, project-apply, plugin or arbitrary-provider API.
+
+## 38. ASSET-VOX-3C public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-3C | None | Application/IDE-internal working-state and existing-baseline refinement path | Preserve adopted geometry across repeated review/Agent passes | Internal / implemented / verified | No exported type, snapshot schema, persistence, provider protocol, writer or project-apply change |
+
+The working revision/lineage data is workspace-session state. It was not added to
+`Ra2VoxelSceneSnapshot`, exported VOX, project settings or a public façade. If implementation requires any such promotion,
+the stage stops for a separate compatibility review.
+
+## 40. ASSET-VOX-4D semantic sidecar v1 contract
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| ASSET-VOX-4D | `ra2-voxel-semantic-sidecar` version 1 | Project-contained serialized JSON shape | Persist accepted Agent, human region and human cell semantic authoring without changing geometry or palette authority | Reload matching semantic authoring in the existing Voxel Style workspace | Experimental / implemented / automated verified | Strict round-trip, negative schema/path/hash/resource tests and ViewModel atomic restore | No public C# API; exact snapshot/evidence/layer hashes; no migration, merge, autosave or writer embedding |
+
+The R4 contract was approved on 2026-08-30 and implemented without adding a public C# API. The serialized shape is now
+experimental persistence surface; incompatible changes require a new compatibility review and version decision.
+
+## 39. ASSET-VOX-3D public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Notes |
+|---|---|---|---|---|---|
+| ASSET-VOX-3D | None | Application/IDE-internal seam evidence and Agent operation | Bridge bounded one/two-cell center seams without Host auto-fill | Internal / implemented / verified | No exported type, snapshot schema, persistence, provider transport, writer or project-apply change |
+
+`bridge_center_gap`, `seam-gap-*` IDs and their evidence facts are internal request/session contracts. Promotion to a
+serialized provider protocol, plugin API or persisted authoring history requires a separate compatibility review.

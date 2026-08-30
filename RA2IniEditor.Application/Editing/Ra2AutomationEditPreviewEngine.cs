@@ -320,14 +320,15 @@ internal sealed class Ra2AutomationEditPreviewEngine
                     Ra2FieldTrustClassifier.Classify(createdFieldIsKnown ? createdFieldDefinition : null).Level);
                 Ra2AutomationFieldAuthoringDisposition disposition =
                     Ra2AutomationFieldTrustMapper.ToAuthoringDisposition(createdFieldTrustLevel);
-                if (disposition == Ra2AutomationFieldAuthoringDisposition.Blocked)
+                if (disposition == Ra2AutomationFieldAuthoringDisposition.Blocked &&
+                    plannedCreation.Operation.ExpectedSectionKind != Ra2SectionKind.Unknown)
                 {
                     return PlanningResult.Failed(
                         Ra2AutomationEditPreviewFailureKind.BlockedFieldTrust,
                         $"The field [{operation.SectionName}] {operation.Key} is blocked for new-section authoring.");
                 }
 
-                if (disposition == Ra2AutomationFieldAuthoringDisposition.Caution)
+                if (disposition != Ra2AutomationFieldAuthoringDisposition.Normal)
                     plannedCreation.Disposition = Ra2AutomationFieldAuthoringDisposition.Caution;
 
                 if (!createdSectionFields.TryGetValue(

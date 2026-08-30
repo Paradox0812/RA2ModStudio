@@ -1,3 +1,5 @@
+using RA2IniEditor.Application.Editing;
+
 namespace RA2IniEditor.Application.Automation.Experimental;
 
 public sealed class Ra2AutomationCapabilityGateway : IRa2AutomationCapabilityGateway
@@ -60,12 +62,29 @@ public sealed class Ra2AutomationCapabilityGateway : IRa2AutomationCapabilityGat
                 Ra2AutomationCapabilityStability.Experimental,
                 Ra2AutomationDocumentQueryService.MaximumDocumentCharacters,
                 null,
-                Ra2AutomationEditPlan.MaximumOperationCount)
+                Ra2AutomationEditPlan.MaximumOperationCount),
+            new(
+                Ra2AutomationCapabilityIds.ProjectEditPreview,
+                Ra2AutomationCapabilityIds.CurrentVersion,
+                Ra2AutomationCapabilityRisk.Edit,
+                Ra2AutomationCapabilityStability.Experimental,
+                Ra2AutomationEditPreviewService.MaximumDocumentCharacters,
+                Ra2AutomationProjectSnapshot.MaximumDocumentCount,
+                Ra2AutomationProjectEditPlan.MaximumAggregateWorkCount),
+            new(
+                Ra2AutomationCapabilityIds.ProjectContentTemplateExpand,
+                Ra2AutomationCapabilityIds.CurrentVersion,
+                Ra2AutomationCapabilityRisk.Edit,
+                Ra2AutomationCapabilityStability.Experimental,
+                Ra2AutomationDocumentQueryService.MaximumDocumentCharacters,
+                Ra2AutomationProjectSnapshot.MaximumDocumentCount,
+                Ra2AutomationProjectEditPlan.MaximumAggregateWorkCount)
         ]);
 
     private readonly Ra2AutomationDocumentQueryService _queryService = new();
     private readonly Ra2AutomationEditPreviewService _editPreviewService = new();
     private readonly Ra2AutomationTemplateService _templateService = new();
+    private readonly Ra2AutomationProjectEditPreviewService _projectEditPreviewService = new();
 
     public IReadOnlyList<Ra2AutomationCapabilityDescriptor> GetCapabilities()
         => Capabilities;
@@ -108,9 +127,21 @@ public sealed class Ra2AutomationCapabilityGateway : IRa2AutomationCapabilityGat
         CancellationToken cancellationToken = default)
         => _editPreviewService.Preview(snapshot, plan, cancellationToken);
 
+    public Ra2AutomationProjectEditPreviewResult PreviewProject(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationProjectEditPlan plan,
+        CancellationToken cancellationToken = default)
+        => _projectEditPreviewService.Preview(snapshot, plan, cancellationToken);
+
     public Ra2AutomationTemplateExpansionResult ExpandTemplate(
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationTemplateExpansionRequest request,
         CancellationToken cancellationToken = default)
         => _templateService.ExpandTemplate(snapshot, request, cancellationToken);
+
+    public Ra2AutomationProjectTemplateExpansionResult ExpandProjectTemplate(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
+        CancellationToken cancellationToken = default)
+        => _templateService.ExpandProjectTemplate(snapshot, request, cancellationToken);
 }

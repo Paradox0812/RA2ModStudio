@@ -1,4 +1,5 @@
 using System.Text;
+using System.IO;
 using RA2IniEditor.IDE.Editing;
 
 namespace RA2IniEditor.IDE.AuthoringDiff;
@@ -17,7 +18,8 @@ internal enum Ra2AuthoringDiffRowKind
     Context = 0,
     Added,
     Removed,
-    HunkHeader
+    HunkHeader,
+    FileHeader
 }
 
 internal sealed record Ra2AuthoringDiffRow(
@@ -25,7 +27,33 @@ internal sealed record Ra2AuthoringDiffRow(
     int? OldLineNumber,
     int? NewLineNumber,
     string Marker,
-    string Text);
+    string Text)
+{
+    public bool IsFileHeader => Kind == Ra2AuthoringDiffRowKind.FileHeader;
+
+    public string FileHeaderName
+        => IsFileHeader ? Text.Split(" — ", 2, StringSplitOptions.None)[0] : string.Empty;
+
+    public string FileHeaderPath
+    {
+        get
+        {
+            if (!IsFileHeader)
+                return string.Empty;
+            string[] parts = Text.Split(" — ", 2, StringSplitOptions.None);
+            return parts.Length == 2 ? parts[1] : string.Empty;
+        }
+    }
+}
+
+internal sealed record Ra2AuthoringMappedChange(
+    Ra2AutomationTextSpan SourceSpan,
+    Ra2AutomationTextSpan CandidateSpan,
+    int SourceStartLine,
+    int SourceEndLine,
+    int CandidateStartLine,
+    int CandidateEndLine,
+    int RemovedLineCount);
 
 internal sealed class Ra2AuthoringDiffProjection
 {
@@ -93,6 +121,71 @@ internal sealed class Ra2AuthoringDiffProjectionBuilder
             cancellationToken);
     }
 
+    public Ra2AuthoringDiffProjection Build(
+        Ra2ProjectEditPreview preview,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+        if (!preview.Succeeded || preview.DocumentPreviews.Count == 0)
+        {
+            return Ra2AuthoringDiffProjection.Failure(
+                Ra2AuthoringDiffFailureKind.InvalidPreview,
+                "当前项目提案没有可投影的差异。");
+        }
+
+        try
+        {
+            List<Ra2AuthoringDiffRow> rows = [];
+            int added = 0;
+            int removed = 0;
+            int hunks = 0;
+            foreach (Ra2AutomationEditPreviewResult documentPreview in preview.DocumentPreviews)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Ra2AutomationDocumentSnapshot sourceDocument = preview.Snapshot.Documents.Single(
+                    document => document.DocumentId == documentPreview.DocumentId);
+                if (documentPreview.CandidateText is null)
+                    return Ra2AuthoringDiffProjection.Failure(Ra2AuthoringDiffFailureKind.InvalidPreview, "项目提案包含无效文档差异。");
+
+                Ra2AuthoringDiffProjection documentProjection = Build(
+                    sourceDocument.Text,
+                    documentPreview.CandidateText,
+                    documentPreview.Changes,
+                    cancellationToken);
+                if (!documentProjection.Succeeded)
+                    return Ra2AuthoringDiffProjection.Failure(documentProjection.FailureKind, documentProjection.Message);
+
+                if (hunks + documentProjection.HunkCount > MaximumHunks ||
+                    rows.Count + 1 + documentProjection.Rows.Count > MaximumVisualRows)
+                {
+                    return ResultLimit("项目差异超过全局可视行或差异块上限。");
+                }
+
+                string relativePath = Path.GetRelativePath(preview.Snapshot.ProjectRootPath, documentPreview.FilePath);
+                rows.Add(new Ra2AuthoringDiffRow(
+                    Ra2AuthoringDiffRowKind.FileHeader,
+                    null,
+                    null,
+                    string.Empty,
+                    $"{Path.GetFileName(documentPreview.FilePath)} — {relativePath}"));
+                rows.AddRange(documentProjection.Rows);
+                added = checked(added + documentProjection.AddedLineCount);
+                removed = checked(removed + documentProjection.RemovedLineCount);
+                hunks = checked(hunks + documentProjection.HunkCount);
+            }
+
+            return Ra2AuthoringDiffProjection.Success(Array.AsReadOnly(rows.ToArray()), added, removed, hunks);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return Ra2AuthoringDiffProjection.Failure(Ra2AuthoringDiffFailureKind.Canceled, "项目差异预览已取消。");
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException and not StackOverflowException and not AccessViolationException)
+        {
+            return Ra2AuthoringDiffProjection.Failure(Ra2AuthoringDiffFailureKind.InvalidPreview, "无法生成项目差异预览。");
+        }
+    }
+
     internal Ra2AuthoringDiffProjection Build(
         string source,
         string candidate,
@@ -112,44 +205,16 @@ internal sealed class Ra2AuthoringDiffProjectionBuilder
                     "当前提案没有可投影的差异。");
             }
 
-            if (source.Length > MaximumInputCharacters || candidate.Length > MaximumInputCharacters)
-                return TooLarge("差异输入超过 8 MiB 上限。");
-
-            Ra2AutomationTextChange[] orderedChanges = changes
-                .OrderBy(change => change.Span.Start)
-                .ToArray();
-            if (!ChangesProduceCandidate(source, candidate, orderedChanges, cancellationToken))
-            {
-                return Ra2AuthoringDiffProjection.Failure(
-                    Ra2AuthoringDiffFailureKind.InvalidPreview,
-                    "差异变更与候选文本不一致。");
-            }
+            if (!TryMapChanges(source, candidate, changes, cancellationToken, out IReadOnlyList<Ra2AuthoringMappedChange> mappedChanges, out Ra2AuthoringDiffProjection? mappingFailure))
+                return mappingFailure!;
 
             LineMap oldMap = LineMap.Create(source, cancellationToken);
             LineMap newMap = LineMap.Create(candidate, cancellationToken);
-            if (oldMap.Count > MaximumInputLines || newMap.Count > MaximumInputLines)
-                return TooLarge("差异输入超过 200,000 行上限。");
-
-            List<Region> regions = new(orderedChanges.Length);
-            int delta = 0;
-            int previousEnd = 0;
-            foreach ((Ra2AutomationTextChange change, int index) in orderedChanges.Select((value, index) => (value, index)))
-            {
-                if ((index & 31) == 0)
-                    cancellationToken.ThrowIfCancellationRequested();
-                if (change.Span.Start < previousEnd || change.Span.End > source.Length)
-                    return Ra2AuthoringDiffProjection.Failure(Ra2AuthoringDiffFailureKind.InvalidPreview, "差异变更范围重叠或越界。");
-
-                int newStartOffset = checked(change.Span.Start + delta);
-                Region region = new(
-                    GetStartLine(oldMap, change.Span.Start),
-                    GetEndLine(oldMap, change.Span.Start, change.Span.Length),
-                    GetStartLine(newMap, newStartOffset),
-                    GetEndLine(newMap, newStartOffset, change.NewText.Length));
-                regions.Add(region);
-                previousEnd = change.Span.End;
-                delta = checked(delta + change.NewText.Length - change.Span.Length);
-            }
+            List<Region> regions = mappedChanges.Select(change => new Region(
+                change.SourceStartLine,
+                change.SourceEndLine,
+                change.CandidateStartLine,
+                change.CandidateEndLine)).ToList();
 
             List<RegionGroup> groups = Group(regions);
             if (groups.Count > MaximumHunks)
@@ -220,6 +285,75 @@ internal sealed class Ra2AuthoringDiffProjectionBuilder
     }
 
     private static int GetStartLine(LineMap map, int offset) => map.LineAt(offset);
+
+    internal static bool TryMapChanges(
+        string source,
+        string candidate,
+        IReadOnlyList<Ra2AutomationTextChange> changes,
+        CancellationToken cancellationToken,
+        out IReadOnlyList<Ra2AuthoringMappedChange> mappedChanges,
+        out Ra2AuthoringDiffProjection? failure)
+    {
+        mappedChanges = [];
+        failure = null;
+        if (source.Length > MaximumInputCharacters || candidate.Length > MaximumInputCharacters)
+        {
+            failure = TooLarge("差异输入超过 8 MiB 上限。");
+            return false;
+        }
+
+        Ra2AutomationTextChange[] orderedChanges = changes.OrderBy(change => change.Span.Start).ToArray();
+        if (!ChangesProduceCandidate(source, candidate, orderedChanges, cancellationToken))
+        {
+            failure = Ra2AuthoringDiffProjection.Failure(
+                Ra2AuthoringDiffFailureKind.InvalidPreview,
+                "差异变更与候选文本不一致。");
+            return false;
+        }
+
+        LineMap oldMap = LineMap.Create(source, cancellationToken);
+        LineMap newMap = LineMap.Create(candidate, cancellationToken);
+        if (oldMap.Count > MaximumInputLines || newMap.Count > MaximumInputLines)
+        {
+            failure = TooLarge("差异输入超过 200,000 行上限。");
+            return false;
+        }
+
+        List<Ra2AuthoringMappedChange> result = new(orderedChanges.Length);
+        int delta = 0;
+        int previousEnd = 0;
+        foreach ((Ra2AutomationTextChange change, int index) in orderedChanges.Select((value, index) => (value, index)))
+        {
+            if ((index & 31) == 0)
+                cancellationToken.ThrowIfCancellationRequested();
+            if (change.Span.Start < previousEnd || change.Span.End > source.Length)
+            {
+                failure = Ra2AuthoringDiffProjection.Failure(
+                    Ra2AuthoringDiffFailureKind.InvalidPreview,
+                    "差异变更范围重叠或越界。");
+                return false;
+            }
+
+            int candidateStart = checked(change.Span.Start + delta);
+            int oldStartLine = GetStartLine(oldMap, change.Span.Start);
+            int oldEndLine = GetEndLine(oldMap, change.Span.Start, change.Span.Length);
+            int newStartLine = GetStartLine(newMap, candidateStart);
+            int newEndLine = GetEndLine(newMap, candidateStart, change.NewText.Length);
+            result.Add(new Ra2AuthoringMappedChange(
+                change.Span,
+                new Ra2AutomationTextSpan(candidateStart, change.NewText.Length),
+                oldStartLine,
+                oldEndLine,
+                newStartLine,
+                newEndLine,
+                Math.Max(0, oldEndLine - oldStartLine)));
+            previousEnd = change.Span.End;
+            delta = checked(delta + change.NewText.Length - change.Span.Length);
+        }
+
+        mappedChanges = Array.AsReadOnly(result.ToArray());
+        return true;
+    }
 
     private static bool ChangesProduceCandidate(
         string source,

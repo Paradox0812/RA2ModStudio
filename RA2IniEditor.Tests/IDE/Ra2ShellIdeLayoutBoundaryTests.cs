@@ -2,7 +2,9 @@
 
 using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
 using AvalonDock;
+using AvalonDock.Controls;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
 using RA2IniEditor.IDE.Views;
@@ -697,6 +699,7 @@ public sealed class Ra2ShellIdeLayoutBoundaryTests
     public void ShellStartup_SuppressesIntermediateFloatingHostsUntilLayoutRestoreCompletes()
     {
         string shellCode = ReadShellWindowCode();
+        string shellXaml = ReadShellWindowXaml();
         string floatingChromeCode = File.ReadAllText(Path.Combine(
             TestRepositoryRoot.Find(),
             "RA2IniEditor.IDE",
@@ -711,6 +714,32 @@ public sealed class Ra2ShellIdeLayoutBoundaryTests
         Assert.Contains("_initialLayoutSuppressedHostOpacities", floatingChromeCode, StringComparison.Ordinal);
         Assert.Contains("host.SetCurrentValue(UIElement.OpacityProperty, 0.0);", floatingChromeCode, StringComparison.Ordinal);
         Assert.Contains("host.SetCurrentValue(UIElement.OpacityProperty, opacity);", floatingChromeCode, StringComparison.Ordinal);
+        Assert.Matches(
+            "x:Name=\"ShellDockManager\"[\\s\\S]*?IsHitTestVisible=\"False\"[\\s\\S]*?Opacity=\"0\"",
+            shellXaml);
+        int restore = shellCode.IndexOf("await TryRestorePersistedDockLayoutAsync();", StringComparison.Ordinal);
+        int hideFindReferences = shellCode.IndexOf(
+            "_dockLayoutCoordinator.ApplyToolCompiledDefaultVisibility(\"Tool.FindReferences\");",
+            restore,
+            StringComparison.Ordinal);
+        int hideSearch = shellCode.IndexOf(
+            "_dockLayoutCoordinator.ApplyToolCompiledDefaultVisibility(\"Tool.Search\");",
+            hideFindReferences,
+            StringComparison.Ordinal);
+        int revealDock = shellCode.IndexOf(
+            "ShellDockManager.SetCurrentValue(UIElement.OpacityProperty, 1.0);",
+            hideSearch,
+            StringComparison.Ordinal);
+        int ready = shellCode.IndexOf("_shellReady.TrySetResult();", revealDock, StringComparison.Ordinal);
+        Assert.True(restore >= 0);
+        Assert.True(hideFindReferences > restore);
+        Assert.True(hideSearch > hideFindReferences);
+        Assert.True(revealDock > hideSearch);
+        Assert.True(ready > revealDock);
+        Assert.Contains(
+            "ShellDockManager.SetCurrentValue(UIElement.IsHitTestVisibleProperty, true);",
+            shellCode,
+            StringComparison.Ordinal);
         int suppressionStart = floatingChromeCode.IndexOf(
             "private void SuppressInitialLayoutHost",
             StringComparison.Ordinal);
@@ -723,6 +752,143 @@ public sealed class Ra2ShellIdeLayoutBoundaryTests
             ".Hide()",
             floatingChromeCode[suppressionStart..suppressionEnd],
             StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ShellStartup_DefaultHiddenFloatingToolIsMaterializedOnlyWhenExplicitlyShown()
+    {
+        RunInSta(() =>
+        {
+            LayoutDocument document = new() { ContentId = "Document.Source", Content = new object() };
+            LayoutAnchorable output = new() { ContentId = "Tool.Output", Content = new object() };
+            LayoutAnchorable search = new() { ContentId = "Tool.Search", Content = new object() };
+            DockingManager manager = new() { Layout = CreateLayout(document, output, search) };
+            search.Hide();
+            ShellDockToolProfile[] profiles =
+            [
+                new("Tool.Output", ShellDockHomeZone.Bottom, 0, true, 800, 420),
+                new("Tool.Search", ShellDockHomeZone.Floating, 0, false, 560, 620)
+            ];
+            ShellDockLayoutCoordinator coordinator = new(manager, () => new Size(1280, 700), profiles);
+
+            coordinator.ApplyCompiledDefaultTopology();
+            coordinator.ApplyCompiledDefaultVisibility();
+
+            Assert.False(search.IsVisible);
+            Assert.False(search.IsFloating);
+            Assert.Equal(560, search.FloatingWidth);
+            Assert.Equal(620, search.FloatingHeight);
+
+            coordinator.ShowAndActivate("Tool.Search");
+
+            Assert.True(search.IsVisible);
+            Assert.True(search.IsFloating);
+            Assert.True(search.IsSelected);
+            Assert.True(search.IsActive);
+        });
+    }
+
+    [Fact]
+    public void SearchCommand_LoadedHiddenBottomToolCreatesARealFloatingHostWithoutCrashing()
+    {
+        RunInSta(() =>
+        {
+            LayoutDocument document = new() { ContentId = "Document.Source", Content = new object() };
+            LayoutAnchorable output = new() { ContentId = "Tool.Output", Content = new object() };
+            LayoutAnchorable search = new() { ContentId = "Tool.Search", Content = new object() };
+            DockingManager manager = new() { Layout = CreateLayout(document, output, search) };
+            ShellDockToolProfile[] profiles =
+            [
+                new("Tool.Output", ShellDockHomeZone.Bottom, 0, true, 800, 420),
+                new("Tool.Search", ShellDockHomeZone.Floating, 0, false, 560, 620)
+            ];
+            ShellDockLayoutCoordinator coordinator = new(manager, () => new Size(1280, 700), profiles);
+            LayoutFloatingWindowControl? floatingHost = null;
+            manager.LayoutFloatingWindowControlCreated += (_, args) =>
+                floatingHost = args.LayoutFloatingWindowControl;
+            Window host = new()
+            {
+                Width = 1280,
+                Height = 700,
+                Content = manager,
+                ShowInTaskbar = false
+            };
+
+            try
+            {
+                host.Show();
+                host.UpdateLayout();
+                FlushDispatcher();
+
+                search.Hide();
+                FlushDispatcher();
+                Assert.False(search.IsVisible);
+                Assert.False(search.IsFloating);
+
+                coordinator.ShowAndActivate("Tool.Search");
+                FlushDispatcher();
+
+                Assert.True(search.IsVisible);
+                Assert.True(search.IsFloating);
+                Assert.NotNull(floatingHost);
+                Assert.NotSame(output.Parent, search.Parent);
+                Assert.IsType<LayoutAnchorablePane>(search.Parent);
+            }
+            finally
+            {
+                if (floatingHost is { IsVisible: true })
+                    floatingHost.Close();
+                host.Close();
+                FlushDispatcher();
+            }
+        });
+    }
+
+    [Fact]
+    public void SearchCommand_OverridesAnIncorrectVisibleBottomPlacementWithFloatingHome()
+    {
+        RunInSta(() =>
+        {
+            LayoutDocument document = new() { ContentId = "Document.Source", Content = new object() };
+            LayoutAnchorable output = new() { ContentId = "Tool.Output", Content = new object() };
+            LayoutAnchorable search = new() { ContentId = "Tool.Search", Content = new object() };
+            DockingManager manager = new() { Layout = CreateLayout(document, output, search) };
+            ShellDockToolProfile[] profiles =
+            [
+                new("Tool.Output", ShellDockHomeZone.Bottom, 0, true, 800, 420),
+                new("Tool.Search", ShellDockHomeZone.Floating, 0, false, 560, 620)
+            ];
+            ShellDockLayoutCoordinator coordinator = new(manager, () => new Size(1280, 700), profiles);
+
+            Assert.True(search.IsVisible);
+            Assert.False(search.IsFloating);
+
+            coordinator.ShowAndActivate("Tool.Search");
+
+            Assert.True(search.IsVisible);
+            Assert.True(search.IsFloating);
+            Assert.True(search.IsSelected);
+            Assert.True(search.IsActive);
+        });
+    }
+
+    [Fact]
+    public void ShellStartup_HidesSearchAfterPersistedLayoutRestoreBeforeFloatingHostsAreRefreshed()
+    {
+        string shellCode = ReadShellWindowCode();
+        int restore = shellCode.IndexOf("await TryRestorePersistedDockLayoutAsync();", StringComparison.Ordinal);
+        int hideSearch = shellCode.IndexOf(
+            "_dockLayoutCoordinator.ApplyToolCompiledDefaultVisibility(\"Tool.Search\");",
+            restore,
+            StringComparison.Ordinal);
+        int refreshHosts = shellCode.IndexOf(
+            "_floatingChromeController.RefreshExistingHosts();",
+            hideSearch,
+            StringComparison.Ordinal);
+
+        Assert.True(restore >= 0);
+        Assert.True(hideSearch > restore);
+        Assert.True(refreshHosts > hideSearch);
     }
 
     [Fact]
@@ -873,5 +1039,8 @@ public sealed class Ra2ShellIdeLayoutBoundaryTests
         thread.Join();
         Assert.Null(threadFailure);
     }
+
+    private static void FlushDispatcher()
+        => Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.Background, new Action(() => { }));
 }
 

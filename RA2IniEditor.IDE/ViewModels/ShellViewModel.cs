@@ -18,6 +18,7 @@ public sealed class ShellViewModel : INotifyPropertyChanged
     private readonly ManualFullDiagnosticsService _manualFullDiagnosticsService = new();
     private CurrentSourceSnapshot? _currentSnapshot;
     private string _currentProjectRootPath = string.Empty;
+    private IReadOnlyList<ReadonlyIniFileDescriptor> _currentProjectFiles = [];
     private int _selectedFileLoadVersion;
     private string _outputText = "就绪";
     private string _projectTitle = "未打开项目";
@@ -171,10 +172,13 @@ public sealed class ShellViewModel : INotifyPropertyChanged
         ? null
         : _currentProjectRootPath;
 
+    internal IReadOnlyList<ReadonlyIniFileDescriptor> CurrentProjectFiles => _currentProjectFiles;
+
     public async Task OpenProjectFolderAsync(string folderPath)
     {
         _selectedFileLoadVersion++;
         _currentProjectRootPath = string.Empty;
+        _currentProjectFiles = [];
         CurrentSnapshot = null;
         Issues.Clear(IssuesStatusMessages.NoFileSelected);
         ProjectExplorer.Clear();
@@ -185,6 +189,7 @@ public sealed class ShellViewModel : INotifyPropertyChanged
         {
             var result = await Task.Run(() => _projectOpenService.OpenFolderReadonly(folderPath));
             _currentProjectRootPath = result.ProjectFolderPath;
+            _currentProjectFiles = Array.AsReadOnly(result.Files.ToArray());
             ProjectTitle = BuildProjectTitle(folderPath);
             ProjectExplorer.ShowFiles(result.Files);
 
@@ -206,6 +211,7 @@ public sealed class ShellViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
+            _currentProjectFiles = [];
             ProjectExplorer.ShowFiles([]);
             SourceEditor.ShowError("打开失败", $"无法打开所选文件夹：{Environment.NewLine}{Environment.NewLine}{ex.Message}");
             Navigator.ShowError("项目文件夹打开失败，导航不可用。");
@@ -292,9 +298,15 @@ public sealed class ShellViewModel : INotifyPropertyChanged
         OutputText = Issues.StatusText;
     }
 
-    public async Task RunManualFullDiagnosticsAsync(
+    public Task RunManualFullDiagnosticsAsync(
         string currentEditorText,
         IRa2FieldDefinitionProvider? fieldProvider = null)
+        => RunManualFullDiagnosticsAsync(currentEditorText, fieldProvider, documentOverrides: null);
+
+    internal async Task RunManualFullDiagnosticsAsync(
+        string currentEditorText,
+        IRa2FieldDefinitionProvider? fieldProvider,
+        IReadOnlyDictionary<string, ManualFullDiagnosticsDocumentOverride>? documentOverrides)
     {
         IReadOnlyList<ReadonlyIniFileDescriptor> files = ProjectExplorer.Items
             .Where(item => item.Kind == ProjectExplorerItemKind.File)
@@ -314,7 +326,8 @@ public sealed class ShellViewModel : INotifyPropertyChanged
             files,
             CurrentSnapshot,
             currentEditorText,
-            fieldProvider);
+            fieldProvider,
+            documentOverrides);
         ManualFullDiagnosticsResult result = await Task.Run(() => _manualFullDiagnosticsService.Analyze(request));
         Issues.ReplaceIssues(result.Issues, result.StatusText);
         OutputText = result.StatusText;

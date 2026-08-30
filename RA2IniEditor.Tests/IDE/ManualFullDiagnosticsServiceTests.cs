@@ -13,6 +13,34 @@ namespace RA2IniEditor.Tests.IDE;
 public sealed class ManualFullDiagnosticsServiceTests
 {
     [Fact]
+    public void Analyze_UsesInMemoryOverridesForInactiveProjectDocuments()
+    {
+        FakeIniFileStore store = new();
+        store.Add("C:\\mod\\rules.ini", "[E1]\nName=Disk\n");
+        store.Add("C:\\mod\\art.ini", "[ART]\nName=Disk\n");
+        ManualFullDiagnosticsService service = new(store, new CurrentFileReadonlyDiagnosticService());
+        ManualFullDiagnosticsRequest request = new(
+            "C:\\mod",
+            [
+                new ReadonlyIniFileDescriptor("rules.ini", "C:\\mod\\rules.ini", 20),
+                new ReadonlyIniFileDescriptor("art.ini", "C:\\mod\\art.ini", 20)
+            ],
+            currentSnapshot: null,
+            currentEditorText: string.Empty,
+            documentOverrides: new Dictionary<string, ManualFullDiagnosticsDocumentOverride>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["C:\\mod\\rules.ini"] = new("[E1]\nName=One\nName=Duplicate\n", 7),
+                ["C:\\mod\\art.ini"] = new("[ART]\nName=One\nName=Duplicate\n", 8)
+            });
+
+        ManualFullDiagnosticsResult result = service.Analyze(request);
+
+        Assert.Equal(2, result.AnalyzedFileCount);
+        Assert.Contains(result.Issues, issue => issue.FilePath == "C:\\mod\\rules.ini" && issue.Version == 7);
+        Assert.Contains(result.Issues, issue => issue.FilePath == "C:\\mod\\art.ini" && issue.Version == 8);
+    }
+
+    [Fact]
     public void Analyze_UsesCurrentEditorTextForCurrentFileAndReadsOtherFiles()
     {
         FakeIniFileStore store = new();

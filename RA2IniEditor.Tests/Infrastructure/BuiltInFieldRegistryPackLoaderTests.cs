@@ -1778,6 +1778,29 @@ public sealed class BuiltInFieldRegistryPackLoaderTests
         Assert.Equal(FieldEditorKind.Boolean, FindDefinition("AnimPalette", Ra2SectionKind.Projectile).EditorKind);
     }
 
+    [Theory]
+    [InlineData("Cameo", FieldEditorKind.Reference, Ra2FieldValueKind.Reference, "侧边栏")]
+    [InlineData("AltCameo", FieldEditorKind.Reference, Ra2FieldValueKind.Reference, "替代")]
+    [InlineData("Voxel", FieldEditorKind.Boolean, Ra2FieldValueKind.Boolean, "VXL/HVA")]
+    [InlineData("Remapable", FieldEditorKind.Boolean, Ra2FieldValueKind.Boolean, "重映射")]
+    public void Load_V32ArtObjectCoreFieldsAreSourceBackedAuthorableSchemas(
+        string key,
+        FieldEditorKind expectedEditorKind,
+        Ra2FieldValueKind expectedValueKind,
+        string expectedDescriptionFragment)
+    {
+        Ra2FieldDefinition definition = FindDefinition(key, Ra2SectionKind.ArtObject);
+
+        Assert.Equal(expectedEditorKind, definition.EditorKind);
+        Assert.Equal(expectedValueKind, definition.ValueMetadata.ValueKind);
+        Assert.Equal(Ra2FieldSourceKind.Yuri, definition.SourceKind);
+        Assert.Equal("source-verified-yr-art-object-core-20260824", definition.RegistryQuality);
+        Assert.Contains(expectedDescriptionFragment, definition.Description);
+        Assert.DoesNotContain("来源不足", definition.Description, StringComparison.Ordinal);
+        if (expectedEditorKind == FieldEditorKind.Boolean)
+            Assert.Equal(Ra2FieldBooleanValueStyle.YesNo, definition.ValueMetadata.BooleanStyle);
+    }
+
     public static TheoryData<string, Ra2SectionKind, FieldEditorKind, string> ArtAnimationCoreDescriptionData => new()
     {
         { "Image", Ra2SectionKind.Animation, FieldEditorKind.Reference, "图像资源" },

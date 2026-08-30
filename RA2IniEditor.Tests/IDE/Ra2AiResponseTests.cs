@@ -86,6 +86,35 @@ public sealed class Ra2AiResponseTests
     }
 
     [Fact]
+    public void CreateLocalRejection_SeparatesSafeLocalReasonFromProviderFailure()
+    {
+        Ra2AiRequestDiagnostics diagnostics = new(
+            "0123456789abcdef0123456789abcdef",
+            "deepseek-v4-flash",
+            100,
+            TimeSpan.FromMilliseconds(2),
+            null,
+            TimeSpan.FromMilliseconds(4),
+            0,
+            0,
+            200);
+
+        Ra2AiResponse response = Ra2AiResponse.CreateLocalRejection(
+            "  当前项目缺少 rules/art 配对。  ",
+            diagnostics);
+
+        Assert.Equal(Ra2AiResponseKind.LocalRejection, response.Kind);
+        Assert.Equal("当前项目缺少 rules/art 配对。", response.LocalRejectionMessage);
+        Assert.Null(response.ErrorMessage);
+        Assert.Equal(Ra2AiFailureKind.None, response.FailureKind);
+        Assert.Empty(response.Text);
+        Assert.Empty(response.ToolCalls);
+        Assert.False(response.IsSuccess);
+        Assert.False(response.IsSuccessfulTerminal);
+        Assert.Same(diagnostics, response.Diagnostics);
+    }
+
+    [Fact]
     public void CreateIncomplete_PreservesPartialAndNonStopFinish()
     {
         Ra2AiResponse response = Ra2AiResponse.CreateIncomplete(
@@ -136,6 +165,7 @@ public sealed class Ra2AiResponseTests
             Ra2AiFailureKind.ProtocolError,
             "error",
             Ra2AiStreamFinishKind.Stop));
+        Assert.Throws<ArgumentException>(() => Ra2AiResponse.CreateLocalRejection(string.Empty));
         Assert.Throws<ArgumentException>(() => Ra2AiResponse.CreateIncomplete(
             string.Empty,
             Ra2AiStreamFinishKind.Unknown));

@@ -15,6 +15,7 @@ using ICSharpCode.AvalonEdit.Document;
 using Microsoft.Win32;
 using RA2IniEditor.Core.Schema;
 using RA2IniEditor.IDE.AI;
+using RA2IniEditor.IDE.AssetAuthoring;
 using RA2IniEditor.IDE.AuthoringDiff;
 using RA2IniEditor.IDE.Controllers.Completion;
 using RA2IniEditor.IDE.Controllers.EditorSession;
@@ -34,6 +35,7 @@ using RA2IniEditor.IDE.Services.DirtyNavigation;
 using RA2IniEditor.IDE.Services.SavePreflight;
 using RA2IniEditor.IDE.TextModel;
 using RA2IniEditor.IDE.ViewModels;
+using RA2IniEditor.IDE.ViewModels.AssetAuthoring;
 using RA2IniEditor.IDE.ViewModels.AI;
 using RA2IniEditor.IDE.ViewModels.FieldBrowser;
 using RA2IniEditor.IDE.ViewModels.FieldAnnotations;
@@ -44,7 +46,9 @@ using RA2IniEditor.IDE.Views.Language;
 using RA2IniEditor.IDE.Views.FieldQuickPeek;
 using RA2IniEditor.IDE.Views.FieldBrowser;
 using RA2IniEditor.IDE.Views.AI;
+using RA2IniEditor.IDE.Views.AssetAuthoring;
 using RA2IniEditor.IDE.Search;
+using RA2IniEditor.IDE.Startup;
 using RA2IniEditor.Infrastructure.FieldRegistry;
 using RA2IniEditor.Infrastructure.FieldRegistry.Apply;
 using RA2IniEditor.Infrastructure.FieldRegistry.Apply.IO;
@@ -77,6 +81,72 @@ public partial class ShellWindow : Window
 
         public Ra2IniEditApplyResult Apply(Ra2IniEditPreview preview)
             => _owner.ApplyAuthoringPreviewTransaction(preview);
+
+        public Ra2ProjectEditApplyResult ApplyProject(Ra2ProjectEditPreview preview)
+            => _owner.ApplyProjectAuthoringPreviewTransaction(preview);
+    }
+
+    private sealed class ShellActiveEditorProjection : IRa2ActiveEditorProjection
+    {
+        private readonly ShellWindow _owner;
+
+        public ShellActiveEditorProjection(ShellWindow owner)
+            => _owner = owner ?? throw new ArgumentNullException(nameof(owner));
+
+        public string CurrentText => _owner.SourceTextEditor.Document.Text;
+
+        public void SetText(string text)
+            => _owner.SetEditorTextFromProgram(text);
+
+        public void EnterReadOnlyFailSafe()
+            => _owner.ResetEditableSessionToReadOnly();
+    }
+
+    private sealed class ShellAiAuthoringContextRecapturePort : IRa2AiAuthoringContextRecapturePort
+    {
+        private readonly ShellWindow _owner;
+
+        public ShellAiAuthoringContextRecapturePort(ShellWindow owner)
+            => _owner = owner ?? throw new ArgumentNullException(nameof(owner));
+
+        public async ValueTask<Ra2AiAuthoringContextRecaptureResult> RecaptureAsync(
+            Ra2AiAuthoringRequestContext originalContext,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(originalContext);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (_owner.Dispatcher.CheckAccess())
+                return Capture(originalContext);
+
+            return await _owner.Dispatcher.InvokeAsync(
+                () => Capture(originalContext),
+                DispatcherPriority.Send,
+                cancellationToken);
+        }
+
+        private Ra2AiAuthoringContextRecaptureResult Capture(Ra2AiAuthoringRequestContext originalContext)
+        {
+            if (_owner._isShellClosed)
+                return Ra2AiAuthoringContextRecaptureResult.Failure("当前窗口已经关闭。");
+
+            if (originalContext.Scope == Ra2AiAuthoringScope.Project)
+            {
+                Ra2AiProjectEditAvailabilityKind availability = _owner.CaptureProjectAuthoringContext(
+                    originalContext.TargetFilePaths,
+                    out Ra2AiAuthoringRequestContext? currentContext,
+                    out string? failureMessage);
+                return availability == Ra2AiProjectEditAvailabilityKind.Available && currentContext is not null
+                    ? Ra2AiAuthoringContextRecaptureResult.Success(currentContext)
+                    : Ra2AiAuthoringContextRecaptureResult.Failure(
+                        failureMessage ?? "当前项目状态无法用于生成修改预览。");
+            }
+
+            Ra2AuthoringSnapshotCaptureResult capture = _owner.CaptureCurrentAuthoringSnapshot();
+            return capture.Snapshot is not null
+                ? Ra2AiAuthoringContextRecaptureResult.Success(new Ra2AiAuthoringRequestContext(capture.Snapshot))
+                : Ra2AiAuthoringContextRecaptureResult.Failure(
+                    capture.FailureMessage ?? "当前文档状态无法用于生成修改预览。");
+        }
     }
 
     private sealed class AiAssistantStreamingMessageHandle
@@ -165,7 +235,9 @@ public partial class ShellWindow : Window
     private readonly IRa2IniAuthoringWorkspace _authoringWorkspace;
     private readonly Ra2AiAuthoringCoordinator _aiAuthoringCoordinator;
     private readonly Ra2AiProposalPreparationRunner _aiProposalPreparationRunner;
+    private readonly IRa2AiAuthoringContextRecapturePort _aiAuthoringContextRecapturePort;
     private readonly Ra2IniEditPreviewCurrencyEvaluator _authoringPreviewCurrencyEvaluator = new();
+    private readonly TaskCompletionSource _shellReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private const int SourceEditorHoverDelayMilliseconds = 300;
     private const double SourceEditorHoverHorizontalOffset = 12.0;
     private const double SourceEditorHoverVerticalOffset = 18.0;
@@ -200,6 +272,8 @@ public partial class ShellWindow : Window
     private readonly Ra2CompletionDropdownViewModel _completionDropdownViewModel = new();
     private SourceEditorViewModel? _boundSourceEditor;
     private Ra2EditableDocumentSession? _editableSession;
+    private Ra2ProjectDocumentSessionStore? _projectDocumentSessionStore;
+    private Ra2ProjectEditorTransactionCoordinator? _projectTransactionCoordinator;
     private SearchToolView? _searchToolView;
     private CancellationTokenSource? _searchCancellation;
     private Ra2CompletionResult? _lastCompletionResult;
@@ -238,6 +312,9 @@ public partial class ShellWindow : Window
     private Ra2AuthoringDiffView? _activeAuthoringDiffView;
     private Ra2AuthoringDiffViewModel? _activeAuthoringDiffViewModel;
     private CancellationTokenSource? _authoringDiffCancellation;
+    private LayoutDocument? _activeVoxelStyleDocument;
+    private Ra2VoxelStyleWorkspaceView? _activeVoxelStyleView;
+    private Ra2VoxelStyleWorkspaceViewModel? _activeVoxelStyleViewModel;
     private long _aiAuthoringGeneration;
     private bool _isShellClosed;
     private Ra2AiUserMode _aiUserMode = Ra2AiUserMode.Chat;
@@ -258,6 +335,7 @@ public partial class ShellWindow : Window
             _authoringWorkspace);
         _aiProposalPreparationRunner = new Ra2AiProposalPreparationRunner(
             _aiAuthoringCoordinator);
+        _aiAuthoringContextRecapturePort = new ShellAiAuthoringContextRecapturePort(this);
         _windowChromeController = new ShellWindowChromeController(
             this,
             ShellTitleBarDragRegion,
@@ -342,36 +420,47 @@ public partial class ShellWindow : Window
     private async void ShellWindow_OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= ShellWindow_OnLoaded;
-        _floatingChromeController.BeginInitialLayoutVisibilitySuppression();
         try
         {
-            _dockLayoutCoordinator.ApplyInitialFloatingGeometry();
-            _dockLayoutCoordinator.ApplyCompiledDefaultTopology();
-            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
-            _dockLayoutCoordinator.ApplyCompiledDefaultVisibility();
-            if (_dockLayoutCoordinator.FindTool("Tool.Output") is { } output)
+            _floatingChromeController.BeginInitialLayoutVisibilitySuppression();
+            try
             {
-                output.IsSelected = true;
-                output.IsActive = true;
+                _dockLayoutCoordinator.ApplyInitialFloatingGeometry();
+                _dockLayoutCoordinator.ApplyCompiledDefaultTopology();
+                await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ContextIdle);
+                _dockLayoutCoordinator.ApplyCompiledDefaultVisibility();
+                if (_dockLayoutCoordinator.FindTool("Tool.Output") is { } output)
+                {
+                    output.IsSelected = true;
+                    output.IsActive = true;
+                }
+                ShellDockLayoutOperationResult captureResult = _dockLayoutSession.CaptureCompiledDefault();
+                if (!captureResult.Succeeded)
+                {
+                    ReportDockLayoutFailure("无法建立默认窗口布局快照，已继续使用当前布局。", captureResult);
+                    return;
+                }
+
+                await TryRestorePersistedDockLayoutAsync();
+                _dockLayoutCoordinator.ApplyToolCompiledDefaultVisibility("Tool.FindReferences");
+                _dockLayoutCoordinator.ApplyToolCompiledDefaultVisibility("Tool.Search");
+                _floatingChromeController.RefreshExistingHosts();
             }
-            ShellDockLayoutOperationResult captureResult = _dockLayoutSession.CaptureCompiledDefault();
-            if (!captureResult.Succeeded)
+            finally
             {
-                ReportDockLayoutFailure("无法建立默认窗口布局快照，已继续使用当前布局。", captureResult);
-                return;
+                _floatingChromeController.CompleteInitialLayoutVisibilitySuppression();
             }
 
-            await TryRestorePersistedDockLayoutAsync();
-            _floatingChromeController.RefreshExistingHosts();
+            _ = Dispatcher.BeginInvoke(
+                DispatcherPriority.Loaded,
+                new Action(_floatingChromeController.RefreshExistingHosts));
         }
         finally
         {
-            _floatingChromeController.CompleteInitialLayoutVisibilitySuppression();
+            ShellDockManager.SetCurrentValue(UIElement.OpacityProperty, 1.0);
+            ShellDockManager.SetCurrentValue(UIElement.IsHitTestVisibleProperty, true);
+            _shellReady.TrySetResult();
         }
-
-        _ = Dispatcher.BeginInvoke(
-            DispatcherPriority.Loaded,
-            new Action(_floatingChromeController.RefreshExistingHosts));
     }
 
     private Rect GetDockViewportScreenBounds()
@@ -387,8 +476,6 @@ public partial class ShellWindow : Window
         CloseSourceEditorHoverToolTip();
         StopCompletionAutoTrigger();
         CloseCompletionDropdown();
-        if (DataContext is ShellViewModel guardViewModel && !TryResolveDirtyNavigationBeforeLeavingCurrentFile(guardViewModel))
-            return;
 
         OpenFolderDialog dialog = new()
         {
@@ -398,34 +485,96 @@ public partial class ShellWindow : Window
         if (dialog.ShowDialog(this) != true)
             return;
 
-        if (DataContext is ShellViewModel viewModel)
-        {
-            ResetEditableSessionToReadOnly();
-            await viewModel.OpenProjectFolderAsync(dialog.FolderName);
-            ReloadReadonlySourceHighlighting(viewModel);
-            ResetEditableSessionToReadOnly();
-        }
+        await OpenProjectCoreAsync(dialog.FolderName, initialFilePath: null, "菜单");
     }
 
     internal async Task OpenProjectFolderForAutomationAsync(string folderPath)
+        => await OpenLaunchRequestAsync(Ra2LaunchRequestParser.Parse(
+            [Ra2LaunchRequestParser.AutomationOpenFolderArgument, folderPath]));
+
+    internal async Task OpenLaunchRequestAsync(Ra2LaunchRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        await _shellReady.Task;
+        if (request.Kind == Ra2LaunchTargetKind.None)
+            return;
+
+        if (DataContext is not ShellViewModel viewModel)
+            return;
+        if (request.Kind == Ra2LaunchTargetKind.Invalid)
+        {
+            viewModel.ShowOutputMessage(request.ErrorMessage ?? "启动参数无效。");
+            viewModel.SetOperationStatus("未能打开启动目标", "Error");
+            return;
+        }
+
+        await OpenProjectCoreAsync(
+            request.ProjectFolderPath!,
+            request.TargetFilePath,
+            request.Kind == Ra2LaunchTargetKind.IniFile ? "文件关联" : "启动参数");
+    }
+
+    private async Task OpenProjectCoreAsync(
+        string folderPath,
+        string? initialFilePath,
+        string source)
     {
         if (DataContext is not ShellViewModel viewModel)
             return;
 
         CloseSourceEditorHoverToolTip();
-        if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+        StopCompletionAutoTrigger();
+        CloseCompletionDropdown();
+        if (!Directory.Exists(folderPath))
         {
-            viewModel.ShowOutputMessage($"Automation open folder failed: '{folderPath}' does not exist.");
+            viewModel.ShowOutputMessage($"项目文件夹不存在：{folderPath}");
+            viewModel.SetOperationStatus("打开项目失败", "Error");
             return;
         }
-
-        if (!TryResolveDirtyNavigationBeforeLeavingCurrentFile(viewModel))
+        if (!TryAllowProjectBoundary(viewModel))
             return;
 
         ResetEditableSessionToReadOnly();
         await viewModel.OpenProjectFolderAsync(folderPath);
+        if (!string.Equals(
+                viewModel.CurrentProjectRootPath,
+                Path.GetFullPath(folderPath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _activeVoxelStyleViewModel?.NotifyProjectChanged();
+
+        InitializeProjectDocumentSessionStore(viewModel);
         ReloadReadonlySourceHighlighting(viewModel);
         ResetEditableSessionToReadOnly();
+        if (!string.IsNullOrWhiteSpace(initialFilePath))
+        {
+            string targetPath = Path.GetFullPath(initialFilePath);
+            ProjectExplorerItemViewModel? targetItem = FindProjectExplorerFileItem(viewModel, targetPath);
+            if (targetItem is null)
+            {
+                viewModel.ShowOutputMessage($"项目已打开，但启动目标不在顶层 INI 清单中：{targetPath}");
+                viewModel.SetOperationStatus("启动目标未载入", "Warning");
+                RefreshAiAssistantContextSummary();
+                return;
+            }
+
+            await viewModel.LoadProjectExplorerFileAsync(
+                targetItem,
+                _fieldRegistryRuntimeService.CurrentProvider);
+            StartEditableSessionForCurrentSnapshot(viewModel);
+            SelectProjectExplorerItem(targetItem);
+            _ = Dispatcher.BeginInvoke(
+                DispatcherPriority.ContextIdle,
+                new Action(() => SourceTextEditor.Focus()));
+            viewModel.ShowOutputMessage(
+                $"已通过{source}打开 {Path.GetFileName(targetPath)}；项目根目录：{viewModel.CurrentProjectRootPath}");
+            viewModel.SetOperationStatus("启动目标已载入");
+        }
+
+        RefreshAiAssistantContextSummary();
     }
 
     private void OpenSearchToolWindow(object sender, RoutedEventArgs e)
@@ -859,6 +1008,9 @@ public partial class ShellWindow : Window
             DeepSeekRa2AiClientFactory.CreateConfigurationSnapshot(selectedModel);
         UpdateAiAssistantConfigurationStatus(configurationSnapshot);
         Ra2AiAuthoringRequestContext? authoringRequestContext = null;
+        Ra2AiAuthoringRequestContext? projectAuthoringRequestContext = null;
+        Ra2AiProjectEditAvailabilityKind projectAvailability =
+            Ra2AiProjectEditAvailabilityKind.NoProject;
         Ra2AiEditAvailabilityKind editAvailability = configurationSnapshot.State !=
             DeepSeekRa2AiConfigurationState.Ready
                 ? Ra2AiEditAvailabilityKind.MissingConfiguration
@@ -908,19 +1060,26 @@ public partial class ShellWindow : Window
                         ? Ra2AiEditAvailabilityKind.NoEditableDocument
                         : Ra2AiEditAvailabilityKind.SnapshotUnavailable;
             }
+
+            projectAvailability = CaptureRulesArtProjectAuthoringContext(out projectAuthoringRequestContext);
         }
 
         Ra2AiInteractionRoute interactionRoute = Ra2AiInteractionRouter.Resolve(
             prompt,
             editAvailability,
-            _aiUserMode);
+            _aiUserMode) with { ProjectEditAvailability = projectAvailability };
         if (_aiUserMode == Ra2AiUserMode.Work &&
-            editAvailability != Ra2AiEditAvailabilityKind.Available)
+            editAvailability is Ra2AiEditAvailabilityKind.MissingConfiguration or
+                Ra2AiEditAvailabilityKind.UnsupportedEndpoint)
         {
             ShowLocalAiAuthoringRouteNotice(FormatAiEditUnavailableMessage(editAvailability));
             return;
         }
         Ra2AiAssistantPipeline pipeline = CreateAiAssistantPipeline(configurationSnapshot);
+        Ra2AiBoundedStructuredReplanCoordinator replanCoordinator = new(
+            pipeline,
+            _aiProposalPreparationRunner,
+            _aiAuthoringContextRecapturePort);
 
         if (!_aiAssistantRequestLifecycle.TryStart(out Ra2AiRequestSession? requestSession) || requestSession is null)
             return;
@@ -947,31 +1106,42 @@ public partial class ShellWindow : Window
 
             streamingMessage = AddAiAssistantStreamingMessage(requestSession, userMessageBorder);
             AiAssistantStreamingMessageHandle requestStreamingMessage = streamingMessage;
-            Ra2AiAssistantPipelineResult result = await pipeline.SendStreamingAsync(
-                prompt,
-                context,
-                conversationContext,
-                currentSubject,
-                interactionRoute,
+            Ra2AiBoundedStructuredReplanResult result = await replanCoordinator.ExecuteAsync(
+                new Ra2AiBoundedStructuredReplanRequest(
+                    prompt,
+                    context,
+                    conversationContext,
+                    currentSubject,
+                    interactionRoute,
+                    new Ra2AiContextSourceSet(authoringRequestContext, projectAuthoringRequestContext)),
                 (delta, callbackToken) => QueueAiAssistantContentDeltaAsync(
                     requestStreamingMessage,
                     delta,
                     callbackToken),
                 requestSession.Token);
-            UpdateAiAssistantRequestPreparationNotice(result.Request);
-            if (result.Response.Kind == Ra2AiResponseKind.ToolCalls)
+            UpdateAiAssistantRequestPreparationNotice(result.FinalRequest);
+            if (result.FinalProposalResult is not null)
             {
-                await PrepareAndAttachAiEditProposalAsync(
+                AttachPreparedAiEditProposal(
                     streamingMessage,
-                    authoringRequestContext,
-                    result.Response,
+                    result.FinalResponse,
+                    result.FinalProposalResult,
                     requestGeneration,
-                    requestSession.Token);
+                    requestSession.Token,
+                    result.RepairAttempted);
             }
             else
             {
-                FinalizeAiAssistantStreamingMessage(streamingMessage, result.Response);
+                FinalizeAiAssistantStreamingMessage(streamingMessage, result.FinalResponse);
+                ApplyAiStructuredRepairStatus(
+                    streamingMessage,
+                    result.RepairAttempted,
+                    succeeded: false);
             }
+
+            AddAiAssistantRetrievalSummary(
+                streamingMessage,
+                result.InitialPipelineResult.SemanticRetrieval);
 
             RefreshAiAssistantContextSummary(context);
         }
@@ -1383,41 +1553,14 @@ public partial class ShellWindow : Window
             shouldFollow);
     }
 
-    private async Task PrepareAndAttachAiEditProposalAsync(
+    private void AttachPreparedAiEditProposal(
         AiAssistantStreamingMessageHandle handle,
-        Ra2AiAuthoringRequestContext? requestContext,
         Ra2AiResponse response,
+        Ra2AiEditProposalResult proposalResult,
         long requestGeneration,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool repairAttempted)
     {
-        if (requestContext is null)
-        {
-            FinalizeFailedAiAssistantStreamingMessage(
-                handle,
-                "当前请求没有绑定可编辑文档快照，结构化修改建议已拒绝。",
-                "结构化修改建议未完成。",
-                Ra2AiConversationTurnState.Error,
-                isErrorMessage: true);
-            return;
-        }
-
-        Ra2AuthoringSnapshotCaptureResult currentCapture = CaptureCurrentAuthoringSnapshot();
-        if (!currentCapture.Succeeded || currentCapture.Snapshot is null)
-        {
-            FinalizeFailedAiAssistantStreamingMessage(
-                handle,
-                currentCapture.FailureMessage ?? "当前文档状态无法用于生成修改预览。",
-                "结构化修改建议未完成。",
-                Ra2AiConversationTurnState.Error,
-                isErrorMessage: true);
-            return;
-        }
-
-        Ra2AiEditProposalResult proposalResult = await _aiProposalPreparationRunner.PrepareAsync(
-            requestContext,
-            currentCapture.Snapshot,
-            response,
-            cancellationToken);
         if (_isShellClosed ||
             cancellationToken.IsCancellationRequested ||
             requestGeneration != Volatile.Read(ref _aiAuthoringGeneration) ||
@@ -1441,15 +1584,18 @@ public partial class ShellWindow : Window
                 proposalResult.Message,
                 Ra2AiConversationTurnState.Completed,
                 isErrorMessage: false);
+            ApplyAiStructuredRepairStatus(handle, repairAttempted, succeeded: false);
             return;
         }
 
         if (!proposalResult.Succeeded || proposalResult.Proposal is null)
         {
-            FinalizeFailedAiAssistantStreamingMessage(
+            RestoreAiAuthoringPromptIfEmpty(handle);
+            RenderLocalAiAuthoringTerminalMessage(
                 handle,
-                proposalResult.Message,
-                "结构化修改建议未完成。",
+                repairAttempted
+                    ? $"{proposalResult.Message}\n\n已自动修正 1 次，未能生成可预览修改。"
+                    : proposalResult.Message,
                 proposalResult.FailureKind == Ra2AiEditProposalFailureKind.PreviewCancelled
                     ? Ra2AiConversationTurnState.Incomplete
                     : Ra2AiConversationTurnState.Error,
@@ -1458,13 +1604,13 @@ public partial class ShellWindow : Window
         }
 
         Ra2AiEditProposal proposal = proposalResult.Proposal;
-        long fieldRegistryRevision = _fieldRegistryRuntimeService.CaptureProviderSnapshot().Revision;
-        Ra2IniEditPreviewCurrencyResult currency = _authoringPreviewCurrencyEvaluator.Evaluate(
-            proposal.Preview,
-            _editableSession,
-            SourceTextEditor.Document.Text,
-            fieldRegistryRevision);
-        if (!currency.IsCurrent ||
+        bool isCurrent = proposal.Scope == Ra2AiAuthoringScope.Project ||
+            _authoringPreviewCurrencyEvaluator.Evaluate(
+                proposal.Preview,
+                _editableSession,
+                SourceTextEditor.Document.Text,
+                _fieldRegistryRuntimeService.CaptureProviderSnapshot().Revision).IsCurrent;
+        if (!isCurrent ||
             !ReferenceEquals(_aiAuthoringCoordinator.ActiveProposal, proposal))
         {
             _aiAuthoringCoordinator.InvalidateActiveProposal();
@@ -1478,6 +1624,7 @@ public partial class ShellWindow : Window
         }
 
         FinalizeAiAssistantStreamingMessage(handle, response);
+        ApplyAiStructuredRepairStatus(handle, repairAttempted, succeeded: true);
 
         Ra2AiEditProposalViewModel viewModel = new(proposal);
         Ra2AiEditProposalView view = new()
@@ -1489,7 +1636,7 @@ public partial class ShellWindow : Window
         view.OpenDiffRequested += AiEditProposalView_OnOpenDiffRequested;
         handle.ResponsePanel.Children.Add(view);
         handle.MessageBorder.DataContext = CreateAiAssistantConversationTurn(
-            $"结构化修改建议：{proposal.Preview.Plan.Summary}",
+            $"结构化修改建议：{(proposal.Scope == Ra2AiAuthoringScope.Project ? proposal.ProjectPreview.Plan.Summary : proposal.Preview.Plan.Summary)}",
             Ra2AiConversationTurnState.Completed);
         _activeAiEditProposalViewModel = viewModel;
         _activeAiEditProposalView = view;
@@ -1497,6 +1644,75 @@ public partial class ShellWindow : Window
         UpdateAiAssistantModeAvailability();
         OpenAuthoringDiffDocument(viewModel);
         AiAssistantChatScrollViewer.ScrollToEnd();
+    }
+
+    private static void ApplyAiStructuredRepairStatus(
+        AiAssistantStreamingMessageHandle handle,
+        bool repairAttempted,
+        bool succeeded)
+    {
+        if (!repairAttempted)
+            return;
+
+        handle.StatusText.Text = succeeded
+            ? "已自动修正 1 次。"
+            : "已自动修正 1 次，未能生成可预览修改。";
+        handle.StatusText.Visibility = Visibility.Visible;
+        if (!handle.ResponsePanel.Children.Contains(handle.StatusText))
+            handle.ResponsePanel.Children.Add(handle.StatusText);
+    }
+
+    private void AddAiAssistantRetrievalSummary(
+        AiAssistantStreamingMessageHandle handle,
+        Ra2AiSemanticRetrievalResult? retrieval)
+    {
+        if (_aiUserMode != Ra2AiUserMode.Work ||
+            FormatAiAssistantRetrievalSummary(retrieval) is not { } summary)
+        {
+            return;
+        }
+
+        TextBlock summaryText = new()
+        {
+            Style = FindRequiredVisualResource<Style>("IdeAiMetadataTextStyle"),
+            Focusable = false,
+            Margin = new Thickness(0, 4, 0, 0),
+            Text = summary,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.NoWrap
+        };
+        AutomationProperties.SetAutomationId(summaryText, "AiAssistant.RetrievalSummary");
+        AutomationProperties.SetName(summaryText, summary);
+
+        int proposalIndex = _activeAiEditProposalView is { } proposalView
+            ? handle.ResponsePanel.Children.IndexOf(proposalView)
+            : -1;
+        if (proposalIndex >= 0)
+            handle.ResponsePanel.Children.Insert(proposalIndex, summaryText);
+        else
+            handle.ResponsePanel.Children.Add(summaryText);
+    }
+
+    internal static string? FormatAiAssistantRetrievalSummary(
+        Ra2AiSemanticRetrievalResult? retrieval)
+    {
+        if (retrieval is null ||
+            retrieval.StopReason is Ra2AiSemanticRetrievalStopReason.NeedsClarification or
+                Ra2AiSemanticRetrievalStopReason.ProviderFailure ||
+            (retrieval.QueryResults.Count == 0 && retrieval.Attempts.Count == 0))
+        {
+            return null;
+        }
+
+        int rounds = retrieval.Attempts.Count + (retrieval.QueryResults.Count > 0 ? 1 : 0);
+        int facts = retrieval.QueryResults.Count(result => result.Succeeded);
+        string status = retrieval.StopReason switch
+        {
+            Ra2AiSemanticRetrievalStopReason.NoProgress => "无新证据，使用现有事实",
+            Ra2AiSemanticRetrievalStopReason.RoundLimit => "达到补查上限",
+            _ => "已就绪"
+        };
+        return $"项目检索：{rounds} 轮 · {retrieval.EntityBindings.Count} 个实体 · {facts} 项事实 · {status}";
     }
 
     private void RenderLocalAiAuthoringTerminalMessage(
@@ -1587,9 +1803,16 @@ public partial class ShellWindow : Window
             }
             CloseAuthoringDiffDocument();
             ActivateCurrentSourceDocument();
-            RestoreSourceEditorFocusAtCaret(
-                result.AuthoringResult?.RedoCaretOffset ??
-                viewModel.Proposal.Preview.AutomationResult.Changes[0].Span.Start);
+            if (viewModel.Proposal.Scope == Ra2AiAuthoringScope.Document)
+            {
+                RestoreSourceEditorFocusAtCaret(
+                    result.AuthoringResult?.RedoCaretOffset ??
+                    viewModel.Proposal.Preview.AutomationResult.Changes[0].Span.Start);
+            }
+            else
+            {
+                SourceTextEditor.Focus();
+            }
         }
         else if (result.FailureKind == Ra2AiEditProposalFailureKind.RequestContextStale)
         {
@@ -1732,6 +1955,62 @@ public partial class ShellWindow : Window
             if (closeDocument)
                 document.Close();
         }
+    }
+
+    private void OpenVoxelStyleWorkspace_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_activeVoxelStyleDocument is { } existing &&
+            ShellDockManager.Layout.Descendents().OfType<LayoutDocument>().Contains(existing))
+        {
+            existing.IsActive = true;
+            return;
+        }
+
+        ReleaseVoxelStyleWorkspace(closeDocument: false);
+        if (FindCurrentSourceDocument()?.Parent is not LayoutDocumentPane pane)
+            return;
+
+        Ra2VoxelStyleWorkspaceViewModel viewModel = new(
+            Ra2VoxelStylePreviewCoordinator.CreateDefault(),
+            () => (DataContext as ShellViewModel)?.CurrentProjectRootPath,
+            GetSelectedAiAssistantModel);
+        Ra2VoxelStyleWorkspaceView view = new() { DataContext = viewModel };
+        LayoutDocument document = new()
+        {
+            Title = "体素风格",
+            ContentId = "Document.VoxelStyle",
+            Content = view,
+            CanClose = true,
+            CanFloat = false,
+            CanMove = false
+        };
+        document.Closed += VoxelStyleDocument_OnClosed;
+        pane.Children.Add(document);
+        _activeVoxelStyleDocument = document;
+        _activeVoxelStyleView = view;
+        _activeVoxelStyleViewModel = viewModel;
+        document.IsActive = true;
+    }
+
+    private void VoxelStyleDocument_OnClosed(object? sender, EventArgs e) =>
+        ReleaseVoxelStyleWorkspace(closeDocument: false);
+
+    private void CloseVoxelStyleWorkspace() =>
+        ReleaseVoxelStyleWorkspace(closeDocument: true);
+
+    private void ReleaseVoxelStyleWorkspace(bool closeDocument)
+    {
+        LayoutDocument? document = _activeVoxelStyleDocument;
+        Ra2VoxelStyleWorkspaceViewModel? viewModel = _activeVoxelStyleViewModel;
+        _activeVoxelStyleDocument = null;
+        _activeVoxelStyleView = null;
+        _activeVoxelStyleViewModel = null;
+        viewModel?.Dispose();
+        if (document is null)
+            return;
+        document.Closed -= VoxelStyleDocument_OnClosed;
+        if (closeDocument)
+            document.Close();
     }
 
     private void InvalidateActiveAiEditProposal(bool markSuperseded)
@@ -1944,7 +2223,8 @@ public partial class ShellWindow : Window
         => responseKind is Ra2AiResponseKind.Timeout
             or Ra2AiResponseKind.ProviderError
             or Ra2AiResponseKind.MissingConfiguration
-            or Ra2AiResponseKind.AuthoringToolNotInvoked;
+            or Ra2AiResponseKind.AuthoringToolNotInvoked
+            or Ra2AiResponseKind.LocalRejection;
 
     private static string? GetAiAssistantTerminalStatus(
         Ra2AiResponse response)
@@ -2339,7 +2619,8 @@ public partial class ShellWindow : Window
         DeepSeekRa2AiConfigurationSnapshot configurationSnapshot)
         => new(
             _aiPromptBuilder,
-            DeepSeekRa2AiClientFactory.CreateClient(configurationSnapshot));
+            DeepSeekRa2AiClientFactory.CreateClient(configurationSnapshot),
+            _automationCapabilityGateway);
 
     private DeepSeekRa2AiModel GetSelectedAiAssistantModel()
         => AiAssistantModelSelector.SelectedValue is DeepSeekRa2AiModel selectedModel
@@ -2418,6 +2699,12 @@ public partial class ShellWindow : Window
         if (response.Kind == Ra2AiResponseKind.Cancelled)
             return "请求已取消。";
 
+        if (response.Kind == Ra2AiResponseKind.LocalRejection)
+        {
+            return response.LocalRejectionMessage
+                ?? "当前请求未通过本地安全校验；本次未进入执行阶段。";
+        }
+
         if (response.FailureKind != Ra2AiFailureKind.None)
         {
             return DeepSeekRa2AiFailureUiMessageFormatter.FormatStandaloneMessage(
@@ -2476,6 +2763,7 @@ public partial class ShellWindow : Window
             ? Ra2AiUserMode.Work
             : Ra2AiUserMode.Chat;
         RefreshAiAssistantModePresentation();
+        RefreshAiAssistantContextSummary();
     }
 
     private void RefreshAiAssistantModePresentation()
@@ -2487,11 +2775,11 @@ public partial class ShellWindow : Window
             ? "结构化修改 · 预览后应用"
             : "解释与建议";
         AiAssistantSafetyFooterText.Text = isWork
-            ? "工作模式只生成本地预览；仅点击应用后修改当前文件，不自动保存。"
+            ? "工作模式只生成本地预览；仅点击应用后修改当前文件或项目，不自动保存。"
             : "聊天模式只提供解释与建议；发送会联网，不修改文件。";
         AiAssistantSafetyFooterText.ToolTip = AiAssistantSafetyFooterText.Text;
         AiAssistantEmptyStatePrimaryText.Text = isWork
-            ? "描述当前文件要完成的修改。"
+            ? "描述当前文件或当前项目要完成的修改。"
             : "询问 INI 规则、字段或当前文档内容。";
         AiAssistantEmptyStateSecondaryText.Text = isWork
             ? "先生成结构化 Diff，再由你决定是否应用。"
@@ -2600,7 +2888,10 @@ public partial class ShellWindow : Window
         Ra2AiConversationContext conversationContext,
         Ra2AiCurrentSubject currentSubject)
     {
-        AiAssistantContextSummaryText.Text = FormatAiContextSummary(context);
+        string contextSummary = FormatAiContextSummary(context);
+        AiAssistantContextSummaryText.Text = _aiUserMode == Ra2AiUserMode.Work
+            ? $"{contextSummary} {FormatAiProjectContextSummary()}"
+            : contextSummary;
         AiAssistantCurrentSubjectSummaryText.Text = FormatAiCurrentSubjectSummary(currentSubject);
         AiAssistantConversationContextSummaryText.Text = FormatAiConversationContextSummary(conversationContext);
     }
@@ -2656,6 +2947,78 @@ public partial class ShellWindow : Window
             SourceTextEditor.Document.Text,
             (DataContext as ShellViewModel)?.CurrentProjectRootPath,
             _fieldRegistryRuntimeService.CaptureProviderSnapshot());
+
+    private Ra2AiProjectEditAvailabilityKind CaptureRulesArtProjectAuthoringContext(
+        out Ra2AiAuthoringRequestContext? context)
+    {
+        context = null;
+        if (_projectDocumentSessionStore is null)
+            return Ra2AiProjectEditAvailabilityKind.NoProject;
+
+        Ra2AiProjectTargetResolution targetResolution =
+            Ra2AiProjectAuthoringAdmission.ResolveRulesWithOptionalArtTargets(_projectDocumentSessionStore.MemberFilePaths);
+        return targetResolution.Succeeded
+            ? CaptureProjectAuthoringContext(targetResolution.TargetFilePaths, out context, out _)
+            : targetResolution.Availability;
+    }
+
+    private string FormatAiProjectContextSummary()
+    {
+        if (_projectDocumentSessionStore is null)
+            return "Work 项目：未打开项目文件夹。";
+
+        Ra2AiProjectTargetResolution resolution =
+            Ra2AiProjectAuthoringAdmission.ResolveRulesWithOptionalArtTargets(_projectDocumentSessionStore.MemberFilePaths);
+        string rootPath = _projectDocumentSessionStore.ProjectRootPath;
+        if (resolution.Succeeded)
+        {
+            string targets = string.Join(" + ", resolution.TargetFilePaths.Select(Path.GetFileName));
+            string scope = resolution.TargetFilePaths.Count == 1 ? "rules 目标已识别" : "rules/art 配对已识别";
+            return $"Work 项目：{rootPath}；{targets}，{scope}。";
+        }
+
+        string[] fileNames = _projectDocumentSessionStore.MemberFilePaths
+            .Select(Path.GetFileName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Take(8)
+            .ToArray()!;
+        string detected = fileNames.Length == 0 ? "未检测到顶层 INI" : $"检测到 {string.Join("、", fileNames)}";
+        string reason = resolution.Availability == Ra2AiProjectEditAvailabilityKind.PairAmbiguous
+            ? "存在重复或多组 rules/art 配对"
+            : "未找到唯一 rulesmd.ini 或 rules.ini";
+        return $"Work 项目：{rootPath}；{reason}（{detected}）。";
+    }
+
+    private Ra2AiProjectEditAvailabilityKind CaptureProjectAuthoringContext(
+        IReadOnlyList<string> targetFilePaths,
+        out Ra2AiAuthoringRequestContext? context,
+        out string? failureMessage)
+    {
+        context = null;
+        failureMessage = null;
+        if (_projectDocumentSessionStore is null)
+            return Ra2AiProjectEditAvailabilityKind.NoProject;
+
+        Ra2ProjectSnapshotCaptureResult capture = _projectDocumentSessionStore.CaptureSnapshot(
+            targetFilePaths,
+            SourceTextEditor.Document.Text,
+            _fieldRegistryRuntimeService.CaptureProviderSnapshot());
+        if (!capture.Succeeded || capture.Snapshot is null)
+        {
+            failureMessage = capture.Message;
+            return capture.FailureKind switch
+            {
+                Ra2ProjectSnapshotCaptureFailureKind.ReadOnly => Ra2AiProjectEditAvailabilityKind.ReadOnly,
+                Ra2ProjectSnapshotCaptureFailureKind.DocumentTooLarge or
+                Ra2ProjectSnapshotCaptureFailureKind.ResourceLimitExceeded => Ra2AiProjectEditAvailabilityKind.ResourceLimitExceeded,
+                Ra2ProjectSnapshotCaptureFailureKind.InvalidProject => Ra2AiProjectEditAvailabilityKind.NoProject,
+                _ => Ra2AiProjectEditAvailabilityKind.SnapshotUnavailable
+            };
+        }
+
+        context = Ra2AiAuthoringRequestContext.ForProject(capture.Snapshot, targetFilePaths);
+        return Ra2AiProjectEditAvailabilityKind.Available;
+    }
 
     private string? GetExplicitAiSelectedText()
     {
@@ -3402,7 +3765,14 @@ public partial class ShellWindow : Window
             return;
         }
 
+        Ra2EditableDocumentSession previousSession = _editableSession;
         _editableSession = result.Session;
+        if (!TryUpdateProjectSessionOwner(previousSession, result.Session))
+        {
+            ResetEditableSessionToReadOnly();
+            return;
+        }
+        _projectTransactionCoordinator?.InvalidateCompoundEntry();
         InvalidateProgrammaticSemanticUndoIfTextChanged(result.Session.DocumentState.CurrentText);
         UpdateEditorStateControls();
         ScheduleCompletionAutoTrigger();
@@ -3451,6 +3821,8 @@ public partial class ShellWindow : Window
 
     private void UndoCurrentFileFromShell()
     {
+        if (TryUndoProjectCompoundChange())
+            return;
         if (TryUndoProgrammaticSemanticChange())
             return;
 
@@ -3476,6 +3848,8 @@ public partial class ShellWindow : Window
 
     private void RedoCurrentFileFromShell()
     {
+        if (TryRedoProjectCompoundChange())
+            return;
         if (TryRedoProgrammaticSemanticChange())
             return;
 
@@ -3502,12 +3876,44 @@ public partial class ShellWindow : Window
     private bool CanUndoSourceEditor()
         => _editableSession is not null &&
            !SourceTextEditor.IsReadOnly &&
-           (SourceTextEditor.CanUndo || CanUndoProgrammaticSemanticChange());
+           (CanUndoProjectCompoundChange() || SourceTextEditor.CanUndo || CanUndoProgrammaticSemanticChange());
 
     private bool CanRedoSourceEditor()
         => _editableSession is not null &&
            !SourceTextEditor.IsReadOnly &&
-           (SourceTextEditor.CanRedo || CanRedoProgrammaticSemanticChange());
+           (CanRedoProjectCompoundChange() || SourceTextEditor.CanRedo || CanRedoProgrammaticSemanticChange());
+
+    private bool CanUndoProjectCompoundChange()
+        => _projectTransactionCoordinator?.CanUndo == true;
+
+    private bool CanRedoProjectCompoundChange()
+        => _projectTransactionCoordinator?.CanRedo == true;
+
+    private bool TryUndoProjectCompoundChange()
+        => TryTransitionProjectCompoundChange(isUndo: true);
+
+    private bool TryRedoProjectCompoundChange()
+        => TryTransitionProjectCompoundChange(isUndo: false);
+
+    private bool TryTransitionProjectCompoundChange(bool isUndo)
+    {
+        Ra2ProjectEditorTransactionCoordinator? coordinator = _projectTransactionCoordinator;
+        if (coordinator is null || (isUndo ? !coordinator.CanUndo : !coordinator.CanRedo))
+            return false;
+
+        Ra2ProjectCompoundUndoResult result = isUndo ? coordinator.Undo() : coordinator.Redo();
+        if (_projectDocumentSessionStore?.ActiveFilePath is string activePath &&
+            _projectDocumentSessionStore.TryGetSession(activePath, out Ra2EditableDocumentSession? activeSession))
+        {
+            _editableSession = activeSession;
+        }
+        ClearAvalonEditUndoStackOnly();
+        UpdateEditorStateControls();
+        CommandManager.InvalidateRequerySuggested();
+        if (DataContext is ShellViewModel viewModel)
+            viewModel.ShowOutputMessage(result.Message);
+        return true;
+    }
 
     private bool CanUndoProgrammaticSemanticChange()
         => _programmaticSemanticUndoState is { IsUndone: false } state &&
@@ -3568,7 +3974,12 @@ public partial class ShellWindow : Window
         Ra2EditorSessionOperationResult result = _editorSessionController.UpdateTextFromUser(
             new Ra2EditorSessionUpdateTextRequest(_editableSession, text));
         if (result.Success && result.Session is not null)
+        {
+            Ra2EditableDocumentSession previousSession = _editableSession;
             _editableSession = result.Session;
+            TryUpdateProjectSessionOwner(previousSession, result.Session);
+            _projectTransactionCoordinator?.InvalidateCompoundEntry();
+        }
     }
 
     private Ra2IniEditApplyResult ApplyAuthoringPreviewTransaction(Ra2IniEditPreview preview)
@@ -3639,6 +4050,9 @@ public partial class ShellWindow : Window
                 sessionResult.TextToSyncToEditor,
                 sessionResult.CaretOffset ?? redoCaretOffset);
             _editableSession = sessionResult.Session;
+            if (!TryUpdateProjectSessionOwner(sessionBeforeApply, sessionResult.Session))
+                throw new InvalidOperationException("The project session owner rejected the single-document transaction.");
+            _projectTransactionCoordinator?.InvalidateCompoundEntry();
             _programmaticSemanticUndoState = semanticUndoAfterApply;
             ClearAvalonEditUndoStackOnly();
         }
@@ -3649,6 +4063,7 @@ public partial class ShellWindow : Window
             bool editorRestored = TryRestoreEditorAfterAuthoringFailure(
                 editorTextBeforeApply,
                 caretBeforeApply);
+            TryUpdateProjectSessionOwner(sessionResult.Session, sessionBeforeApply);
             _editableSession = sessionBeforeApply;
             _programmaticSemanticUndoState = semanticUndoBeforeApply;
             if (!editorRestored)
@@ -3671,6 +4086,65 @@ public partial class ShellWindow : Window
         }
 
         return appliedResult;
+    }
+
+    private Ra2ProjectEditApplyResult ApplyProjectAuthoringPreviewTransaction(Ra2ProjectEditPreview preview)
+    {
+        if (_projectTransactionCoordinator is null)
+        {
+            return Ra2ProjectEditApplyResult.Failed(
+                Ra2ProjectEditApplyOutcomeKind.UnexpectedFailure,
+                preview.ProjectPreviewId,
+                "No project document session is active.");
+        }
+
+        Ra2ProjectEditApplyResult result = _projectTransactionCoordinator.Apply(preview);
+        if (result.Succeeded &&
+            _projectDocumentSessionStore?.ActiveFilePath is string activePath &&
+            _projectDocumentSessionStore.TryGetSession(activePath, out Ra2EditableDocumentSession? activeSession))
+        {
+            _editableSession = activeSession;
+            _programmaticSemanticUndoState = null;
+            ClearAvalonEditUndoStackOnly();
+            UpdateEditorStateControls();
+            CommandManager.InvalidateRequerySuggested();
+            _ = RefreshProjectDiagnosticsAfterAuthoringApplyAsync(preview, result);
+        }
+        return result;
+    }
+
+    private async Task RefreshProjectDiagnosticsAfterAuthoringApplyAsync(
+        Ra2ProjectEditPreview preview,
+        Ra2ProjectEditApplyResult result)
+    {
+        if (DataContext is not ShellViewModel viewModel)
+            return;
+
+        try
+        {
+            Dictionary<string, ManualFullDiagnosticsDocumentOverride> documentOverrides =
+                new(StringComparer.OrdinalIgnoreCase);
+            foreach (Ra2AutomationDocumentSnapshot document in preview.Snapshot.Documents)
+                documentOverrides[document.FilePath] = new(document.Text, document.Version);
+            foreach (Ra2ProjectDocumentSessionReplacement replacement in result.CommittedReplacements)
+            {
+                documentOverrides[replacement.Replacement.DocumentState.FilePath] = new(
+                    replacement.Replacement.DocumentState.CurrentText,
+                    replacement.Replacement.EditRevision);
+            }
+
+            await viewModel.RunManualFullDiagnosticsAsync(
+                SourceTextEditor.Document.Text,
+                _fieldRegistryRuntimeService.CurrentProvider,
+                documentOverrides);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException and
+                                          not StackOverflowException and
+                                          not AccessViolationException)
+        {
+            // The project transaction is already committed. Diagnostics are a
+            // post-commit projection and must never reverse a successful apply.
+        }
     }
 
     private bool TryRestoreEditorAfterAuthoringFailure(string text, int caretOffset)
@@ -3752,7 +4226,10 @@ public partial class ShellWindow : Window
 
         if (result.UpdatedSession is not null)
         {
+            Ra2EditableDocumentSession? previousSession = _editableSession;
             _editableSession = result.UpdatedSession;
+            if (previousSession is not null)
+                TryUpdateProjectSessionOwner(previousSession, result.UpdatedSession);
             SourceTextEditor.IsReadOnly = false;
         }
 
@@ -3810,7 +4287,13 @@ public partial class ShellWindow : Window
         StopCompletionAutoTrigger();
         CloseCompletionDropdown();
         if (result.Session is not null)
+        {
+            Ra2EditableDocumentSession? previousSession = _editableSession;
             _editableSession = result.Session;
+            if (previousSession is not null)
+                TryUpdateProjectSessionOwner(previousSession, result.Session);
+            _projectTransactionCoordinator?.InvalidateCompoundEntry();
+        }
 
         if (result.ShouldSetEditable)
             SourceTextEditor.IsReadOnly = false;
@@ -3894,7 +4377,11 @@ public partial class ShellWindow : Window
             return;
         }
 
+        Ra2EditableDocumentSession? previousSession = _editableSession;
         _editableSession = result.UpdatedSession;
+        if (previousSession is not null)
+            TryUpdateProjectSessionOwner(previousSession, result.UpdatedSession);
+        _projectTransactionCoordinator?.InvalidateCompoundEntry();
         _programmaticSemanticUndoState = CreateProgrammaticSemanticUndoState(
             textBeforeApply,
             result.UpdatedText,
@@ -4299,6 +4786,23 @@ public partial class ShellWindow : Window
             return;
         }
 
+        if (_projectDocumentSessionStore is not null)
+        {
+            if (!_projectDocumentSessionStore.TryActivate(snapshot.FilePath, out Ra2EditableDocumentSession? projectSession, out string? projectFailure) ||
+                projectSession is null)
+            {
+                ResetEditableSessionToReadOnly();
+                viewModel.ShowOutputMessage(projectFailure ?? "Cannot activate the project document session.");
+                return;
+            }
+            _editableSession = projectSession;
+            if (!string.Equals(SourceTextEditor.Document.Text, projectSession.DocumentState.CurrentText, StringComparison.Ordinal))
+                SetEditorTextFromProgram(projectSession.DocumentState.CurrentText);
+            SourceTextEditor.IsReadOnly = false;
+            UpdateEditorStateControls();
+            return;
+        }
+
         Ra2EditorSessionOperationResult result = _editorSessionController.EnterEditMode(
             new Ra2EditorSessionEnterRequest(
                 snapshot.FilePath,
@@ -4318,6 +4822,9 @@ public partial class ShellWindow : Window
 
     private bool TryResolveDirtyNavigationBeforeLeavingCurrentFile(ShellViewModel viewModel)
     {
+        if (_projectDocumentSessionStore is not null)
+            return true;
+
         if (_editableSession?.DocumentState.IsDirty != true)
             return true;
 
@@ -4354,7 +4861,13 @@ public partial class ShellWindow : Window
         StopCompletionAutoTrigger();
         CloseCompletionDropdown();
         if (result.Session is not null)
+        {
+            Ra2EditableDocumentSession? previousSession = _editableSession;
             _editableSession = result.Session;
+            if (previousSession is not null)
+                TryUpdateProjectSessionOwner(previousSession, result.Session);
+            _projectTransactionCoordinator?.InvalidateCompoundEntry();
+        }
 
         if (result.ShouldSetEditable)
             SourceTextEditor.IsReadOnly = false;
@@ -4373,6 +4886,55 @@ public partial class ShellWindow : Window
         viewModel.ShowOutputMessage("已取消导航，当前未保存修改仍保留。");
         viewModel.SetOperationStatus("导航已取消，未保存修改仍保留", "Warning");
         return false;
+    }
+
+    private bool TryAllowProjectBoundary(ShellViewModel viewModel)
+    {
+        if (_projectDocumentSessionStore?.HasDirtyDocuments == true)
+        {
+            int dirtyCount = _projectDocumentSessionStore.DirtyDocumentCount;
+            viewModel.ShowOutputMessage($"当前项目仍有 {dirtyCount} 个未保存文件；请逐文件保存、恢复或撤销项目事务后再继续。");
+            viewModel.SetOperationStatus("项目切换已取消：仍有未保存文件", "Warning");
+            return false;
+        }
+        return TryResolveDirtyNavigationBeforeLeavingCurrentFile(viewModel);
+    }
+
+    private void InitializeProjectDocumentSessionStore(ShellViewModel viewModel)
+    {
+        _projectDocumentSessionStore = null;
+        _projectTransactionCoordinator = null;
+        if (viewModel.CurrentProjectRootPath is not string rootPath)
+            return;
+
+        ReadonlyIniFileDescriptor[] files = viewModel.CurrentProjectFiles.ToArray();
+        if (files.Length == 0)
+            return;
+
+        _projectDocumentSessionStore = new Ra2ProjectDocumentSessionStore(
+            new ProjectOpenResult(rootPath, files),
+            new IniFileStore(),
+            _editableSessionService,
+            new Ra2EditorEncodingMetadataAdapter());
+        _projectTransactionCoordinator = new Ra2ProjectEditorTransactionCoordinator(
+            _projectDocumentSessionStore,
+            _editableSessionService,
+            new ShellActiveEditorProjection(this),
+            () => _fieldRegistryRuntimeService.CaptureProviderSnapshot().Revision);
+    }
+
+    private bool TryUpdateProjectSessionOwner(
+        Ra2EditableDocumentSession expected,
+        Ra2EditableDocumentSession replacement)
+    {
+        if (_projectDocumentSessionStore is null)
+            return true;
+        if (_projectDocumentSessionStore.TryGetSession(expected.DocumentState.FilePath, out Ra2EditableDocumentSession? current) &&
+            ReferenceEquals(current, replacement))
+        {
+            return true;
+        }
+        return _projectDocumentSessionStore.TryReplaceMany([new(expected, replacement)], out _);
     }
 
     private void UpdateEditorStateControls()
@@ -4396,10 +4958,13 @@ public partial class ShellWindow : Window
         }
     }
 
-    private static string BuildStatusDirtyStateText(Ra2EditorStateViewModel editorState, ShellViewModel viewModel)
+    private string BuildStatusDirtyStateText(Ra2EditorStateViewModel editorState, ShellViewModel viewModel)
     {
         if (viewModel.CurrentSnapshot is null)
             return "无文件";
+
+        if (_projectDocumentSessionStore?.DirtyDocumentCount is > 0 and int dirtyCount)
+            return dirtyCount == 1 ? "未保存（1 个文件）" : $"未保存（{dirtyCount} 个文件）";
 
         if (editorState.IsDirty)
             return "未保存";
@@ -5270,7 +5835,11 @@ public partial class ShellWindow : Window
             return;
         }
 
+        Ra2EditableDocumentSession? previousSession = _editableSession;
         _editableSession = result.Session;
+        if (previousSession is not null)
+            TryUpdateProjectSessionOwner(previousSession, result.Session);
+        _projectTransactionCoordinator?.InvalidateCompoundEntry();
         _programmaticSemanticUndoState = CreateCompletionSemanticUndoState(
             textBeforeCommit,
             completionResultBeforeCommit,
@@ -5852,6 +6421,17 @@ public partial class ShellWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
+        if (_projectDocumentSessionStore?.HasDirtyDocuments == true)
+        {
+            e.Cancel = true;
+            if (DataContext is ShellViewModel viewModel)
+            {
+                viewModel.ShowOutputMessage($"当前项目仍有 {_projectDocumentSessionStore.DirtyDocumentCount} 个未保存文件；关闭已取消。");
+                viewModel.SetOperationStatus("关闭已取消：仍有未保存文件", "Warning");
+            }
+            base.OnClosing(e);
+            return;
+        }
         _dockLayoutCoordinator.BeginShellClose();
         base.OnClosing(e);
         if (e.Cancel)
@@ -5861,6 +6441,7 @@ public partial class ShellWindow : Window
         }
 
         CloseAuthoringDiffDocument();
+        CloseVoxelStyleWorkspace();
         PersistCurrentDockLayout("关闭时无法保存窗口布局，已保留上一次有效布局。", reportSuccess: false);
     }
 

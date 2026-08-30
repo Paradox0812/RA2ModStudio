@@ -67,7 +67,25 @@ public sealed class Ra2AutomationBoundaryTests
         "Ra2AutomationTemplateExpansionResult",
         "Ra2AutomationTemplateExpansionFailureKind",
         "Ra2AutomationTemplateWarningKind",
-        "Ra2AutomationTemplateWarningFact"
+        "Ra2AutomationTemplateWarningFact",
+        "Ra2AutomationProjectSnapshot",
+        "Ra2AutomationProjectEditPlan",
+        "Ra2AutomationProjectEditPreviewFailureKind",
+        "Ra2AutomationProjectEditPreviewResult",
+        "Ra2AutomationAssetKind",
+        "Ra2AutomationAssetBindingState",
+        "Ra2AutomationAssetBindingFact",
+        "Ra2AutomationAssetRequirement",
+        "Ra2AutomationAssetManifest",
+        "Ra2AutomationProjectTemplateExpansionResult",
+        "IRa2AutomationAssetProvider",
+        "Ra2AutomationExistingAssetProvider",
+        "Ra2AutomationAssetProviderDescriptor",
+        "Ra2AutomationAssetSource",
+        "Ra2AutomationAssetArtifact",
+        "Ra2AutomationAssetProviderResult",
+        "Ra2AutomationAssetProviderFailureKind",
+        "Ra2AutomationAssetVerificationLevel"
     ];
 
     [Fact]

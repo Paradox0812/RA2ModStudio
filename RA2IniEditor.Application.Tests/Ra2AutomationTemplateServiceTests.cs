@@ -14,13 +14,15 @@ public sealed class Ra2AutomationTemplateServiceTests
     {
         Ra2AutomationTemplateService service = new();
         IReadOnlyList<Ra2AutomationTemplateDescriptor> first = service.GetTemplates();
-        Assert.Equal(6, first.Count);
+        Assert.Equal(9, first.Count);
         Ra2AutomationTemplateDescriptor descriptor = Assert.Single(first, item => item.Id == TemplateId);
         Ra2AutomationTemplateDescriptor complete = Assert.Single(first, item => item.Id == "weapon-projectile-warhead-direct-fire-complete");
         Ra2AutomationTemplateDescriptor dual = Assert.Single(first, item => item.Id == "techno-primary-secondary-direct-fire-complete");
         Ra2AutomationTemplateDescriptor arcing = Assert.Single(first, item => item.Id == "weapon-projectile-arcing-complete");
         Ra2AutomationTemplateDescriptor homing = Assert.Single(first, item => item.Id == "weapon-projectile-homing-complete");
         Ra2AutomationTemplateDescriptor warhead = Assert.Single(first, item => item.Id == "weapon-warhead-yr-core-complete");
+        Ra2AutomationTemplateDescriptor unitDelivery = Assert.Single(first, item => item.Id == "ares-unitdelivery-superweapon-complete");
+        Ra2AutomationTemplateDescriptor genericWarhead = Assert.Single(first, item => item.Id == "ares-genericwarhead-superweapon-complete");
 
         Assert.Same(first, service.GetTemplates());
         Assert.Equal(TemplateId, descriptor.Id);
@@ -36,6 +38,10 @@ public sealed class Ra2AutomationTemplateServiceTests
         Assert.Equal(8, arcing.Parameters.Count);
         Assert.Equal(6, homing.Parameters.Count);
         Assert.Equal(14, warhead.Parameters.Count);
+        Assert.Equal(15, unitDelivery.Parameters.Count);
+        Assert.Equal(15, genericWarhead.Parameters.Count);
+        Assert.False(unitDelivery.IsProjectTemplate);
+        Assert.False(genericWarhead.ProducesAssetManifest);
         Assert.All([arcing, homing, warhead], item => Assert.Equal(Ra2AutomationTemplateOutputKind.CompleteObject, item.OutputKind));
         Assert.Equal(["weaponId", "projectileId", "warheadId"], descriptor.Parameters.Select(parameter => parameter.Name));
         Assert.All(descriptor.Parameters, parameter =>
@@ -405,7 +411,7 @@ public sealed class Ra2AutomationTemplateServiceTests
             types.Where(type => type.IsClass).SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)),
             property => Assert.Null(property.SetMethod));
         Assert.Equal(
-            ["None", "TemplateNotFound", "TemplateVersionMismatch", "InvalidArguments", "MissingRequiredArgument", "UnknownArgument", "DuplicateArgument", "FieldSchemaNotFound", "BlockedFieldTrust", "OperationLimitExceeded", "DocumentTooLarge", "Canceled", "ExpansionFailed", "RequiredSectionNotFound", "RequiredSectionKindMismatch"],
+            ["None", "TemplateNotFound", "TemplateVersionMismatch", "InvalidArguments", "MissingRequiredArgument", "UnknownArgument", "DuplicateArgument", "FieldSchemaNotFound", "BlockedFieldTrust", "OperationLimitExceeded", "DocumentTooLarge", "Canceled", "ExpansionFailed", "RequiredSectionNotFound", "RequiredSectionKindMismatch", "ProjectDocumentNotFound", "ProjectDocumentAmbiguous"],
             Enum.GetNames<Ra2AutomationTemplateExpansionFailureKind>());
     }
 

@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE 开发路线图
 
-更新时间：2026-08-23
+更新时间：2026-08-26
 目标来源：`Docs/ProductVisionAndRequirements.md`  
 当前能力来源：`Docs/CurrentCapabilities.md`
 
@@ -29,16 +29,21 @@
 | POST-HLI-0 | Semantic / Host 优先级审计 | 代码事实、复用矩阵、语义优先路线 | Completed / DocsOnly |
 | CONTENT-1 | 语义对象/模板层 | Schema/Resolve query、Section Preview、模板编译、IDE Apply | Completed / Verified |
 | AGENT-MODE-1 | Chat / Work 与完整度路由 | 显式模式、skeleton/complete split、direct-fire complete profile | Completed / Verified |
-| AGENT-KNOWLEDGE-1 | BuiltIn RA2 Skill 层 | 15 个按需领域 Skill、来源审计、prompt 边界 | Completed / Verified |
+| AGENT-KNOWLEDGE-1 | BuiltIn RA2 Skill 层 | 18 个按需领域/项目绑定 Skill、来源审计、prompt 边界 | Completed / Verified through CONTENT-2E |
+| AGENT-SKILL-ROUTING-2 | Work 模型选 Skill Manifest | 第一轮元数据选取、Host 必选合并/模式/预算解析、第二轮正文注入 | Completed / automated verified |
+| AGENT-CONTEXT-3 | 两阶段共享上下文与受限项目查询 | 同一会话/主题/快照投影；两调用之间通过 HLI 查询命名 Section/引用 | Completed / automated verified |
 | CONTENT-2A | Techno Complete Profile | 现有 Techno Primary/Secondary 两条完整 direct-fire 链 | Completed / Verified |
 | CONTENT-2B | Projectile / Warhead Profiles | Arcing/Homing Projectile 与 YR core Warhead | Completed / Verified |
 | CONTENT-2C | AI Programming Tuple Profiles | 代码事实审计完成；typed tuple/动态 key/引用闭包契约与实现延期 | Audit completed / deferred by user |
 | CONTENT-2D-0/1 | 对象闭包与当前文档注册 | internal closure model + deterministic numbered registration allocator | Completed / verified |
-| CONTENT-2D-2 | 项目级多文档事务 | rules/art unified Preview、atomic Apply/rollback、compound Undo | Next / contract required |
-| CONTENT-2D-3+ | 完整对象 Profile 扩展 | Rules–Art binding、Techno、SuperWeapon/Faction | Future / source-gated |
+| CONTENT-2D-2 | 项目级多文档事务 | rules/art unified Preview、atomic Apply/rollback、compound Undo | Completed / Verified |
+| CONTENT-2D-3+ | 完整对象 Profile 扩展 | Rules–Art body+Cameo binding completed；SuperWeapon UnitDelivery/GenericWarhead completed；Techno/Faction 与其它超武 remain | Partial / source-gated |
+| CONTENT-2E | SuperWeapon / 支援技能 Profiles | Ares UnitDelivery、GenericWarhead typed complete；其它明确类型 generic reviewed fallback | Completed / automated verified |
+| CONTENT-PROJECT-UI-1 | Work 项目提案接线 | 复用已有 rules/art template、Project Preview/Diff、atomic Apply/Undo | Completed / verified |
+| DIFF-REVIEW-1 | 完整候选审阅 | canonical Result、unified Changes、有界对象上下文、文档/Section 导航 | Completed / automated verified；manual visual pending |
 | HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after stable CONTENT profiles |
-| ASSET-ICON-1 | Cameo/Icon 流水线 | provider abstraction、palette、preview、manifest、INI binding | Deferred |
-| ASSET-VOX-1 | VOX/SliceStack 流水线 | VOX、切片、part/pivot/palette manifest、VXLSE III 导入包 | Deferred |
+| ASSET-ICON-1 | Cameo/Icon 流水线 | Manifest/INI binding/Existing Provider completed；palette、codec、generation、Host persistence remain | Partial / provider foundation verified |
+| ASSET-VOX-1/4 | VOX 流水线 | canonical VOX、provider Host、GLB voxelization、Agent geometry/style review、人工语义蒙版、accepted candidate、verified VOX export | VOX review/export and session semantic masks completed；project Apply、VXL/HVA deferred |
 | ASSET-SHP-1 | SHP 动画流水线 | frame spec、palette、anchor、preview、export adapter | Deferred |
 | AUTOMATION-1 | Job/Event/Artifact Runtime | 状态机、取消、恢复、产物登记、审计 | Deferred |
 | ASSEMBLY-1 | 多产物自动装配 | INI + icon + VXL/SHP 引用图、提交策略 | Deferred |
@@ -109,7 +114,7 @@
 
 - Chat 默认零编辑工具；Work 只进入既有结构化 Preview/Apply 边界。
 - 明确“骨架/框架”才使用 skeleton；普通可用 direct-fire 武器链使用 complete profile。
-- 15 个 BuiltIn RA2 Skill 按领域渐进披露，禁止 scripts、外部根和直接工具权限。
+- 当前 18 个 BuiltIn RA2 Skill 按领域或明确 project capability 渐进披露，禁止 scripts、外部根和直接工具权限。
 - Field Registry 继续是字段 schema/trust 事实源，Content Profile 是对象完整度事实源，Host 是写入权限源。
 - 最新门禁：Application 147/147、IDE non-UI 2580/2580、clean package 1171 files。
 
@@ -145,6 +150,22 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 
 在真实切片导入样本通过前，不开发二进制 VXL writer。
 
+2026-08-26 系统侦察进一步确认：生成侧应采用 provider-neutral 的参考图/image-to-3D adapter，
+体素、palette、VOX 与 SliceStack 由本地确定性核心负责；VXLSE III 保持首版最终收口权威，
+Vengi/C&C parser 只作交叉验证。当前 Existing Asset Provider 只能闭合最终 `.vxl/.hva`，不能把
+VOX/PNG 中间产物冒充为成功 VXL。`ASSET-VOX-1A` 已实现分离式 Body/Turret/Barrel 装配契约、
+受限 VXL/HVA 元数据探针和真实 Body/Turret 样本交叉验证。用户提供的 VXLSE file `1.3.9.3281` / product
+`1.4.0.0` 及随包源码已经冻结 Downward/Rightward 切片寻址、direct-alpha occupancy、palette expansion 和
+nearest-colour 行为；pivot/mount、normal、HVA 和游戏表现仍待 1B 之后验收。详见
+`Docs/ASSET-VOX-1A_GoldenProbeAndSeparatedAssemblyFinalContract.md`。
+
+2026-08-26：`ASSET-VOX-1B Canonical Voxel Core` 已完成并自动验证。当前已有 internal 单部件规范快照、
+palette/quantizer、受限 MagicaVoxel VOX 交换、有界 Westwood VXL span 解码，以及 VXLSE-compatible RGBA/PNG
+SliceStack。真实 PNG -> 用户提供 VXLSE -> decoded VXL 结构验收已闭合 `3x4x5` 非对称 5-cell fixture；
+它仍不能宣称最终 VXL/HVA 或 GameReady。1C provider-neutral Host 已完成：可探测可信本地 provider、执行
+单次有界 image-to-mesh 任务、返回经哈希验证的 GLB/PNG 候选及来源记录；真实模型 adapter、视觉验收、
+项目接入和直接 VXL writer 仍分别冻结到后续独立阶段。
+
 ### ASSET-SHP-1
 
 先冻结动画规格、帧尺寸、方向/序列、anchor、palette、remap 和验证结果，再决定
@@ -178,13 +199,34 @@ adapter。首个纵向切片建议是一个 Cameo：文本/参考图输入 -> �
 当前停止点是：
 
 ```text
-CONTENT-2D-0/1 Object Closure + Current-Document Registration completed
+AGENT-QUERY-2 completed / automated verified
 ```
 
-CONTENT-2A/2B 已把双武器、原版 Arcing/Homing Projectile 与 YR core Warhead 固化为
-source-gated complete profiles。2D-0/1 已增加 internal typed registration 基础，但尚无生产 Profile
-启用。下一步先冻结 2D-2 多文档 Snapshot/Preview/Apply/Undo 契约，再实现 rules/art binding、
-Techno 和 SuperWeapon/Faction complete profiles。CONTENT-2C AI 写入继续按用户要求冻结。
+AGENT-QUERY-2 已让 Work 在捕获项目中搜索、补查并规范绑定现有对象，同时保持 Project Diff/显式 Apply/
+compound Undo 权威。下一步应先用真实 DeepSeek 验收自然语言实体检索；UI 只读摘要按
+`AGENT-TRACE-1_CompactRetrievalSummaryUiContract.md` 单独批准后实现。随后再决定扩展下一批 source-backed
+SuperWeapon profile 或审计自动化游戏测试 Host。`ASSET-HOST-1` 的显式持久化/冲突/回滚仍后置，
+CONTENT-2C AI 写入继续冻结。
 HOST-1 在这些高优先级语义面稳定后
 冻结 wire/session/permission。持久化模板、外部/可执行 Skill、multi-file、public Apply/Save、
 Job Runtime 和素材写入仍不在范围内。
+## ASSET-VOX next boundary after 1E-UI
+
+`ASSET-VOX-1E-UI-R2` is implemented and automated verified. The review workspace now accepts canonical VOX or an
+explicit VXL/PAL pair, and ordinary shading no longer depends on remap metadata. The next asset stage should not expand
+the same UI ad hoc.
+Choose one separately contracted direction after manual review:
+
+1. persistent semantic-mask interchange/import beyond the completed 4B session editor; or
+2. an accepted-preview handoff that keeps AssetHost/project-write/VXL-HVA authority explicit and reviewable.
+
+2026-08-28：第二条中的最小 handoff 已由 `ASSET-VOX-3B` 完成：用户显式固化一个不可变候选，并可导出经
+canonical codec 回读验证的 VOX 副本。它不是项目 Apply/Save，也不写 VXL/HVA。下一安全路线应在以下两者中
+单独立约：语义材质/部件识别与上色，或 VOX -> 分件 VXL/HVA 的确定性 materialization。
+
+2026-08-29：第一条的会话内 authoring 已由 `ASSET-VOX-4A/4B` 完成：DeepSeek 提供可选初稿，用户可在现有
+3D 工作区用区域赋值和稀疏表面画笔完成材质边界。持久化 mask interchange 和 VXL/HVA 仍需独立契约。
+
+2026-08-30：`ASSET-VOX-4B-STROKE-1` 已把稀疏表面画笔升级为单事务连续笔划，并增加部件/材质审阅配色。
+自动验证完成，当前安全停止点是用户物理 WPF 鼠标与 DPI 验收。通过后再决定持久化 mask interchange、
+上色工作流深化或 VOX → 分件 VXL/HVA；不在本阶段自动展开。

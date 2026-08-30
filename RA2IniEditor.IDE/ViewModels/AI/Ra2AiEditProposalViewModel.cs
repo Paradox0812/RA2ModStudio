@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.IO;
 using RA2IniEditor.IDE.AI;
 using RA2IniEditor.IDE.Editing;
 
@@ -41,21 +42,33 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
             ? Ra2AiEditProposalState.Blocked
             : Ra2AiEditProposalState.Ready;
         _resultMessage = proposal.RiskSummary;
-        Operations = Array.AsReadOnly(
-            proposal.Preview.SectionCreationPreviews
-                .Select(CreateSectionCreation)
-                .Concat(proposal.Preview.OperationPreviews.Select(operation =>
-                    CreateOperation(operation, proposal.Preview.Snapshot.Text)))
-                .ToArray());
+        Operations = proposal.Scope == Ra2AiAuthoringScope.Project
+            ? CreateProjectOperations(proposal.ProjectPreview)
+            : Array.AsReadOnly(
+                proposal.Preview.SectionCreationPreviews
+                    .Select(CreateSectionCreation)
+                    .Concat(proposal.Preview.OperationPreviews.Select(operation =>
+                        CreateOperation(operation, proposal.Preview.Snapshot.Text)))
+                    .ToArray());
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public Ra2AiEditProposal Proposal { get; }
 
-    public string Title => "建议修改当前文件";
+    public bool IsProject => Proposal.Scope == Ra2AiAuthoringScope.Project;
 
-    public string Summary => Proposal.Preview.Plan.Summary;
+    public string Title => IsProject ? "建议修改当前项目" : "建议修改当前文件";
+
+    public string Summary => IsProject ? Proposal.ProjectPreview.Plan.Summary : Proposal.Preview.Plan.Summary;
+
+    public string ProjectSummary => IsProject
+        ? $"{Proposal.ProjectPreview.DocumentPreviews.Count} 个 INI 文件 · {Proposal.ProjectPreview.AutomationResult.TotalOperationCount + Proposal.ProjectPreview.AutomationResult.TotalSectionCreationCount} 项结构化更改"
+        : string.Empty;
+
+    public string AssetManifestSummary => IsProject && Proposal.AssetManifest is not null
+        ? $"素材待办：{string.Join("、", Proposal.AssetManifest.Requirements.Select(item => item.FileName))}（不影响本次 INI 修改）"
+        : string.Empty;
 
     public string RiskSummary => Proposal.RiskSummary;
 
@@ -80,7 +93,9 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
     };
 
     public string ApplyButtonText
-        => Proposal.ApplyPolicy == Ra2AiEditProposalApplyPolicy.Caution
+        => IsProject
+            ? "应用到项目"
+            : Proposal.ApplyPolicy == Ra2AiEditProposalApplyPolicy.Caution
             ? "仍要应用"
             : "应用到当前文件";
 
@@ -100,7 +115,9 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
     public void MarkApplied(string message)
         => SetState(
             Ra2AiEditProposalState.Applied,
-            string.IsNullOrWhiteSpace(message)
+            IsProject
+                ? $"已应用到 {Proposal.ProjectPreview.DocumentPreviews.Count} 个内存文档，尚未保存；可使用 Ctrl+Z 整体撤销。"
+                : string.IsNullOrWhiteSpace(message)
                 ? "已应用到内存，尚未保存；可使用 Ctrl+Z 撤销。"
                 : $"{message} 可使用 Ctrl+Z 撤销。");
 
@@ -171,6 +188,24 @@ internal sealed class Ra2AiEditProposalViewModel : INotifyPropertyChanged
             $"[{preview.Operation.SectionName}]",
             $"新增空 Section（{preview.Operation.ExpectedSectionKind}）",
             evidence);
+    }
+
+    private static IReadOnlyList<Ra2AiEditProposalOperationViewModel> CreateProjectOperations(
+        Ra2ProjectEditPreview preview)
+    {
+        List<Ra2AiEditProposalOperationViewModel> items = [];
+        foreach (Ra2AutomationEditPreviewResult document in preview.DocumentPreviews)
+        {
+            int workCount = document.OperationPreviews.Count + document.SectionCreationPreviews.Count;
+            items.Add(new Ra2AiEditProposalOperationViewModel(
+                "文件",
+                Path.GetFileName(document.FilePath),
+                $"{workCount} 项结构化更改",
+                document.AddedErrorCount == 0 && document.AddedWarningCount == 0
+                    ? "预览已验证 · 无新增错误或警告"
+                    : $"新增错误 {document.AddedErrorCount} · 新增警告 {document.AddedWarningCount}"));
+        }
+        return Array.AsReadOnly(items.ToArray());
     }
 
     internal static string ReadOriginalValue(

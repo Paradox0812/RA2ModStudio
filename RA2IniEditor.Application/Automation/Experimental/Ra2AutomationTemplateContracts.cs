@@ -26,13 +26,16 @@ public enum Ra2AutomationTemplateExpansionFailureKind
     Canceled,
     ExpansionFailed,
     RequiredSectionNotFound,
-    RequiredSectionKindMismatch
+    RequiredSectionKindMismatch,
+    ProjectDocumentNotFound,
+    ProjectDocumentAmbiguous
 }
 
 public enum Ra2AutomationTemplateOutputKind
 {
     Skeleton = 0,
-    CompleteObject
+    CompleteObject,
+    ProjectBinding
 }
 
 public enum Ra2AutomationTemplateWarningKind
@@ -68,7 +71,9 @@ public sealed class Ra2AutomationTemplateDescriptor
         string displayName,
         string summary,
         Ra2AutomationTemplateOutputKind outputKind,
-        IEnumerable<Ra2AutomationTemplateParameterDescriptor> parameters)
+        IEnumerable<Ra2AutomationTemplateParameterDescriptor> parameters,
+        bool isProjectTemplate = false,
+        bool producesAssetManifest = false)
     {
         Id = id;
         Version = version;
@@ -76,6 +81,8 @@ public sealed class Ra2AutomationTemplateDescriptor
         Summary = summary;
         OutputKind = outputKind;
         Parameters = Array.AsReadOnly(parameters.ToArray());
+        IsProjectTemplate = isProjectTemplate;
+        ProducesAssetManifest = producesAssetManifest;
     }
 
     public string Id { get; }
@@ -84,6 +91,8 @@ public sealed class Ra2AutomationTemplateDescriptor
     public string Summary { get; }
     public Ra2AutomationTemplateOutputKind OutputKind { get; }
     public IReadOnlyList<Ra2AutomationTemplateParameterDescriptor> Parameters { get; }
+    public bool IsProjectTemplate { get; }
+    public bool ProducesAssetManifest { get; }
 }
 
 public sealed class Ra2AutomationTemplateArgument

@@ -137,6 +137,19 @@ public sealed class IdeDiagnosticsGuardrailTests
         Assert.Contains("*.suo", gitIgnoreText);
         Assert.Contains("*.vsidx", gitIgnoreText);
         Assert.Contains("*.DotSettings.user", gitIgnoreText);
+        Assert.Contains(".verify-*/", gitIgnoreText);
+        Assert.Contains(".env.*", gitIgnoreText);
+        Assert.Contains("!.env.example", gitIgnoreText);
+        Assert.DoesNotContain("*.vox", gitIgnoreText);
+        Assert.DoesNotContain("*.semantic.json", gitIgnoreText);
+
+        string gitAttributesPath = Path.Combine(root, ".gitattributes");
+        string gitAttributesText = File.ReadAllText(gitAttributesPath);
+
+        Assert.Contains("* text=auto eol=lf", gitAttributesText);
+        Assert.Contains("*.sln text eol=crlf", gitAttributesText);
+        Assert.Contains("*.vox binary", gitAttributesText);
+        Assert.Contains("*.vxl binary", gitAttributesText);
     }
 
     [Fact]
@@ -150,9 +163,18 @@ public sealed class IdeDiagnosticsGuardrailTests
         Assert.Contains("bin", scriptText);
         Assert.Contains("obj", scriptText);
         Assert.Contains("TestResults", scriptText);
+        Assert.Contains(".verify-*", scriptText);
         Assert.Contains("Compress-Archive", scriptText);
         Assert.DoesNotContain("dotnet build", scriptText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("dotnet test", scriptText, StringComparison.OrdinalIgnoreCase);
+
+        string cleanPackageScriptPath = Path.Combine(root, "tools", "package-source-clean.ps1");
+        string cleanPackageScriptText = File.ReadAllText(cleanPackageScriptPath);
+        Assert.Contains(".verify-*", cleanPackageScriptText);
+        Assert.Contains("\\.verify-[^/]+/", cleanPackageScriptText);
+        Assert.Contains(".env.example", cleanPackageScriptText);
+        Assert.Contains("secrets.json", cleanPackageScriptText);
+        Assert.Contains("appsettings.*.Local.json", cleanPackageScriptText);
     }
 
     [Fact]

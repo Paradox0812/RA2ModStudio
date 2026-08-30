@@ -55,6 +55,33 @@ public sealed class Ra2AiAuthoringToolAdapterTests
     }
 
     [Fact]
+    public void TryCreatePlan_InferMissingSectionCreationForModelOwnedCompleteObject()
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            """
+            {
+              "outcome":"proposal",
+              "summary":"Create a complete weapon chain",
+              "operations":[
+                {"kind":"upsert_field","section":"E1","key":"Secondary","value":"E1CoaxMG"},
+                {"kind":"upsert_field","section":"E1CoaxMG","key":"Damage","value":"15"},
+                {"kind":"upsert_field","section":"E1CoaxMG","key":"Projectile","value":"E1CoaxBullet"},
+                {"kind":"upsert_field","section":"E1CoaxMG","key":"Warhead","value":"E1CoaxWH"},
+                {"kind":"upsert_field","section":"E1CoaxBullet","key":"Image","value":"50CAL"},
+                {"kind":"upsert_field","section":"E1CoaxWH","key":"Verses","value":"100%,80%,70%,60%,40%,40%,30%,20%,20%,100%,100%"}
+              ]
+            }
+            """);
+
+        Assert.True(result.Succeeded, result.Message);
+        Ra2IniEditPlan plan = Assert.IsType<Ra2IniEditPlan>(result.Plan);
+        Assert.Equal(
+            ["E1CoaxMG", "E1CoaxBullet", "E1CoaxWH"],
+            plan.SectionCreations.Select(section => section.SectionName));
+        Assert.Equal(6, plan.Operations.Count);
+    }
+
+    [Fact]
     public void TryCreatePlan_NormalizesUnambiguousNonStrictProviderDrift()
     {
         Ra2AiEditPlanCreationResult result = Parse(
@@ -102,7 +129,6 @@ public sealed class Ra2AiAuthoringToolAdapterTests
     [InlineData("{")]
     [InlineData("[]")]
     [InlineData("""{"summary":"x"}""")]
-    [InlineData("""{"outcome":"proposal","summary":1,"operations":[]}""")]
     [InlineData("""{"outcome":"proposal","summary":"x","operations":{}}""")]
     public void TryCreatePlan_RejectsInvalidArgumentShape(string arguments)
     {
@@ -112,10 +138,22 @@ public sealed class Ra2AiAuthoringToolAdapterTests
     }
 
     [Fact]
-    public void TryCreatePlan_RejectsUnknownRootAndOperationProperties()
+    public void TryCreatePlan_IgnoresAdditiveRootAndOperationMetadata()
     {
         Ra2AiEditPlanCreationResult root = Parse(
-            """{"outcome":"proposal","summary":"x","operations":[],"documentId":"model-owned"}""");
+            """
+            {
+              "outcome":"proposal",
+              "summary":"x",
+              "confidence":0.9,
+              "operations":[{
+                "kind":"upsert_field",
+                "section":"E1",
+                "key":"Strength",
+                "value":"125"
+              }]
+            }
+            """);
         Ra2AiEditPlanCreationResult operation = Parse(
             """
             {
@@ -131,8 +169,10 @@ public sealed class Ra2AiAuthoringToolAdapterTests
             }
             """);
 
-        Assert.Equal(Ra2AiEditProposalFailureKind.UnknownArgumentProperty, root.FailureKind);
-        Assert.Equal(Ra2AiEditProposalFailureKind.UnknownArgumentProperty, operation.FailureKind);
+        Assert.True(root.Succeeded, root.Message);
+        Assert.True(operation.Succeeded, operation.Message);
+        Assert.Single(Assert.IsType<Ra2IniEditPlan>(root.Plan).Operations);
+        Assert.Single(Assert.IsType<Ra2IniEditPlan>(operation.Plan).Operations);
     }
 
     [Fact]
@@ -202,9 +242,64 @@ public sealed class Ra2AiAuthoringToolAdapterTests
         Assert.Null(result.Plan);
     }
 
+    [Fact]
+    public void TryCreatePlan_ClarificationKeepsEchoedProposalPayloadInert()
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            """
+            {
+              "outcome":"NEEDS-CLARIFICATION",
+              "message":"请确认目标对象。",
+              "summary":"must stay inert",
+              "operations":[{"kind":"upsert_field","section":"E1","key":"Strength","value":"999"}]
+            }
+            """);
+
+        Assert.True(result.NeedsClarification);
+        Assert.Null(result.Plan);
+        Assert.Equal("请确认目标对象。", result.Message);
+    }
+
     [Theory]
-    [InlineData("""{"outcome":"needs_clarification","message":"x","summary":"y"}""")]
-    [InlineData("""{"outcome":"needs_clarification","message":"x","operations":[]}""")]
+    [InlineData("")]
+    [InlineData("null")]
+    [InlineData("{}")]
+    public void TryCreatePlan_ClarificationStillRequiresReadableMessage(string messageJson)
+    {
+        string messageProperty = string.IsNullOrEmpty(messageJson)
+            ? string.Empty
+            : $",\"message\":{messageJson}";
+        Ra2AiEditPlanCreationResult result = Parse(
+            $"{{\"outcome\":\"needs_clarification\"{messageProperty}}}");
+
+        Assert.Equal(Ra2AiToolAdaptationOutcomeKind.Failed, result.OutcomeKind);
+        Assert.Equal(Ra2AiEditProposalFailureKind.InvalidArgumentsJson, result.FailureKind);
+        Assert.Null(result.Plan);
+    }
+
+    [Theory]
+    [InlineData("\"\"")]
+    [InlineData("null")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("42")]
+    public void TryCreatePlan_ProposalIgnoresNonExecutablePresentationDrift(string displayJson)
+    {
+        Ra2AiEditPlanCreationResult result = Parse(
+            $$"""
+            {
+              "outcome":"PRO-POSAL",
+              "summary":{{displayJson}},
+              "message":{{displayJson}},
+              "operations":[{"kind":"upsert_field","section":"E1","key":"Strength","value":"125"}]
+            }
+            """);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal("AI 结构化修改建议", Assert.IsType<Ra2IniEditPlan>(result.Plan).Summary);
+    }
+
+    [Theory]
     [InlineData("""{"outcome":"proposal","summary":"x","operations":[],"message":"mixed"}""")]
     [InlineData("""{"outcome":"unknown","message":"x"}""")]
     public void TryCreatePlan_RejectsMixedOrUnknownOutcomeShapes(string arguments)

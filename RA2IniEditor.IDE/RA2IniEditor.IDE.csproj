@@ -16,6 +16,9 @@
     </ProjectReference>
     <ProjectReference Include="..\RA2IniEditor.Core\RA2IniEditor.Core.csproj" />
     <ProjectReference Include="..\RA2IniEditor.Infrastructure\RA2IniEditor.Infrastructure.csproj" />
+    <ProjectReference Include="..\RA2IniEditor.AssetHost\RA2IniEditor.AssetHost.csproj" />
+    <ProjectReference Include="..\RA2IniEditor.AssetProviders.TencentHy3D\RA2IniEditor.AssetProviders.TencentHy3D.csproj"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,5 +44,29 @@
     <Content Include="..\Docs\SmokeChecklist_v0.5.0-preview.md" Link="SmokeChecklist_v0.5.0-preview.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="AgentSkills\**\*.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="VoxelStyles\**\*.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="PrepareTencentHy3DProviderBundle" AfterTargets="Build">
+    <PropertyGroup>
+      <_TencentProviderSource>$(MSBuildProjectDirectory)\..\RA2IniEditor.AssetProviders.TencentHy3D\bin\$(Configuration)\net8.0</_TencentProviderSource>
+      <_TencentProviderBundle>$(TargetDir)Providers\TencentHy3D</_TencentProviderBundle>
+      <_TencentProviderExe>$(_TencentProviderBundle)\RA2IniEditor.AssetProviders.TencentHy3D.exe</_TencentProviderExe>
+    </PropertyGroup>
+    <ItemGroup>
+      <_TencentProviderFiles Include="$(_TencentProviderSource)\RA2IniEditor.AssetProviders.TencentHy3D.exe" />
+      <_TencentProviderFiles Include="$(_TencentProviderSource)\RA2IniEditor.AssetProviders.TencentHy3D.dll" />
+      <_TencentProviderFiles Include="$(_TencentProviderSource)\RA2IniEditor.AssetProviders.TencentHy3D.deps.json" />
+      <_TencentProviderFiles Include="$(_TencentProviderSource)\RA2IniEditor.AssetProviders.TencentHy3D.runtimeconfig.json" />
+    </ItemGroup>
+    <MakeDir Directories="$(_TencentProviderBundle)" />
+    <Copy SourceFiles="@(_TencentProviderFiles)" DestinationFolder="$(_TencentProviderBundle)" SkipUnchangedFiles="true" />
+    <GetFileHash Files="$(_TencentProviderExe)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_TencentProviderHash" />
+    </GetFileHash>
+    <PropertyGroup>
+      <_TencentManifest>{&quot;schema&quot;:&quot;ra2-asset-provider-bundle/1&quot;,&quot;executable&quot;:&quot;RA2IniEditor.AssetProviders.TencentHy3D.exe&quot;,&quot;sha256&quot;:&quot;@(_TencentProviderHash-&gt;'%(FileHash)')&quot;,&quot;protocol&quot;:&quot;ra2-voxel-generation/1&quot;,&quot;providerId&quot;:&quot;tencent-hy3d-openai-compatible&quot;,&quot;providerVersion&quot;:&quot;1.0.0&quot;,&quot;modelId&quot;:&quot;hunyuan-3d-professional&quot;,&quot;modelRevision&quot;:&quot;3.1-geometry&quot;,&quot;capability&quot;:&quot;ReferenceImageToMesh&quot;}</_TencentManifest>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_TencentProviderBundle)\provider.bundle.json" Lines="$(_TencentManifest)" Overwrite="true" Encoding="UTF-8" />
+  </Target>
 </Project>

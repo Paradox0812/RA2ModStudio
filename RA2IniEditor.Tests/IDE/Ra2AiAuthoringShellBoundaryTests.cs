@@ -1,9 +1,108 @@
 using Xunit;
+using RA2IniEditor.IDE.AI;
+using RA2IniEditor.IDE.Views;
 
 namespace RA2IniEditor.Tests.IDE;
 
 public sealed class Ra2AiAuthoringShellBoundaryTests
 {
+    [Fact]
+    public void RetrievalSummary_UsesCompactHostFactsAndHidesTerminalQueryFailures()
+    {
+        Ra2AiContextQueryRequest query = new(
+            Ra2AiContextQueryKind.GetSection,
+            "rules",
+            "HTNK",
+            string.Empty,
+            null,
+            null,
+            0);
+        Ra2AiContextQueryResult fact = new(
+            query,
+            true,
+            string.Empty,
+            string.Empty,
+            new Ra2AiContextSectionFact("HTNK", "Vehicle", 0, 1, [], false),
+            null);
+        Ra2AiSemanticRetrievalAttempt attempt = new(
+            1,
+            [query],
+            [fact],
+            1,
+            Ra2AiResponseKind.ToolCalls,
+            1200);
+        Ra2AiResolvedEntityBinding binding = new(
+            "techno",
+            "rules",
+            "HTNK",
+            "Vehicle",
+            "HTNK",
+            "ExactSectionId",
+            100);
+        Ra2AiSemanticRetrievalResult ready = new(
+            [fact],
+            [binding],
+            [attempt],
+            Ra2AiSemanticRetrievalStopReason.EvidenceReady,
+            "ready");
+
+        Assert.Equal(
+            "项目检索：2 轮 · 1 个实体 · 1 项事实 · 已就绪",
+            ShellWindow.FormatAiAssistantRetrievalSummary(ready));
+        Assert.EndsWith(
+            "无新证据，使用现有事实",
+            ShellWindow.FormatAiAssistantRetrievalSummary(
+                ready with { StopReason = Ra2AiSemanticRetrievalStopReason.NoProgress }));
+        Assert.EndsWith(
+            "达到补查上限",
+            ShellWindow.FormatAiAssistantRetrievalSummary(
+                ready with { StopReason = Ra2AiSemanticRetrievalStopReason.RoundLimit }));
+        Assert.Null(ShellWindow.FormatAiAssistantRetrievalSummary(
+            ready with { StopReason = Ra2AiSemanticRetrievalStopReason.NeedsClarification }));
+        Assert.Null(ShellWindow.FormatAiAssistantRetrievalSummary(
+            ready with { StopReason = Ra2AiSemanticRetrievalStopReason.ProviderFailure }));
+        Assert.Null(ShellWindow.FormatAiAssistantRetrievalSummary(
+            new Ra2AiSemanticRetrievalResult([], [], [], Ra2AiSemanticRetrievalStopReason.NoRefinementRequired, "none")));
+    }
+
+    [Fact]
+    public void RetrievalSummary_IsDynamicMetadataWithoutShellXamlOrRawProviderDisclosure()
+    {
+        string root = TestRepositoryRoot.Find();
+        string shellCode = File.ReadAllText(
+            Path.Combine(root, "RA2IniEditor.IDE", "Views", "ShellWindow.xaml.cs"));
+        string shellXaml = File.ReadAllText(
+            Path.Combine(root, "RA2IniEditor.IDE", "Views", "ShellWindow.xaml"));
+
+        Assert.Contains("AiAssistant.RetrievalSummary", shellCode, StringComparison.Ordinal);
+        Assert.Contains("IdeAiMetadataTextStyle", shellCode, StringComparison.Ordinal);
+        Assert.Contains("TextTrimming = TextTrimming.CharacterEllipsis", shellCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("AiAssistant.RetrievalSummary", shellXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("retrieval.Message", shellCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("attempt.PromptCharacters", shellCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Shell_PassesAlreadyCapturedContextSourcesAndExistingGatewayWithoutUiChanges()
+    {
+        string root = TestRepositoryRoot.Find();
+        string shellCode = File.ReadAllText(
+            Path.Combine(root, "RA2IniEditor.IDE", "Views", "ShellWindow.xaml.cs"));
+        string shellXaml = File.ReadAllText(
+            Path.Combine(root, "RA2IniEditor.IDE", "Views", "ShellWindow.xaml"));
+
+        Assert.Contains(
+            "new Ra2AiContextSourceSet(authoringRequestContext, projectAuthoringRequestContext)",
+            shellCode,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "DeepSeekRa2AiClientFactory.CreateClient(configurationSnapshot),\r\n            _automationCapabilityGateway",
+            shellCode.Replace("\n", "\r\n", StringComparison.Ordinal).Replace("\r\r\n", "\r\n", StringComparison.Ordinal),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("Ra2AiContextSourceSet", shellXaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("context_queries", shellXaml, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Shell_EnablesStructuredEditingOnlyForOfficialEndpointAndEditableSnapshot()
     {
@@ -28,9 +127,17 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
-            "editAvailability != Ra2AiEditAvailabilityKind.Available",
+            "editAvailability is Ra2AiEditAvailabilityKind.MissingConfiguration or",
             shellCode,
             StringComparison.Ordinal);
+        Assert.Contains("CaptureRulesArtProjectAuthoringContext", shellCode, StringComparison.Ordinal);
+        Assert.Contains("ProjectEditAvailability = projectAvailability", shellCode, StringComparison.Ordinal);
+        Assert.Contains("_projectDocumentSessionStore.MemberFilePaths", shellCode, StringComparison.Ordinal);
+        Assert.Contains("viewModel.CurrentProjectFiles.ToArray()", shellCode, StringComparison.Ordinal);
+        Assert.Contains("Work 项目：", shellCode, StringComparison.Ordinal);
+        Assert.Contains("ResolveRulesWithOptionalArtTargets", shellCode, StringComparison.Ordinal);
+        Assert.Contains("未找到唯一 rulesmd.ini 或 rules.ini", shellCode, StringComparison.Ordinal);
+        Assert.Contains("描述当前文件或当前项目要完成的修改。", shellCode, StringComparison.Ordinal);
         Assert.DoesNotContain(
             "interactionRoute.Kind == Ra2AiInteractionRouteKind.UnsupportedWorkCapability",
             shellCode,
@@ -40,11 +147,15 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
-            "PrepareAndAttachAiEditProposalAsync(",
+            "new Ra2AiBoundedStructuredReplanRequest(",
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
-            "_aiProposalPreparationRunner.PrepareAsync(",
+            "replanCoordinator.ExecuteAsync(",
+            shellCode,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "AttachPreparedAiEditProposal(",
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
@@ -68,9 +179,12 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             shellCode,
             StringComparison.Ordinal);
         Assert.Contains(
-            "$\"结构化修改建议：{proposal.Preview.Plan.Summary}\"",
+            "proposal.ProjectPreview.Plan.Summary : proposal.Preview.Plan.Summary",
             shellCode,
             StringComparison.Ordinal);
+        Assert.DoesNotContain("Ra2AiStructuredRepairPolicy", shellCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("SendStructuredRepairAsync", shellCode, StringComparison.Ordinal);
+        Assert.Contains("已自动修正 1 次。", shellCode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -136,6 +250,8 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             "AiAssistant.EditProposalCard.OpenDiffButton",
             proposalXaml,
             StringComparison.Ordinal);
+        Assert.Contains("AiAssistant.EditProposalCard.ProjectSummary", proposalXaml, StringComparison.Ordinal);
+        Assert.Contains("AiAssistant.EditProposalCard.AssetManifestSummary", proposalXaml, StringComparison.Ordinal);
         Assert.DoesNotContain("<DataGrid", proposalXaml, StringComparison.Ordinal);
     }
 
@@ -158,5 +274,10 @@ public sealed class Ra2AiAuthoringShellBoundaryTests
             "or Ra2AiResponseKind.AuthoringToolNotInvoked",
             shellCode,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "or Ra2AiResponseKind.LocalRejection",
+            shellCode,
+            StringComparison.Ordinal);
+        Assert.Contains("response.LocalRejectionMessage", shellCode, StringComparison.Ordinal);
     }
 }

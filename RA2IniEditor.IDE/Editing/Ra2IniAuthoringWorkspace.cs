@@ -9,7 +9,16 @@ internal interface IRa2IniAuthoringWorkspace
 
     Ra2IniEditApplyResult Apply(Ra2IniEditApplyRequest request);
 
+    Ra2ProjectEditPreview PreviewProject(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationProjectEditPlan plan,
+        CancellationToken cancellationToken = default);
+
+    Ra2ProjectEditApplyResult ApplyProject(Ra2ProjectEditApplyRequest request);
+
     bool TryDiscardActivePreview(Guid previewId);
+
+    bool TryDiscardActiveProjectPreview(Guid projectPreviewId);
 
     void InvalidateActivePreview();
 }
@@ -21,16 +30,20 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
 {
     private readonly IRa2IniEditPreviewService _previewService;
     private readonly IRa2EditorTransactionPort _transactionPort;
+    private readonly IRa2ProjectEditPreviewService _projectPreviewService;
     private readonly object _previewGate = new();
     private long _previewGeneration;
     private Ra2IniEditPreview? _activePreview;
+    private Ra2ProjectEditPreview? _activeProjectPreview;
 
     public Ra2IniAuthoringWorkspace(
         IRa2IniEditPreviewService previewService,
-        IRa2EditorTransactionPort transactionPort)
+        IRa2EditorTransactionPort transactionPort,
+        IRa2ProjectEditPreviewService? projectPreviewService = null)
     {
         _previewService = previewService ?? throw new ArgumentNullException(nameof(previewService));
         _transactionPort = transactionPort ?? throw new ArgumentNullException(nameof(transactionPort));
+        _projectPreviewService = projectPreviewService ?? new Ra2ProjectEditPreviewService();
     }
 
     public Ra2IniEditPreview Preview(
@@ -46,6 +59,7 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
         {
             generation = AdvanceGeneration();
             _activePreview = null;
+            _activeProjectPreview = null;
         }
 
         Ra2IniEditPreview preview;
@@ -78,6 +92,48 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
                 _activePreview = preview;
         }
 
+        return preview;
+    }
+
+    public Ra2ProjectEditPreview PreviewProject(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationProjectEditPlan plan,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(plan);
+        long generation;
+        lock (_previewGate)
+        {
+            generation = AdvanceGeneration();
+            _activePreview = null;
+            _activeProjectPreview = null;
+        }
+
+        Ra2ProjectEditPreview preview;
+        try
+        {
+            preview = _projectPreviewService.Preview(snapshot, plan, cancellationToken);
+            if (preview is null || !ReferenceEquals(preview.Snapshot, snapshot) || !ReferenceEquals(preview.Plan, plan))
+                throw new InvalidOperationException("Project preview was not bound to this Host invocation.");
+        }
+        catch (Exception exception) when (!IsFatal(exception))
+        {
+            Ra2AutomationProjectEditPreviewResult failed = new Ra2AutomationProjectEditPreviewResult(
+                snapshot,
+                plan,
+                Ra2AutomationProjectEditPreviewFailureKind.UnexpectedFailure,
+                "Project edit preview could not be generated.",
+                Guid.Empty,
+                []);
+            preview = Ra2ProjectEditPreview.FromAutomation(snapshot, plan, failed);
+        }
+
+        lock (_previewGate)
+        {
+            if (generation == _previewGeneration && preview.Succeeded)
+                _activeProjectPreview = preview;
+        }
         return preview;
     }
 
@@ -122,11 +178,58 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
         }
     }
 
+    public Ra2ProjectEditApplyResult ApplyProject(Ra2ProjectEditApplyRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Ra2ProjectEditPreview preview;
+        lock (_previewGate)
+        {
+            if (_activeProjectPreview is null ||
+                request.ProjectPreviewId == Guid.Empty ||
+                _activeProjectPreview.ProjectPreviewId != request.ProjectPreviewId)
+            {
+                return Ra2ProjectEditApplyResult.Failed(
+                    Ra2ProjectEditApplyOutcomeKind.PreviewUnavailable,
+                    request.ProjectPreviewId,
+                    "The project preview is no longer available.");
+            }
+            if (!request.ExplicitConfirmationGranted)
+            {
+                return Ra2ProjectEditApplyResult.Failed(
+                    Ra2ProjectEditApplyOutcomeKind.ConfirmationRequired,
+                    request.ProjectPreviewId,
+                    "Explicit confirmation is required before applying a project preview.");
+            }
+            preview = _activeProjectPreview;
+            _activeProjectPreview = null;
+            AdvanceGeneration();
+        }
+
+        try
+        {
+            return _transactionPort.ApplyProject(preview) ??
+                   Ra2ProjectEditApplyResult.Failed(Ra2ProjectEditApplyOutcomeKind.UnexpectedFailure, preview.ProjectPreviewId, "Project transaction returned no result.");
+        }
+        catch (Exception exception) when (!IsFatal(exception))
+        {
+            return Ra2ProjectEditApplyResult.Failed(Ra2ProjectEditApplyOutcomeKind.UnexpectedFailure, preview.ProjectPreviewId, "Project transaction failed unexpectedly.");
+        }
+        finally
+        {
+            lock (_previewGate)
+            {
+                _activeProjectPreview = null;
+                AdvanceGeneration();
+            }
+        }
+    }
+
     public void InvalidateActivePreview()
     {
         lock (_previewGate)
         {
             _activePreview = null;
+            _activeProjectPreview = null;
             AdvanceGeneration();
         }
     }
@@ -142,6 +245,22 @@ internal sealed class Ra2IniAuthoringWorkspace : IRa2IniAuthoringWorkspace
                 return false;
 
             _activePreview = null;
+            AdvanceGeneration();
+            return true;
+        }
+    }
+
+    public bool TryDiscardActiveProjectPreview(Guid projectPreviewId)
+    {
+        if (projectPreviewId == Guid.Empty)
+            return false;
+
+        lock (_previewGate)
+        {
+            if (_activeProjectPreview?.ProjectPreviewId != projectPreviewId)
+                return false;
+
+            _activeProjectPreview = null;
             AdvanceGeneration();
             return true;
         }

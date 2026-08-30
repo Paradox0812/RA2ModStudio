@@ -1,4 +1,5 @@
 using RA2IniEditor.IDE.AuthoringDiff;
+using RA2IniEditor.IDE.Editing;
 using Xunit;
 
 namespace RA2IniEditor.Tests.IDE;
@@ -149,6 +150,72 @@ public sealed class Ra2AuthoringDiffProjectionTests
         Assert.Equal(Ra2AuthoringDiffFailureKind.TooLarge, lineLimited.FailureKind);
         Assert.Equal(Ra2AuthoringDiffFailureKind.ResultLimitExceeded, hunkLimited.FailureKind);
         Assert.Empty(hunkLimited.Rows);
+    }
+
+    [Fact]
+    public void ProjectPreview_ProjectsStableFileHeadersAndAggregateStatistics()
+    {
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Ra2ProjectDiff"));
+        Ra2AutomationDocumentSnapshot rules = Snapshot(Guid.Parse("11111111-1111-1111-1111-111111111111"), Path.Combine(root, "rulesmd.ini"), "[E1]\nStrength=100\n");
+        Ra2AutomationDocumentSnapshot art = Snapshot(Guid.Parse("22222222-2222-2222-2222-222222222222"), Path.Combine(root, "artmd.ini"), "[E1]\nCameo=OLD\n");
+        Guid sessionId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        Ra2AutomationProjectSnapshot snapshot = new(sessionId, 3, root, [rules, art]);
+        Ra2AutomationProjectEditPlan plan = new(
+            Guid.NewGuid(), sessionId, 3,
+            [Plan(rules, "Strength", "150"), Plan(art, "Cameo", "NEW")],
+            "two files", "tests");
+        Ra2ProjectEditPreview preview = new Ra2ProjectEditPreviewService().Preview(snapshot, plan);
+
+        Ra2AuthoringDiffProjection result = _builder.Build(preview);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal(2, result.Rows.Count(row => row.Kind == Ra2AuthoringDiffRowKind.FileHeader));
+        Assert.Equal(new[] { "rulesmd.ini — rulesmd.ini", "artmd.ini — artmd.ini" },
+            result.Rows.Where(row => row.Kind == Ra2AuthoringDiffRowKind.FileHeader).Select(row => row.Text));
+        Assert.Equal(2, result.AddedLineCount);
+        Assert.Equal(2, result.RemovedLineCount);
+        Assert.Equal(2, result.HunkCount);
+    }
+
+    [Fact]
+    public void FailedOrCanceledProjectPreview_ProducesNoPartialRows()
+    {
+        string root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "Ra2ProjectDiff"));
+        Ra2AutomationDocumentSnapshot rules = Snapshot(Guid.NewGuid(), Path.Combine(root, "rulesmd.ini"), "[E1]\nStrength=100\n");
+        Guid sessionId = Guid.NewGuid();
+        Ra2AutomationProjectSnapshot snapshot = new(sessionId, 1, root, [rules]);
+        Ra2AutomationProjectEditPlan plan = new(Guid.NewGuid(), sessionId, 1, [Plan(rules, "Strength", "150")], "one file", "tests");
+        Ra2AutomationProjectEditPreviewResult failedResult = new(
+            snapshot, plan, Ra2AutomationProjectEditPreviewFailureKind.DocumentPreviewFailed,
+            "failed", Guid.Empty, [], rules.DocumentId, rules.FilePath, Ra2AutomationEditPreviewFailureKind.InvalidPlan);
+        Ra2ProjectEditPreview failed = Ra2ProjectEditPreview.FromAutomation(snapshot, plan, failedResult);
+
+        Assert.Equal(Ra2AuthoringDiffFailureKind.InvalidPreview, _builder.Build(failed).FailureKind);
+        using CancellationTokenSource source = new();
+        source.Cancel();
+        Ra2AuthoringDiffProjection canceled = _builder.Build(new Ra2ProjectEditPreviewService().Preview(snapshot, plan), source.Token);
+        Assert.Equal(Ra2AuthoringDiffFailureKind.Canceled, canceled.FailureKind);
+        Assert.Empty(canceled.Rows);
+    }
+
+    private static Ra2AutomationDocumentSnapshot Snapshot(Guid id, string path, string text)
+        => new(id, 1, path, text, true, new Ra2AutomationFieldRegistrySnapshot(new EmptyProvider(), 7));
+
+    private static Ra2AutomationEditPlan Plan(Ra2AutomationDocumentSnapshot snapshot, string key, string value)
+        => new(
+            Guid.NewGuid(), snapshot.DocumentId, snapshot.Version, snapshot.FieldRegistry.Revision,
+            [new Ra2AutomationEditOperation(Ra2AutomationEditOperationKind.UpsertField, "E1", key, value)],
+            "change", "tests");
+
+    private sealed class EmptyProvider : RA2IniEditor.Core.Schema.IRa2FieldDefinitionProvider
+    {
+        public bool TryGetField(RA2IniEditor.Core.Schema.Ra2SectionKind sectionKind, string key, out RA2IniEditor.Core.Schema.Ra2FieldDefinition definition)
+        {
+            definition = null!;
+            return false;
+        }
+        public IReadOnlyList<RA2IniEditor.Core.Schema.Ra2FieldDefinition> GetFields(RA2IniEditor.Core.Schema.Ra2SectionKind sectionKind) => [];
+        public bool IsKnownField(RA2IniEditor.Core.Schema.Ra2SectionKind sectionKind, string key) => false;
     }
 
     private static Ra2AutomationTextChange Change(int start, int length, string newText)

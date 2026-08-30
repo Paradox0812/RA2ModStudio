@@ -13,6 +13,21 @@ internal enum Ra2AiEditAvailabilityKind
     ResourceLimitExceeded
 }
 
+internal enum Ra2AiProjectEditAvailabilityKind
+{
+    Available = 0,
+    NoProject,
+    PairMissing,
+    PairAmbiguous,
+    SnapshotUnavailable,
+    ReadOnly,
+    ResourceLimitExceeded
+}
+
+internal readonly record struct Ra2AiAuthoringAvailability(
+    Ra2AiEditAvailabilityKind Document,
+    Ra2AiProjectEditAvailabilityKind RulesArtProject);
+
 internal enum Ra2AiInteractionRouteKind
 {
     Advisory = 0,
@@ -23,6 +38,10 @@ internal enum Ra2AiInteractionRouteKind
     ArcingProjectileExplicit,
     HomingProjectileExplicit,
     YrCoreWarheadExplicit,
+    ProjectRulesArtBindingExplicit,
+    AresUnitDeliverySuperWeaponExplicit,
+    AresGenericWarheadSuperWeaponExplicit,
+    SuperWeaponProjectEditExplicit,
     EditAmbiguous,
     EditUnavailable,
     UnsupportedWorkCapability
@@ -33,7 +52,8 @@ internal readonly record struct Ra2AiInteractionRoute(
     Ra2AiCapabilityMode CapabilityMode,
     Ra2AiEditAvailabilityKind EditAvailability,
     Ra2AiUserMode UserMode = Ra2AiUserMode.Work,
-    string DomainIntentId = "ra2-general");
+    string DomainIntentId = "ra2-general",
+    Ra2AiProjectEditAvailabilityKind ProjectEditAvailability = Ra2AiProjectEditAvailabilityKind.NoProject);
 
 /// <summary>仅根据用户可见提示词和本地可用性事实裁决编辑权限。</summary>
 internal static partial class Ra2AiInteractionRouter
@@ -187,6 +207,9 @@ internal static partial class Ra2AiInteractionRouter
                 Ra2AiInteractionRouteKind.ArcingProjectileExplicit => Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview,
                 Ra2AiInteractionRouteKind.HomingProjectileExplicit => Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview,
                 Ra2AiInteractionRouteKind.YrCoreWarheadExplicit => Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview,
+                Ra2AiInteractionRouteKind.AresUnitDeliverySuperWeaponExplicit => Ra2AiCapabilityMode.ProjectAresUnitDeliverySuperWeaponPreview,
+                Ra2AiInteractionRouteKind.AresGenericWarheadSuperWeaponExplicit => Ra2AiCapabilityMode.ProjectAresGenericWarheadSuperWeaponPreview,
+                Ra2AiInteractionRouteKind.SuperWeaponProjectEditExplicit => Ra2AiCapabilityMode.ProjectSuperWeaponEditPreview,
                 _ => Ra2AiCapabilityMode.AdvisoryOnly
             },
             availability,
@@ -257,7 +280,7 @@ internal static partial class Ra2AiInteractionRouter
     private static bool LooksLikeUnsupportedCompleteObject(string prompt)
         => ContainsAny(prompt,
         [
-            "完整单位", "完整建筑", "超级武器", "国家阵营", "ai触发", "ai trigger",
+            "完整单位", "完整建筑", "国家阵营", "ai触发", "ai trigger",
             "shp动画", "vxl", "vox", "图标", "cameo", "icon"
         ]);
 
@@ -274,7 +297,7 @@ internal static partial class Ra2AiInteractionRouter
             return "warhead-damage";
         if (ContainsAny(prompt, ["aitrigger", "ai trigger", "teamtype", "taskforce", "scripttype", "触发队伍", "作战小队", "脚本队伍"]))
             return "ai-programming";
-        if (ContainsAny(prompt, ["superweapon", "超级武器", "超武"]))
+        if (ContainsAny(prompt, ["superweapon", "support power", "超级武器", "超武", "支援技能", "支援能力"]))
             return "superweapon";
         if (ContainsAny(prompt, ["country", "side", "国家", "阵营", "派系"]))
             return "faction";

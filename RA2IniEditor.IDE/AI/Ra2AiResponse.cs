@@ -15,7 +15,8 @@ internal sealed class Ra2AiResponse
         Ra2AiStreamFinishKind finishKind = Ra2AiStreamFinishKind.Unknown,
         Ra2AiFailureKind failureKind = Ra2AiFailureKind.None,
         Ra2AiRequestDiagnostics? diagnostics = null,
-        IReadOnlyList<Ra2AiToolCall>? toolCalls = null)
+        IReadOnlyList<Ra2AiToolCall>? toolCalls = null,
+        string? localRejectionMessage = null)
     {
         Ra2AiToolCall[] toolCallArray = toolCalls?.ToArray() ?? [];
         bool isToolCallResponse = kind == Ra2AiResponseKind.ToolCalls;
@@ -25,6 +26,12 @@ internal sealed class Ra2AiResponse
         {
             throw new ArgumentException("AI response tool-call state is inconsistent.");
         }
+        bool isLocalRejection = kind == Ra2AiResponseKind.LocalRejection;
+        if (isLocalRejection != !string.IsNullOrWhiteSpace(localRejectionMessage) ||
+            (isLocalRejection && (failureKind != Ra2AiFailureKind.None || errorMessage is not null)))
+        {
+            throw new ArgumentException("AI local-rejection state is inconsistent.");
+        }
 
         Kind = kind;
         Text = text ?? string.Empty;
@@ -33,6 +40,7 @@ internal sealed class Ra2AiResponse
         FailureKind = failureKind;
         Diagnostics = diagnostics;
         ToolCalls = Array.AsReadOnly(toolCallArray);
+        LocalRejectionMessage = localRejectionMessage;
     }
 
     public Ra2AiResponseKind Kind { get; }
@@ -54,6 +62,9 @@ internal sealed class Ra2AiResponse
         => Kind is Ra2AiResponseKind.Success or Ra2AiResponseKind.ToolCalls;
 
     public IReadOnlyList<Ra2AiToolCall> ToolCalls { get; }
+
+    /// <summary>获取只由本地 pipeline 生成、可安全直接显示的拒绝原因。</summary>
+    public string? LocalRejectionMessage { get; }
 
     public static Ra2AiResponse CreateSuccess(
         string text,
@@ -154,6 +165,19 @@ internal sealed class Ra2AiResponse
             diagnostics: diagnostics);
     }
 
+    public static Ra2AiResponse CreateLocalRejection(
+        string safeUserMessage,
+        Ra2AiRequestDiagnostics? diagnostics = null)
+    {
+        if (string.IsNullOrWhiteSpace(safeUserMessage))
+            throw new ArgumentException("A safe local-rejection message is required.", nameof(safeUserMessage));
+
+        return new Ra2AiResponse(
+            Ra2AiResponseKind.LocalRejection,
+            diagnostics: diagnostics,
+            localRejectionMessage: safeUserMessage.Trim());
+    }
+
     public static Ra2AiResponse CreateIncomplete(
         string partialText,
         Ra2AiStreamFinishKind finishKind,
@@ -181,5 +205,13 @@ internal sealed class Ra2AiResponse
     }
 
     internal Ra2AiResponse WithDiagnostics(Ra2AiRequestDiagnostics diagnostics)
-        => new(Kind, Text, ErrorMessage, FinishKind, FailureKind, diagnostics, ToolCalls);
+        => new(
+            Kind,
+            Text,
+            ErrorMessage,
+            FinishKind,
+            FailureKind,
+            diagnostics,
+            ToolCalls,
+            LocalRejectionMessage);
 }

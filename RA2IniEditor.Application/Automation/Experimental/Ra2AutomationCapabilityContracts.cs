@@ -10,6 +10,8 @@ public static class Ra2AutomationCapabilityIds
     public const string DocumentFieldSchemaGet = "ini.document.field-schema.get";
     public const string DocumentReferenceResolve = "ini.document.reference.resolve";
     public const string ContentTemplateExpand = "ini.content.template.expand";
+    public const string ProjectEditPreview = "ini.project.edit.preview";
+    public const string ProjectContentTemplateExpand = "ini.project.content.template.expand";
 }
 
 public enum Ra2AutomationCapabilityRisk

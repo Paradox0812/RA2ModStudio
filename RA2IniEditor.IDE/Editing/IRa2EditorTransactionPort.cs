@@ -6,4 +6,10 @@ namespace RA2IniEditor.IDE.Editing;
 internal interface IRa2EditorTransactionPort
 {
     Ra2IniEditApplyResult Apply(Ra2IniEditPreview preview);
+
+    Ra2ProjectEditApplyResult ApplyProject(Ra2ProjectEditPreview preview)
+        => Ra2ProjectEditApplyResult.Failed(
+            Ra2ProjectEditApplyOutcomeKind.UnexpectedFailure,
+            preview?.ProjectPreviewId ?? Guid.Empty,
+            "Project editing is not connected to this transaction port.");
 }

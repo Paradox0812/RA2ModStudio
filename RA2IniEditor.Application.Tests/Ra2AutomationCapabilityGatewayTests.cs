@@ -13,7 +13,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Ra2AutomationCapabilityDescriptor[] capabilities =
             new Ra2AutomationCapabilityGateway().GetCapabilities().ToArray();
 
-        Assert.Equal(7, capabilities.Length);
+        Assert.Equal(9, capabilities.Length);
         Assert.Equal(
             new[]
             {
@@ -23,7 +23,9 @@ public sealed class Ra2AutomationCapabilityGatewayTests
                 Ra2AutomationCapabilityIds.DocumentEditPreview,
                 Ra2AutomationCapabilityIds.DocumentFieldSchemaGet,
                 Ra2AutomationCapabilityIds.DocumentReferenceResolve,
-                Ra2AutomationCapabilityIds.ContentTemplateExpand
+                Ra2AutomationCapabilityIds.ContentTemplateExpand,
+                Ra2AutomationCapabilityIds.ProjectEditPreview,
+                Ra2AutomationCapabilityIds.ProjectContentTemplateExpand
             },
             capabilities.Select(capability => capability.Id));
         Assert.All(capabilities, capability =>
@@ -42,6 +44,8 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[4].Risk);
         Assert.Equal(Ra2AutomationCapabilityRisk.Query, capabilities[5].Risk);
         Assert.Equal(Ra2AutomationCapabilityRisk.Edit, capabilities[6].Risk);
+        Assert.Equal(Ra2AutomationCapabilityRisk.Edit, capabilities[7].Risk);
+        Assert.Equal(Ra2AutomationCapabilityRisk.Edit, capabilities[8].Risk);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[0].MaximumResultItems);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[1].MaximumResultItems);
         Assert.Equal(Ra2AutomationDocumentQueryService.MaximumResultItems, capabilities[2].MaximumResultItems);
@@ -49,6 +53,8 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Equal(1, capabilities[4].MaximumResultItems);
         Assert.Equal(1, capabilities[5].MaximumResultItems);
         Assert.Null(capabilities[6].MaximumResultItems);
+        Assert.Equal(Ra2AutomationProjectSnapshot.MaximumDocumentCount, capabilities[7].MaximumResultItems);
+        Assert.Equal(Ra2AutomationProjectSnapshot.MaximumDocumentCount, capabilities[8].MaximumResultItems);
         Assert.Null(capabilities[0].MaximumOperations);
         Assert.Null(capabilities[1].MaximumOperations);
         Assert.Null(capabilities[2].MaximumOperations);
@@ -56,6 +62,8 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Null(capabilities[4].MaximumOperations);
         Assert.Null(capabilities[5].MaximumOperations);
         Assert.Equal(Ra2AutomationEditPlan.MaximumOperationCount, capabilities[6].MaximumOperations);
+        Assert.Equal(Ra2AutomationProjectEditPlan.MaximumAggregateWorkCount, capabilities[7].MaximumOperations);
+        Assert.Equal(Ra2AutomationProjectEditPlan.MaximumAggregateWorkCount, capabilities[8].MaximumOperations);
     }
 
     [Fact]
@@ -70,7 +78,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.True(list.IsReadOnly);
         Assert.Throws<NotSupportedException>(() => list.Clear());
         Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
-        Assert.Equal(7, first.Count);
+        Assert.Equal(9, first.Count);
     }
 
     [Fact]
@@ -111,7 +119,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         FieldInfo[] fields = typeof(Ra2AutomationCapabilityIds)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        Assert.Equal(8, fields.Length);
+        Assert.Equal(10, fields.Length);
         Assert.All(fields, field => Assert.True(field.IsLiteral));
         Assert.Equal(1, (int)fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.CurrentVersion))
             .GetRawConstantValue()!);
@@ -142,6 +150,14 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         Assert.Equal(
             "ini.content.template.expand",
             fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.ContentTemplateExpand))
+                .GetRawConstantValue());
+        Assert.Equal(
+            "ini.project.edit.preview",
+            fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.ProjectEditPreview))
+                .GetRawConstantValue());
+        Assert.Equal(
+            "ini.project.content.template.expand",
+            fields.Single(field => field.Name == nameof(Ra2AutomationCapabilityIds.ProjectContentTemplateExpand))
                 .GetRawConstantValue());
     }
 
@@ -204,6 +220,20 @@ public sealed class Ra2AutomationCapabilityGatewayTests
             typeof(Ra2AutomationDocumentSnapshot),
             typeof(Ra2AutomationTemplateExpansionRequest),
             typeof(CancellationToken));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.PreviewProject),
+            typeof(Ra2AutomationProjectEditPreviewResult),
+            typeof(Ra2AutomationProjectSnapshot),
+            typeof(Ra2AutomationProjectEditPlan),
+            typeof(CancellationToken));
+        AssertMethod(
+            typeof(IRa2AutomationCapabilityGateway),
+            nameof(IRa2AutomationCapabilityGateway.ExpandProjectTemplate),
+            typeof(Ra2AutomationProjectTemplateExpansionResult),
+            typeof(Ra2AutomationProjectSnapshot),
+            typeof(Ra2AutomationTemplateExpansionRequest),
+            typeof(CancellationToken));
 
         Type gateway = typeof(Ra2AutomationCapabilityGateway);
         Assert.True(gateway.IsSealed);
@@ -211,7 +241,7 @@ public sealed class Ra2AutomationCapabilityGatewayTests
         ConstructorInfo constructor = Assert.Single(gateway.GetConstructors(BindingFlags.Public | BindingFlags.Instance));
         Assert.Empty(constructor.GetParameters());
         Assert.Equal(
-            new[] { "ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "ResolveReference", "Validate" },
+            new[] { "ExpandProjectTemplate", "ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "PreviewProject", "ResolveReference", "Validate" },
             gateway.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                 .Select(method => method.Name)
                 .OrderBy(name => name, StringComparer.Ordinal));

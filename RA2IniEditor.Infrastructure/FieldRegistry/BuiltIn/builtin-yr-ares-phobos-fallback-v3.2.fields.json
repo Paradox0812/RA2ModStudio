@@ -87822,6 +87822,177 @@
       ]
     },
     {
+      "key": "Cameo",
+      "appliesTo": [
+        "ArtObject"
+      ],
+      "editorKind": "Reference",
+      "sourceKind": "Yuri",
+      "displayName": "Cameo",
+      "description": "指定对象在建造侧边栏中使用的常规 Cameo 图标资源 ID；YR 通常以不带扩展名的 SHP 资源名引用该图标。",
+      "schema": {
+        "type": "Reference"
+      },
+      "builtinPolicy": {
+        "role": "FallbackReference",
+        "diagnosticStrength": "Conservative",
+        "allowsUserOverride": true,
+        "blocksSave": false
+      },
+      "sources": [
+        {
+          "source": "Yuri",
+          "sourceVersion": "artmd-source-reviewed-2026-08-24",
+          "sourceUrl": "https://github.com/eppoha/Red_Alert_Yuri-s_Revenge/blob/main/artmd.ini",
+          "category": "YR artmd.ini game object art field and entries",
+          "provenance": "artmd.ini Cameo field comment and object entries"
+        },
+        {
+          "source": "ModEnc",
+          "sourceVersion": "online-verified-2026-08-24",
+          "sourceUrl": "https://modenc.renegadeprojects.com/Cameo",
+          "category": "ModEnc RA2/YR art(md).ini field documentation",
+          "provenance": "ModEnc Cameo page"
+        }
+      ],
+      "quality": "source-verified-yr-art-object-core-20260824",
+      "examples": [
+        {
+          "value": "HTNKICON",
+          "description": "引用 HTNKICON.shp 作为常规侧边栏图标"
+        }
+      ]
+    },
+    {
+      "key": "AltCameo",
+      "appliesTo": [
+        "ArtObject"
+      ],
+      "editorKind": "Reference",
+      "sourceKind": "Yuri",
+      "displayName": "AltCameo",
+      "description": "指定对象在替代状态下使用的侧边栏 Cameo 图标资源 ID；原版对象通常用它提供升级或替代图标。",
+      "schema": {
+        "type": "Reference"
+      },
+      "builtinPolicy": {
+        "role": "FallbackReference",
+        "diagnosticStrength": "Conservative",
+        "allowsUserOverride": true,
+        "blocksSave": false
+      },
+      "sources": [
+        {
+          "source": "Yuri",
+          "sourceVersion": "artmd-source-reviewed-2026-08-24",
+          "sourceUrl": "https://github.com/eppoha/Red_Alert_Yuri-s_Revenge/blob/main/artmd.ini",
+          "category": "YR artmd.ini game object art entries",
+          "provenance": "artmd.ini AltCameo object entries"
+        }
+      ],
+      "quality": "source-verified-yr-art-object-core-20260824",
+      "examples": [
+        {
+          "value": "HTNKUICO",
+          "description": "引用 HTNKUICO.shp 作为替代侧边栏图标"
+        }
+      ]
+    },
+    {
+      "key": "Voxel",
+      "appliesTo": [
+        "ArtObject"
+      ],
+      "editorKind": "Boolean",
+      "sourceKind": "Yuri",
+      "displayName": "Voxel",
+      "description": "设置该 art 对象是否作为 VXL/HVA 体素图像加载；yes 表示体素对象，no 表示使用 SHP 等非体素图像。",
+      "schema": {
+        "type": "Boolean",
+        "booleanStyle": "YesNo"
+      },
+      "builtinPolicy": {
+        "role": "FallbackReference",
+        "diagnosticStrength": "Conservative",
+        "allowsUserOverride": true,
+        "blocksSave": false
+      },
+      "sources": [
+        {
+          "source": "Yuri",
+          "sourceVersion": "artmd-source-reviewed-2026-08-24",
+          "sourceUrl": "https://github.com/eppoha/Red_Alert_Yuri-s_Revenge/blob/main/artmd.ini",
+          "category": "YR artmd.ini game object art field and entries",
+          "provenance": "artmd.ini Voxel field comment and object entries"
+        },
+        {
+          "source": "ModEnc",
+          "sourceVersion": "online-verified-2026-08-24",
+          "sourceUrl": "https://modenc.renegadeprojects.com/Voxel",
+          "category": "ModEnc RA2/YR art(md).ini field documentation",
+          "provenance": "ModEnc Voxel page"
+        }
+      ],
+      "quality": "source-verified-yr-art-object-core-20260824",
+      "examples": [
+        {
+          "value": "yes",
+          "description": "按 VXL/HVA 体素对象加载"
+        },
+        {
+          "value": "no",
+          "description": "按非体素图像加载"
+        }
+      ]
+    },
+    {
+      "key": "Remapable",
+      "appliesTo": [
+        "ArtObject"
+      ],
+      "editorKind": "Boolean",
+      "sourceKind": "Yuri",
+      "displayName": "Remapable",
+      "description": "设置该 art 对象是否允许使用所属方颜色进行重映射；yes 启用阵营色重映射，默认通常为 no。",
+      "schema": {
+        "type": "Boolean",
+        "booleanStyle": "YesNo"
+      },
+      "builtinPolicy": {
+        "role": "FallbackReference",
+        "diagnosticStrength": "Conservative",
+        "allowsUserOverride": true,
+        "blocksSave": false
+      },
+      "sources": [
+        {
+          "source": "Yuri",
+          "sourceVersion": "artmd-source-reviewed-2026-08-24",
+          "sourceUrl": "https://github.com/eppoha/Red_Alert_Yuri-s_Revenge/blob/main/artmd.ini",
+          "category": "YR artmd.ini game object art field and entries",
+          "provenance": "artmd.ini Remapable field comment and object entries"
+        },
+        {
+          "source": "ModEnc",
+          "sourceVersion": "online-verified-2026-08-24",
+          "sourceUrl": "https://modenc.renegadeprojects.com/Remapable",
+          "category": "ModEnc RA2/YR art(md).ini field documentation",
+          "provenance": "ModEnc Remapable page"
+        }
+      ],
+      "quality": "source-verified-yr-art-object-core-20260824",
+      "examples": [
+        {
+          "value": "yes",
+          "description": "启用所属方颜色重映射"
+        },
+        {
+          "value": "no",
+          "description": "保持资源自身颜色"
+        }
+      ]
+    },
+    {
       "key": "Theater",
       "appliesTo": [
         "ArtObject"

@@ -464,8 +464,10 @@ public sealed class WpfAutomationHarnessBoundaryTests
         string root = TestRepositoryRoot.Find();
         string appCode = File.ReadAllText(Path.Combine(root, "RA2IniEditor.IDE", "App.xaml.cs"));
         string shellCode = File.ReadAllText(Path.Combine(root, "RA2IniEditor.IDE", "Views", "ShellWindow.xaml.cs"));
+        string launchParserCode = File.ReadAllText(Path.Combine(root, "RA2IniEditor.IDE", "Startup", "Ra2LaunchRequestParser.cs"));
 
-        Assert.Contains("--automation-open-folder", appCode, StringComparison.Ordinal);
+        Assert.Contains("Ra2LaunchRequestParser.Parse(e.Args)", appCode, StringComparison.Ordinal);
+        Assert.Contains("--automation-open-folder", launchParserCode, StringComparison.Ordinal);
         Assert.Contains("OpenProjectFolderForAutomationAsync", shellCode, StringComparison.Ordinal);
         Assert.DoesNotContain("ProjectSaveService", appCode + shellCode, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ProjectLoader", appCode + shellCode, StringComparison.OrdinalIgnoreCase);

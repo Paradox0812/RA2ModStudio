@@ -141,6 +141,52 @@ public sealed class Ra2ContentTemplateCompilerTests
     }
 
     [Fact]
+    public void Compile_OpenReferencePolicyKeepsTrustGateButDoesNotTreatObservedEnumAsClosedWorld()
+    {
+        Ra2FieldDefinition observedImage = new(
+            "Image",
+            [Ra2SectionKind.Vehicle],
+            FieldEditorKind.Enum,
+            Ra2FieldSourceKind.User,
+            valueMetadata: new Ra2FieldValueMetadata(
+                Ra2FieldValueKind.Enum,
+                allowedValues: [new Ra2FieldAllowedValue("HTNK")]),
+            registryQuality: "source-verified");
+        Ra2AutomationDocumentSnapshot snapshot = Snapshot(Provider(observedImage));
+        Ra2ContentTemplateDefinition strict = new(
+            "strict-image", 1, "Strict image",
+            [Parameter("vehicleId"), Parameter("imageId")],
+            [new Ra2ContentTemplateSectionSpec(
+                Ra2ContentTemplateValueSource.Parameter("vehicleId"),
+                Ra2SectionKind.Vehicle,
+                [new Ra2ContentTemplateFieldSpec("Image", Ra2ContentTemplateValueSource.Parameter("imageId"))])]);
+        Ra2ContentTemplateDefinition openReference = new(
+            "open-image", 1, "Open image",
+            [Parameter("vehicleId"), Parameter("imageId")],
+            [new Ra2ContentTemplateSectionSpec(
+                Ra2ContentTemplateValueSource.Parameter("vehicleId"),
+                Ra2SectionKind.Vehicle,
+                [new Ra2ContentTemplateFieldSpec(
+                    "Image",
+                    Ra2ContentTemplateValueSource.Parameter("imageId"),
+                    Ra2ContentTemplateFieldValidationPolicy.OpenReference)])]);
+        KeyValuePair<string, string>[] arguments = [new("vehicleId", "HTNK"), new("imageId", "HTNKART")];
+
+        Ra2ContentTemplateCompilationResult rejected = new Ra2ContentTemplateCompiler().Compile(strict, arguments, snapshot);
+        Ra2ContentTemplateCompilationResult accepted = new Ra2ContentTemplateCompiler().Compile(openReference, arguments, snapshot);
+
+        AssertFailure(rejected, Ra2ContentTemplateCompilationFailureKind.InvalidFieldValue);
+        Assert.True(accepted.Succeeded, accepted.Message);
+        Assert.Equal("HTNKART", Assert.Single(accepted.Plan!.Operations).Value);
+
+        Ra2ContentTemplateCompilationResult invalidIdentifier = new Ra2ContentTemplateCompiler().Compile(
+            openReference,
+            [new("vehicleId", "HTNK"), new("imageId", "bad=value")],
+            snapshot);
+        AssertFailure(invalidIdentifier, Ra2ContentTemplateCompilationFailureKind.InvalidArgumentValue);
+    }
+
+    [Fact]
     public void Compile_MapsBlockedAndCautionTrustWithoutPartialFailures()
     {
         Ra2ContentTemplateDefinition definition = Definition();

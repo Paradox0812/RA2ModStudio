@@ -84,7 +84,7 @@ internal sealed class ShellDockLayoutCoordinator
                 if (tool is null)
                     continue;
 
-                PlaceAtHome(profile, tool);
+                PlaceAtCompiledDefaultHome(profile, tool);
                 if (profile.DefaultVisible)
                     EnsureVisible(tool);
             }
@@ -135,7 +135,7 @@ internal sealed class ShellDockLayoutCoordinator
             FindTool(contentId) is not { } tool)
             return;
 
-        ExecuteLayoutUpdate(() => PlaceAtHome(profile, tool));
+        ExecuteLayoutUpdate(() => PlaceAtCompiledDefaultHome(profile, tool));
     }
 
     public void ApplyToolCompiledDefaultVisibility(string contentId)
@@ -206,16 +206,26 @@ internal sealed class ShellDockLayoutCoordinator
         if (tool is null)
             return;
 
-        if (!tool.IsVisible)
-            tool.Show();
-
-        if (!tool.IsVisible || tool.Parent is not LayoutAnchorablePane)
+        if (profile.HomeZone == ShellDockHomeZone.Floating)
         {
             ExecuteLayoutUpdate(() =>
             {
                 PlaceAtHome(profile, tool);
-                EnsureVisible(tool);
             });
+        }
+        else
+        {
+            if (!tool.IsVisible)
+                tool.Show();
+
+            if (!tool.IsVisible || tool.Parent is not LayoutAnchorablePane)
+            {
+                ExecuteLayoutUpdate(() =>
+                {
+                    PlaceAtHome(profile, tool);
+                    EnsureVisible(tool);
+                });
+            }
         }
 
         Activate(tool);
@@ -263,6 +273,20 @@ internal sealed class ShellDockLayoutCoordinator
         }
     }
 
+    private void PlaceAtCompiledDefaultHome(ShellDockToolProfile profile, LayoutAnchorable tool)
+    {
+        // A hidden floating tool must not create a native AvalonDock host during Shell startup.
+        // Its preferred geometry is ready, and the canonical ShowAndActivate path materializes
+        // the floating host only when the user explicitly opens the tool.
+        if (profile.HomeZone == ShellDockHomeZone.Floating && !profile.DefaultVisible)
+        {
+            ApplyDefaultFloatingBounds(profile, tool);
+            return;
+        }
+
+        PlaceAtHome(profile, tool);
+    }
+
     private void PlaceAtHome(ShellDockToolProfile profile, LayoutAnchorable tool)
     {
         if (tool.IsAutoHidden)
@@ -271,6 +295,17 @@ internal sealed class ShellDockLayoutCoordinator
         if (profile.HomeZone == ShellDockHomeZone.Floating)
         {
             ApplyDefaultFloatingBounds(profile, tool);
+
+            // AvalonDock cannot Float() a hidden LayoutAnchorable whose current parent is
+            // LayoutRoot.Hidden. Show it first so the model restores a concrete pane, then
+            // override any persisted/bottom previous container with the floating home.
+            EnsureVisible(tool);
+            if (tool.Parent is not LayoutAnchorablePane)
+            {
+                tool.Parent?.RemoveChild(tool);
+                tool.AddToLayout(_manager, AnchorableShowStrategy.Right);
+            }
+
             if (!tool.IsFloating)
                 tool.Float();
             return;

@@ -8,4 +8,9 @@ public interface IRa2AutomationTemplateService
         Ra2AutomationDocumentSnapshot snapshot,
         Ra2AutomationTemplateExpansionRequest request,
         CancellationToken cancellationToken = default);
+
+    Ra2AutomationProjectTemplateExpansionResult ExpandProjectTemplate(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
+        CancellationToken cancellationToken = default);
 }

@@ -42,7 +42,7 @@ public sealed class Ra2AiAssistantPipelineTests
     [InlineData("把当前文件 [E1] 的 Strength 改成 150，其余内容不要改动", (int)Ra2AiInteractionRouteKind.EditExplicit)]
     [InlineData("不要修改当前文件，告诉我 Strength 的作用", (int)Ra2AiInteractionRouteKind.Advisory)]
     [InlineData("为当前文件创建一个完整单位", (int)Ra2AiInteractionRouteKind.UnsupportedWorkCapability)]
-    [InlineData("为当前文件创建一个超级武器", (int)Ra2AiInteractionRouteKind.UnsupportedWorkCapability)]
+    [InlineData("为当前文件创建一个超级武器", (int)Ra2AiInteractionRouteKind.EditAmbiguous)]
     public void InteractionRouter_DistinguishesPositiveEditsFromNegatedScopeAndUnsupportedObjects(
         string prompt,
         int expectedKind)
@@ -91,6 +91,7 @@ public sealed class Ra2AiAssistantPipelineTests
             CancellationToken.None);
 
         Assert.Equal(Ra2AiResponseKind.ProviderError, result.Response.Kind);
+        Assert.Equal(Ra2AiFailureKind.ProtocolError, result.Response.FailureKind);
         Assert.Equal("fake provider error", result.Response.ErrorMessage);
         Assert.NotNull(client.LastRequest);
         Assert.DoesNotContain("DeepSeek API key", result.Request.PromptText);
@@ -343,12 +344,17 @@ public sealed class Ra2AiAssistantPipelineTests
 
         Assert.Equal(1, client.NonStreamingCallCount);
         Assert.Equal(1, client.StreamingCallCount);
+        Assert.Contains("does not need to repeat rulesmd.ini/artmd.ini", client.Requests[0].PromptText, StringComparison.Ordinal);
+        Assert.Contains("Available built-in RA2 Skill manifest", client.Requests[0].UserContentText, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Active Built-in RA2 Skills", client.Requests[0].PromptText, StringComparison.Ordinal);
         Assert.Equal(Ra2AiIntentAnalysisStage.ToolName, Assert.Single(client.Requests[0].Tools).Name);
         Assert.Equal(
             Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName,
             Assert.Single(result.Request.Tools).Name);
         Assert.Equal(Ra2AiCapabilityMode.CurrentDocumentEditPreview, result.ResolvedInteractionRoute?.CapabilityMode);
         Assert.Contains("Validated Intent Analysis Package", result.Request.UserContentText, StringComparison.Ordinal);
+        Assert.Contains("Resolved Built-in RA2 Skill Selection", result.Request.UserContentText, StringComparison.Ordinal);
+        Assert.Equal(["ra2-field-schema-trust"], result.SkillSelection?.ActiveSkills.Select(skill => skill.Name));
     }
 
     [Fact]
@@ -359,7 +365,7 @@ public sealed class Ra2AiAssistantPipelineTests
                 new Ra2AiToolCall(
                     "analysis-1",
                     Ra2AiIntentAnalysisStage.ToolName,
-                    """{"outcome":"authoring","capability_id":"unsupported"}""")
+                    "{invalid")
             ]),
             Ra2AiResponse.CreateSuccess("must not be used"));
         Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), client);
@@ -377,10 +383,99 @@ public sealed class Ra2AiAssistantPipelineTests
             static (_, _) => ValueTask.CompletedTask,
             CancellationToken.None);
 
-        Assert.Equal(Ra2AiResponseKind.ProviderError, result.Response.Kind);
+        Assert.Equal(Ra2AiResponseKind.LocalRejection, result.Response.Kind);
+        Assert.Contains("不是有效 JSON", result.Response.LocalRejectionMessage, StringComparison.Ordinal);
+        Assert.Equal(Ra2AiFailureKind.None, result.Response.FailureKind);
+        Assert.Null(result.Response.ErrorMessage);
         Assert.Equal(1, client.NonStreamingCallCount);
         Assert.Equal(0, client.StreamingCallCount);
         Assert.Null(result.IntentAnalysisPackage);
+        Assert.Equal(
+            Ra2AiIntentAnalysisFailureKind.InvalidJson,
+            result.IntentAnalysisParseResult?.FailureKind);
+    }
+
+    [Fact]
+    public async Task SendStreamingAsync_ProjectIntentUsesDedicatedSecondCallTool()
+    {
+        SequencedAiClient client = new(
+            IntentAnalysisResponse("authoring", "techno-rules-art-binding", "techno", "complete"),
+            Ra2AiResponse.CreateToolCalls([
+                new Ra2AiToolCall(
+                    "project-1",
+                    Ra2AiAuthoringToolCatalog.PreviewIniProjectEditPlanToolName,
+                    """{"outcome":"needs_clarification","message":"Need asset ids"}""")
+            ]));
+        Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), client);
+        Ra2AiInteractionRoute route = Ra2AiInteractionRouter.Resolve(
+            "给 HTNK 绑定 art",
+            Ra2AiEditAvailabilityKind.Available,
+            Ra2AiUserMode.Work) with
+        {
+            ProjectEditAvailability = Ra2AiProjectEditAvailabilityKind.Available
+        };
+
+        Ra2AiAssistantPipelineResult result = await pipeline.SendStreamingAsync(
+            "给 HTNK 绑定 art",
+            CreateContext(),
+            null,
+            null,
+            route,
+            static (_, _) => ValueTask.CompletedTask,
+            CancellationToken.None);
+
+        Assert.Equal(1, client.NonStreamingCallCount);
+        Assert.Equal(1, client.StreamingCallCount);
+        Assert.Equal(Ra2AiCapabilityMode.ProjectRulesArtBindingPreview, result.ResolvedInteractionRoute?.CapabilityMode);
+        Assert.Equal(
+            Ra2AiAuthoringToolCatalog.PreviewIniProjectEditPlanToolName,
+            Assert.Single(result.Request.Tools).Name);
+        Assert.Contains("Skill ra2-rules-art-binding@1", result.Request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("not literal INI keys", result.Request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("Image=ArtSection", result.Request.SystemPromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Skill ra2-art-animation@", result.Request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("\"domain_intent_id\":\"art-animation\"", result.Request.UserContentText, StringComparison.Ordinal);
+        Assert.Contains("\"completion_level\":\"Field\"", result.Request.UserContentText, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.NoProject, "需要先打开一个真实项目")]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.PairMissing, "缺少唯一的 rulesmd.ini 或 rules.ini")]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.PairAmbiguous, "存在重复或冲突的 rules 目标")]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.SnapshotUnavailable, "项目快照不可用")]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.ReadOnly, "包含只读文件")]
+    [InlineData((int)Ra2AiProjectEditAvailabilityKind.ResourceLimitExceeded, "超过结构化编辑资源上限")]
+    public async Task SendStreamingAsync_ProjectUnavailableStopsAfterIntentCallWithSafeLocalReason(
+        int availabilityValue,
+        string expectedMessage)
+    {
+        SequencedAiClient client = new(
+            IntentAnalysisResponse("authoring", "techno-rules-art-binding", "art-animation", "field"),
+            Ra2AiResponse.CreateSuccess("must not execute"));
+        Ra2AiAssistantPipeline pipeline = new(new Ra2AiPromptBuilder(), client);
+        Ra2AiInteractionRoute route = Ra2AiInteractionRouter.Resolve(
+            "给 HTNK 绑定 art",
+            Ra2AiEditAvailabilityKind.Available,
+            Ra2AiUserMode.Work) with
+        {
+            ProjectEditAvailability = (Ra2AiProjectEditAvailabilityKind)availabilityValue
+        };
+
+        Ra2AiAssistantPipelineResult result = await pipeline.SendStreamingAsync(
+            "给 HTNK 绑定 art",
+            CreateContext(),
+            null,
+            null,
+            route,
+            static (_, _) => ValueTask.CompletedTask,
+            CancellationToken.None);
+
+        Assert.Equal(Ra2AiResponseKind.LocalRejection, result.Response.Kind);
+        Assert.Equal(Ra2AiFailureKind.None, result.Response.FailureKind);
+        Assert.Equal(1, client.NonStreamingCallCount);
+        Assert.Equal(0, client.StreamingCallCount);
+        Assert.Contains(expectedMessage, result.Response.LocalRejectionMessage, StringComparison.Ordinal);
+        Assert.Null(result.Response.ErrorMessage);
     }
 
     private static Ra2AiResponse IntentAnalysisResponse(
@@ -388,7 +483,16 @@ public sealed class Ra2AiAssistantPipelineTests
         string capabilityId,
         string domainIntentId,
         string completionLevel)
-        => Ra2AiResponse.CreateToolCalls([
+    {
+        string selectedSkillId = capabilityId switch
+        {
+            "techno-rules-art-binding" => "ra2-rules-art-binding",
+            "arcing-projectile-complete" or "homing-projectile-complete" => "ra2-projectile-trajectory",
+            "yr-core-warhead-complete" => "ra2-warhead-damage",
+            "current-document-field-edit" => "ra2-field-schema-trust",
+            _ => "ra2-weapon-chain"
+        };
+        return Ra2AiResponse.CreateToolCalls([
             new Ra2AiToolCall(
                 "analysis-1",
                 Ra2AiIntentAnalysisStage.ToolName,
@@ -399,10 +503,13 @@ public sealed class Ra2AiAssistantPipelineTests
                   "domain_intent_id":"{{domainIntentId}}",
                   "request_summary":"bounded request summary",
                   "completion_level":"{{completionLevel}}",
-                  "constraints":[]
+                  "constraints":[],
+                  "selected_skill_ids":["{{selectedSkillId}}"],
+                  "knowledge_gaps":[]
                 }
                 """)
         ]);
+    }
 
     private static Ra2AiContext CreateContext()
         => new(

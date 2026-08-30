@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml.Linq;
+using RA2IniEditor.IDE.Views.AssetAuthoring;
 using Xunit;
 using WpfApplication = System.Windows.Application;
 
@@ -233,7 +234,7 @@ public sealed class IdeVisualSystemBoundaryTests
     }
 
     [Fact]
-    public void CollectionControlStyles_AreExplicitlyKeyedAndAdoptedOnlyByShellAndSearch()
+    public void CollectionControlStyles_AreExplicitlyKeyedAndAdoptedOnlyByApprovedSurfaces()
     {
         string root = TestRepositoryRoot.Find();
         string ideRoot = Path.Combine(root, "RA2IniEditor.IDE");
@@ -292,7 +293,8 @@ public sealed class IdeVisualSystemBoundaryTests
             Path.Combine(ideRoot, "Themes", "ShellTheme.xaml"),
             Path.Combine(ideRoot, "Views", "FieldRegistryManagerWindow.xaml"),
             Path.Combine(ideRoot, "Views", "ShellWindow.xaml"),
-            Path.Combine(ideRoot, "Views", "SearchToolView.xaml")
+            Path.Combine(ideRoot, "Views", "SearchToolView.xaml"),
+            Path.Combine(ideRoot, "Views", "AssetAuthoring", "Ra2VoxelStyleWorkspaceView.xaml")
         ];
         Assert.NotEmpty(productionReferences);
         Assert.All(productionReferences, path => Assert.Contains(path, allowedAdoptionFiles));
@@ -827,6 +829,9 @@ public sealed class IdeVisualSystemBoundaryTests
                 applicationResources.MergedDictionaries.Add(LoadDictionary("Themes/IdeCollectionStyles.xaml"));
                 applicationResources.MergedDictionaries.Add(LoadDictionary("Themes/IdeWorkspaceStyles.xaml"));
                 applicationResources.MergedDictionaries.Add(LoadDictionary("Themes/ShellTheme.xaml"));
+
+                Ra2VoxelStyleWorkspaceView voxelStyleWorkspace = new();
+                Assert.NotNull(voxelStyleWorkspace.Content);
 
                 ComboBox comboBox = new()
                 {

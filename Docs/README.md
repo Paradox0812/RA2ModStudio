@@ -36,10 +36,26 @@
 | 查看语义层、独立 Host 与素材的优先级裁决 | `AUTOMATION-POST-HLI-0_SemanticHostPriorityCodeFactAudit.md` |
 | 查看已完成 CONTENT-1 语义模板层 | `AUTOMATION-CONTENT-1_SemanticTemplateContinuousFinalContract.md` + `AUTOMATION-CONTENT-1_StageLedger.md` |
 | 查看 Chat/Work 模式与完整武器链 | `AGENT-MODE-1_ChatWorkModeFinalContract.md` + `AGENT-MODE-1A_DirectFireCompleteProfileSourceAudit.md` |
-| 查看 RA2 Skill 来源、契约与证据 | `AGENT-KNOWLEDGE-1_Ra2LogicAndSkillSourceAudit.md` + `AGENT-KNOWLEDGE-1_Ra2BuiltInSkillsContinuousFinalContract.md` + `AGENT-KNOWLEDGE-1_StageLedger.md` |
+| 查看 RA2 Skill 来源、契约与证据 | `AGENT-KNOWLEDGE-1_Ra2LogicAndSkillSourceAudit.md` + `AGENT-KNOWLEDGE-1_Ra2BuiltInSkillsContinuousFinalContract.md` + `AGENT-KNOWLEDGE-1_StageLedger.md` + `AGENT-KNOWLEDGE-1-R2_RulesArtBindingSourceAudit.md` |
+| 查看 Work 模型选 Skill Manifest 契约与结果 | `AGENT-SKILL-ROUTING-2_ModelSelectedSkillManifestContinuousFinalContract.md` + `AGENT-SKILL-ROUTING-2_StageLedger.md`（Implemented / automated verified） |
+| 查看 Work 共享上下文与受限本地查询 | `AGENT-CONTEXT-3_SharedConversationAndBoundedProjectQueryFinalContract.md` + `AGENT-CONTEXT-3_StageLedger.md`（Completed / automated verified） |
+| 查看 Work 一次性结构化重规划 | `AGENT-REPAIR-1_BoundedStructuredReplanCodeFactAudit.md` + `AGENT-REPAIR-1_BoundedStructuredReplanFinalContract.md` + `AGENT-REPAIR-1_StageLedger.md`（Completed / automated verified） |
+| 查看 Work 入口最低安全重构与证据纠正 | `AGENT-WORK-ENTRY-1_MinimumSafetyWorkAdmissionFinalContract.md` + `AGENT-WORK-ENTRY-1_StageLedger.md`（Implemented / automated verified；real provider manual pending） |
+| 查看 Windows `.ini` 文件关联启动 | `SHELL-LAUNCH-1_FileAssociationLaunchFinalContract.md` + `SHELL-LAUNCH-1_StageLedger.md`（Completed / automated verified；physical smoke pending） |
 | 查看 Projectile / Warhead complete profiles | `AUTOMATION-CONTENT-2B_ProjectileWarheadProfilesCodeFactAudit.md` + `AUTOMATION-CONTENT-2B_ProjectileWarheadProfilesFinalContract.md` + `AUTOMATION-CONTENT-2B_StageLedger.md` |
+| 查看已完成 SuperWeapon / 支援技能 Profiles | `AUTOMATION-CONTENT-2E_SuperWeaponSupportPowerCodeFactAudit.md` + `AUTOMATION-CONTENT-2E_SourceCapabilityMatrix.md` + `AUTOMATION-CONTENT-2E_SuperWeaponSupportPowerContinuousFinalContract.md` + `AUTOMATION-CONTENT-2E_StageLedger.md`（Completed / automated verified） |
 | 查看 AI Programming Tuple Profiles 当前差距 | `AUTOMATION-CONTENT-2C_AiProgrammingTupleProfilesCodeFactAudit.md`（仅审计；契约与实现延期） |
 | 查看对象闭包与当前文档注册基础 | `AUTOMATION-CONTENT-2D01_ObjectClosureRegistrationFinalContract.md` + `AUTOMATION-CONTENT-2D01_StageLedger.md` |
+| 项目级多文档事务实现与证据 | `AUTOMATION-CONTENT-2D2_ProjectMultiDocumentTransactionCodeFactAudit.md` + `AUTOMATION-CONTENT-2D2_ProjectMultiDocumentTransactionFinalContract.md` + `AUTOMATION-CONTENT-2D2_StageLedger.md` |
+| 首个 rules/art project template 与 Asset Manifest | `AUTOMATION-CONTENT-2D3_ASSET-MANIFEST-1_ContinuousFinalContract.md` + `AUTOMATION-CONTENT-2D3_ASSET-MANIFEST-1_StageLedger.md` |
+| Source-backed Art schema 与首个 Existing-Asset Provider | `AUTOMATION-FIELD-REGISTRY-ART-1_ASSET-PROVIDER-1_ContinuousFinalContract.md` + `AUTOMATION-FIELD-REGISTRY-ART-1_ASSET-PROVIDER-1_StageLedger.md` |
+| Work 项目级 rules/art Proposal 与 Project Diff 接线 | `AUTOMATION-CONTENT-PROJECT-UI-1_WorkProjectProposalEndToEndFinalContract.md` + `AUTOMATION-CONTENT-PROJECT-UI-1_StageLedger.md`（Completed / verified） |
+| 查看完整候选 Result/Changes/Object Context 审阅 | `DIFF-REVIEW-1_CanonicalResultAndObjectContextFinalContract.md` + `DIFF-REVIEW-1_StageLedger.md`（Completed / automated verified；manual visual pending） |
+| 查看 Agent VOX 素材流水线侦察与架构提案 | `ASSET-VOX-1_SystemInvestigationAndArchitectureProposal.md`（Research completed） |
+| 查看 VOX 分离式装配与 VXLSE 切片基线 | `ASSET-VOX-1A_GoldenProbeAndSeparatedAssemblyFinalContract.md`、`ASSET-VOX-1A_StageLedger.md`（implementation completed；executable structural acceptance closed by 1B） |
+| 查看规范体素快照、VOX/VXL/PNG/SliceStack 纯核心 | `ASSET-VOX-1B_CanonicalVoxelCoreFinalContract.md`、`ASSET-VOX-1B_StageLedger.md`（implementation + supplied VXLSE structural acceptance completed；visual/game acceptance deferred） |
+| 查看 Generation Provider Host 审计、契约与实现证据 | `ASSET-VOX-1C_GenerationProviderHostCodeFactAudit.md`、`ASSET-VOX-1C_GenerationProviderHostFinalContract.md`、`ASSET-VOX-1C_StageLedger.md`（completed / automated verified） |
+| 查看真实 Hunyuan Provider 环境审计、最终契约与授权门 | `ASSET-VOX-1C-P1_RealProviderEnvironmentCodeFactAudit.md`、`ASSET-VOX-1C-P1_HunyuanMiniProviderFinalContract.md`、`ASSET-VOX-1C-P1_StageLedger.md`（P1-0 completed；P1-1..P1-5 blocked on explicit license/install authorization） |
 | 查看本地已验证 Git 基线 | `GIT-BASELINE-1_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
@@ -57,3 +73,13 @@
 `Docs/Archive/` 保存被替代的累积状态快照。阶段契约和 Stage Ledger 继续作为
 历史证据保留，但它们不自动成为当前需求。不要修改历史台账来配合新计划；
 应在当前状态、路线图或 Decision Log 中记录替代关系。
+### ASSET-VOX-1E-UI
+
+- `ASSET-VOX-1E-UI_CodeFactAudit.md`
+- `ASSET-VOX-1E-UI_FinalContract.md`
+- `ASSET-VOX-1E-UI_StageLedger.md`
+- `ASSET-VOX-1E-UI-R2_UnifiedVoxelInputAndOptionalRemapFinalContract.md`
+- `ASSET-VOX-1E-UI-3D_InteractiveViewportFinalContract.md`
+- `ASSET-VOX-1E-UI-3D_StageLedger.md`
+- `ASSET-VOX-1F-CORE-1_HighValueVoxelCoreMigrationFinalContract.md`
+- `ASSET-VOX-1F-CORE-1_StageLedger.md`

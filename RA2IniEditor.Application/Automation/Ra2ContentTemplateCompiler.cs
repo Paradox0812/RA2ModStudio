@@ -74,7 +74,10 @@ internal sealed class Ra2ContentTemplateParameter
 
 internal sealed class Ra2ContentTemplateFieldSpec
 {
-    public Ra2ContentTemplateFieldSpec(string key, Ra2ContentTemplateValueSource valueSource)
+    public Ra2ContentTemplateFieldSpec(
+        string key,
+        Ra2ContentTemplateValueSource valueSource,
+        Ra2ContentTemplateFieldValidationPolicy validationPolicy = Ra2ContentTemplateFieldValidationPolicy.EffectiveSchema)
     {
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("A template field key is required.", nameof(key));
@@ -86,12 +89,24 @@ internal sealed class Ra2ContentTemplateFieldSpec
             throw new ArgumentException("The template field key is invalid or exceeds the supported limit.", nameof(key));
         }
 
+        if (!Enum.IsDefined(validationPolicy))
+            throw new ArgumentOutOfRangeException(nameof(validationPolicy));
+
         Key = normalized;
         ValueSource = valueSource ?? throw new ArgumentNullException(nameof(valueSource));
+        ValidationPolicy = validationPolicy;
     }
 
     public string Key { get; }
     public Ra2ContentTemplateValueSource ValueSource { get; }
+    public Ra2ContentTemplateFieldValidationPolicy ValidationPolicy { get; }
+}
+
+internal enum Ra2ContentTemplateFieldValidationPolicy
+{
+    EffectiveSchema = 0,
+    OpenReference,
+    SourceBounded
 }
 
 internal sealed class Ra2ContentTemplateSectionSpec
@@ -129,7 +144,8 @@ internal sealed class Ra2ContentTemplateSectionSpec
 internal enum Ra2ContentTemplateSectionTargetMode
 {
     CreateNew = 0,
-    RequireExisting
+    RequireExisting,
+    CreateOrUpdate
 }
 
 internal sealed class Ra2ContentTemplateDefinition
@@ -404,7 +420,7 @@ internal sealed class Ra2ContentTemplateCompiler
 
                     sectionCreations.Add(new Ra2AutomationSectionCreateOperation(sectionName, spec.ExpectedKind));
                 }
-                else
+                else if (spec.TargetMode == Ra2ContentTemplateSectionTargetMode.RequireExisting)
                 {
                     if (!sectionQuery.Succeeded || sectionQuery.Section is null)
                     {
@@ -423,10 +439,53 @@ internal sealed class Ra2ContentTemplateCompiler
 
                     effectiveSectionKind = sectionQuery.Section.Kind;
                 }
+                else if (sectionQuery.Succeeded && sectionQuery.Section is not null)
+                {
+                    if (sectionQuery.Section.Kind != Ra2SectionKind.Unknown &&
+                        !IsCompatibleSectionKind(spec.ExpectedKind, sectionQuery.Section.Kind))
+                    {
+                        return Failure(
+                            Ra2ContentTemplateCompilationFailureKind.RequiredSectionKindMismatch,
+                            $"Existing section '{sectionName}' is not compatible with {spec.ExpectedKind}.");
+                    }
+
+                    effectiveSectionKind = sectionQuery.Section.Kind == Ra2SectionKind.Unknown
+                        ? spec.ExpectedKind
+                        : sectionQuery.Section.Kind;
+                }
+                else if (sectionQuery.FailureKind == Ra2AutomationSectionQueryFailureKind.NotFound)
+                {
+                    sectionCreations.Add(new Ra2AutomationSectionCreateOperation(sectionName, spec.ExpectedKind));
+                }
+                else
+                {
+                    return Failure(
+                        sectionQuery.FailureKind == Ra2AutomationSectionQueryFailureKind.DocumentTooLarge
+                            ? Ra2ContentTemplateCompilationFailureKind.DocumentTooLarge
+                            : Ra2ContentTemplateCompilationFailureKind.UnexpectedFailure,
+                        $"Section '{sectionName}' could not be inspected for create-or-update.");
+                }
                 foreach (Ra2ContentTemplateFieldSpec field in spec.Fields)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     string value = Resolve(field.ValueSource, boundValues);
+                    if (field.ValidationPolicy == Ra2ContentTemplateFieldValidationPolicy.SourceBounded)
+                    {
+                        if (!Ra2ContentTemplateValidation.IsValidBoundedValue(value))
+                        {
+                            return Failure(
+                                Ra2ContentTemplateCompilationFailureKind.InvalidFieldValue,
+                                $"Value for source-bounded field '{field.Key}' is invalid.");
+                        }
+
+                        operations.Add(new Ra2AutomationEditOperation(
+                            Ra2AutomationEditOperationKind.UpsertField,
+                            sectionName,
+                            field.Key,
+                            value));
+                        continue;
+                    }
+
                     Ra2AutomationFieldSchemaQueryResult schema = _queryService.GetFieldSchema(
                         snapshot,
                         new Ra2AutomationFieldSchemaQuery(effectiveSectionKind, field.Key),
@@ -446,7 +505,15 @@ internal sealed class Ra2ContentTemplateCompiler
                     Ra2AutomationFieldSchemaFact fact = schema.Fact!;
                     if (fact.AuthoringDisposition == Ra2AutomationFieldAuthoringDisposition.Blocked)
                         return Failure(Ra2ContentTemplateCompilationFailureKind.BlockedFieldTrust, $"Field '{field.Key}' is blocked for automated authoring.");
-                    if (!Ra2ContentTemplateValidation.IsValidSchemaValue(fact, value))
+                    bool validValue = field.ValidationPolicy switch
+                    {
+                        Ra2ContentTemplateFieldValidationPolicy.EffectiveSchema =>
+                            Ra2ContentTemplateValidation.IsValidSchemaValue(fact, value),
+                        Ra2ContentTemplateFieldValidationPolicy.OpenReference =>
+                            Ra2ContentTemplateValidation.IsValidIdentifier(value),
+                        _ => false
+                    };
+                    if (!validValue)
                         return Failure(Ra2ContentTemplateCompilationFailureKind.InvalidFieldValue, $"Value for field '{field.Key}' does not satisfy its effective schema.");
                     if (fact.AuthoringDisposition == Ra2AutomationFieldAuthoringDisposition.Caution)
                     {
@@ -594,6 +661,11 @@ internal static class Ra2ContentTemplateValidation
         => !string.IsNullOrWhiteSpace(value) &&
            value.Trim().Length <= Ra2AutomationEditOperation.MaximumSectionNameLength &&
            value.Trim().IndexOfAny(['\r', '\n', '\0', '=', '[', ']']) < 0;
+
+    public static bool IsValidBoundedValue(string value)
+        => value is not null &&
+           value.Length <= Ra2AutomationEditOperation.MaximumValueLength &&
+           value.IndexOfAny(['\r', '\n', '\0']) < 0;
 
     public static bool IsValidParameterValue(Ra2ContentTemplateParameterKind kind, string value)
     {

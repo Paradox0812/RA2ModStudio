@@ -14,7 +14,7 @@ namespace RA2IniEditor.Tests.IDE;
 public sealed class Ra2ContentTemplateAiIntegrationTests
 {
     [Fact]
-    public void RouterAndToolCatalog_KeepAdvisoryFieldAndTemplateRoutesMutuallyExclusive()
+    public void RouterAndToolCatalog_KeepAdvisoryAndProductionWorkToolsMutuallyExclusive()
     {
         Ra2AiInteractionRoute template = Ra2AiInteractionRouter.Resolve(
             "在当前文件创建武器链，Weapon=TestWeapon，Projectile=TestProjectile，Warhead=TestWarhead",
@@ -41,9 +41,9 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
             Ra2AiAuthoringToolCatalog.GetTools(template.CapabilityMode));
         Ra2AiToolDefinition fieldTool = Assert.Single(
             Ra2AiAuthoringToolCatalog.GetTools(field.CapabilityMode));
-        Assert.Equal(Ra2AiAuthoringToolCatalog.ExpandIniContentTemplateToolName, templateTool.Name);
+        Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, templateTool.Name);
         Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, fieldTool.Name);
-        Assert.NotEqual(templateTool.Name, fieldTool.Name);
+        Assert.Equal(templateTool.Name, fieldTool.Name);
     }
 
     [Fact]
@@ -100,24 +100,18 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
     }
 
     [Fact]
-    public void DualArmamentToolSchema_HasExactProfileAndTwentySevenArguments()
+    public void DualArmamentProductionToolSchema_IsGenericModelOwnedPlan()
     {
         Ra2AiToolDefinition tool = Assert.Single(Ra2AiAuthoringToolCatalog.GetTools(
             Ra2AiCapabilityMode.CurrentDocumentDualArmamentPreview));
         using JsonDocument schema = JsonDocument.Parse(tool.ParametersJsonSchema);
-        JsonElement properties = schema.RootElement.GetProperty("properties");
-        JsonElement arguments = properties.GetProperty("arguments");
-
-        Assert.Equal(
-            "techno-primary-secondary-direct-fire-complete",
-            properties.GetProperty("template_id").GetProperty("enum")[0].GetString());
-        Assert.Equal(27, arguments.GetProperty("required").GetArrayLength());
-        Assert.Equal("boolean", arguments.GetProperty("properties").GetProperty("secondaryAntiGround").GetProperty("type").GetString());
-        Assert.Contains("not an alternating or cyclic-fire mechanism", tool.Description, StringComparison.Ordinal);
+        Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, tool.Name);
+        Assert.True(schema.RootElement.GetProperty("properties").TryGetProperty("operations", out _));
+        Assert.DoesNotContain("template_id", tool.ParametersJsonSchema, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void PromptBuilder_DualArmamentRequiresExactProfileAndStatesNonCyclicBoundary()
+    public void PromptBuilder_DualArmamentDelegatesCompleteContentToModelOwnedPlan()
     {
         Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
         {
@@ -126,9 +120,10 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
             CapabilityMode = Ra2AiCapabilityMode.CurrentDocumentDualArmamentPreview
         });
 
-        Assert.Contains("template_id=techno-primary-secondary-direct-fire-complete", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains("exactly the 27 declared arguments", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains("does not create alternating or cyclic fire", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("preview_ini_edit_plan exactly once", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("construct every INI field", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("Do not reduce a complete-object request to a skeleton", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("template_id=", request.SystemPromptText, StringComparison.Ordinal);
         Assert.Equal(Ra2AiToolChoiceMode.Required, request.ToolChoice);
     }
 
@@ -170,32 +165,23 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
     }
 
     [Theory]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview, "weapon-projectile-arcing-complete", 8)]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview, "weapon-projectile-homing-complete", 6)]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview, "weapon-warhead-yr-core-complete", 14)]
-    public void ProjectileWarheadToolSchemas_ExposeOneExactProfile(
-        int mode,
-        string templateId,
-        int requiredArgumentCount)
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview)]
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview)]
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview)]
+    public void ProjectileWarheadProductionToolSchemas_ExposeGenericModelOwnedPlan(int mode)
     {
         Ra2AiToolDefinition tool = Assert.Single(Ra2AiAuthoringToolCatalog.GetTools((Ra2AiCapabilityMode)mode));
         using JsonDocument schema = JsonDocument.Parse(tool.ParametersJsonSchema);
-        JsonElement properties = schema.RootElement.GetProperty("properties");
-        JsonElement arguments = properties.GetProperty("arguments");
-
-        Assert.Equal(templateId, properties.GetProperty("template_id").GetProperty("enum")[0].GetString());
-        Assert.Equal(requiredArgumentCount, arguments.GetProperty("required").GetArrayLength());
-        Assert.False(arguments.GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, tool.Name);
+        Assert.True(schema.RootElement.GetProperty("properties").TryGetProperty("operations", out _));
+        Assert.DoesNotContain("template_id", tool.ParametersJsonSchema, StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview, "weapon-projectile-arcing-complete", "never add or imply ROT")]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview, "weapon-projectile-homing-complete", "rot must be a positive JSON integer")]
-    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview, "weapon-warhead-yr-core-complete", "does not create Ares Versus.* overrides")]
-    public void PromptBuilder_ProjectsExactProjectileWarheadProfileRules(
-        int mode,
-        string templateId,
-        string boundary)
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview)]
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview)]
+    [InlineData((int)Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview)]
+    public void PromptBuilder_ProjectileWarheadRoutesUseGenericModelOwnedPlan(int mode)
     {
         Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
         {
@@ -204,8 +190,9 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
             CapabilityMode = (Ra2AiCapabilityMode)mode
         });
 
-        Assert.Contains($"template_id={templateId}", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains(boundary, request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("preview_ini_edit_plan exactly once", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("construct every INI field", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("template_id=", request.SystemPromptText, StringComparison.Ordinal);
         Assert.Equal(Ra2AiToolChoiceMode.Required, request.ToolChoice);
     }
 
@@ -306,7 +293,7 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
     }
 
     [Fact]
-    public void PromptBuilder_RequiresOnlyTemplateToolAndForbidsRawIni()
+    public void PromptBuilder_UsesGenericCurrentDocumentPlanForSkeletonCapability()
     {
         Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
         {
@@ -316,28 +303,21 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
         });
 
         Ra2AiToolDefinition tool = Assert.Single(request.Tools);
-        Assert.Equal(Ra2AiAuthoringToolCatalog.ExpandIniContentTemplateToolName, tool.Name);
+        Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, tool.Name);
         Assert.Equal(Ra2AiToolChoiceMode.Required, request.ToolChoice);
-        Assert.Contains("template_id=weapon-projectile-warhead-skeleton", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains("Do not include raw INI", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.DoesNotContain(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("preview_ini_edit_plan exactly once", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("template_id=", request.SystemPromptText, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void CompleteTemplateToolSchema_UsesNamedObjectAndNativeScalarTypes()
+    public void CompleteCapabilityProductionToolSchema_UsesGenericOperations()
     {
         Ra2AiToolDefinition tool = Assert.Single(Ra2AiAuthoringToolCatalog.GetTools(
             Ra2AiCapabilityMode.CurrentDocumentCompleteTemplatePreview));
         using JsonDocument schema = JsonDocument.Parse(tool.ParametersJsonSchema);
-        JsonElement arguments = schema.RootElement.GetProperty("properties").GetProperty("arguments");
-
-        Assert.Equal("object", arguments.GetProperty("type").GetString());
-        Assert.False(arguments.GetProperty("additionalProperties").GetBoolean());
-        Assert.Equal(15, arguments.GetProperty("required").GetArrayLength());
-        JsonElement properties = arguments.GetProperty("properties");
-        Assert.Equal("integer", properties.GetProperty("damage").GetProperty("type").GetString());
-        Assert.Equal("number", properties.GetProperty("cellSpread").GetProperty("type").GetString());
-        Assert.Equal("boolean", properties.GetProperty("antiGround").GetProperty("type").GetString());
+        Assert.Equal(Ra2AiAuthoringToolCatalog.PreviewIniEditPlanToolName, tool.Name);
+        Assert.True(schema.RootElement.GetProperty("properties").TryGetProperty("operations", out _));
+        Assert.DoesNotContain("template_id", tool.ParametersJsonSchema, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -468,7 +448,7 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
     }
 
     [Fact]
-    public void PromptBuilder_CompleteTemplateUsesNativeBooleanContract()
+    public void PromptBuilder_CompleteCapabilityUsesModelOwnedOperationContract()
     {
         Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
         {
@@ -477,10 +457,9 @@ public sealed class Ra2ContentTemplateAiIntegrationTests
             CapabilityMode = Ra2AiCapabilityMode.CurrentDocumentCompleteTemplatePreview
         });
 
-        Assert.Contains("JSON booleans true or false", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains("choose conservative RA2-compatible draft values", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.Contains("include only outcome and message", request.SystemPromptText, StringComparison.Ordinal);
-        Assert.DoesNotContain("antiGround must be yes or no", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("construct every INI field", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.Contains("Do not reduce a complete-object request to a skeleton", request.SystemPromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("template_id=", request.SystemPromptText, StringComparison.Ordinal);
     }
 
     [Fact]

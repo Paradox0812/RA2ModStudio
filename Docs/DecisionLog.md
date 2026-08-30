@@ -520,3 +520,1186 @@ CurrentPhase 和对应 Stage Ledger 负责。
 - Consequences:
   - 2D-1 只提供当前文档内部基础；现有生产 Profile 与 public API 零变化。
   - 2D-2 必须先定义项目级多文档事务，之后才允许 rules/art 绑定和完整 Techno/SuperWeapon Profile。
+
+## Decision: 项目事务以 IDE session store 为内存权威，Application 只提供纯 Preview
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-2D-2
+- Context:
+  - 当前 Shell 只有一个 editable session；非活动文件没有可提交、可撤销的内存所有者。
+  - Application 已有可靠的单文档 Snapshot/Plan/Preview，但连续调用不能保证跨文件原子性。
+- Decision:
+  - Application 只增加复用现有叶 DTO/engine 的 Project Snapshot/Plan/Preview，不拥有 Apply/Undo/Save。
+  - IDE project document session store 成为活动和非活动 session 的唯一所有者，Shell 仅投影 active session。
+  - Apply 使用 validate-all/prepare-all/commit-all；compound Undo/Redo 复用同一原子 replace-many seam。
+  - Apply 后项目诊断读取 Preview/committed session 的内存覆盖，不从磁盘回读未保存目标；刷新失败不逆转提交。
+  - Apply/Undo/Redo 纯内存且写盘次数为零；磁盘 Save All 和跨文件持久化事务另立契约。
+- Rejected Alternatives:
+  - 对 rules/art 依次执行两个单文档 Apply：第二步失败会留下半提交且无法统一 Undo。
+  - 直接写非活动文件：绕过 Preview/dirty/Undo/显式 Save 权限。
+  - 在 Shell 保留 `_editableSession` 同时新增隐藏项目缓存：形成双重 session 权威和切换竞态。
+  - 在 Application 公开 Apply/Undo/文件系统接口：破坏 Host authority 边界。
+- Consequences:
+  - 2D-2 是 R4 owner 迁移，需要独立分阶段实现和完整单文档回归。
+  - Gateway 将有 additive Experimental project Preview surface；Host mutation 类型保持 internal。
+  - 首个 rules/art profile、AI tool schema、Save All 和退出确认 UI 仍需后续契约。
+- Follow-up:
+  - 以已验证的 project Preview/session transaction 为底座，单独制定首个 rules/art consumer/profile 契约。
+  - Save All、退出确认 UI、独立 Host/wire 继续保持后置。
+
+## Decision: INI Project Plan 与 Asset Manifest 分权
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-2D-3, ASSET-MANIFEST-1
+- Context:
+  - rules/art 绑定需要确定性 INI 修改，同时后续 SHP/Cameo/VXL 提供器需要独立资产输入。
+  - 当前 Field Registry 可安全 author `rules Image` 与 `art Image`，但没有 authorable Cameo/Voxel schema。
+- Decision:
+  - `Ra2AutomationProjectEditPlan` 继续是唯一 INI 修改真相；Asset Manifest 只保存不可变需求和绑定事实。
+  - Proposed binding 必须有精确叶 operation；PendingSchema 必须没有 operation。
+  - 首个 project template 精确配对 rulesmd/artmd 或 rules/art，并复用既有 document compiler 与 Project Preview。
+- Rejected Alternatives:
+  - Manifest 直接写素材或 INI：混淆 proposal、provider 与 Host authority。
+  - 为 Cameo/Voxel 绕过 Field Registry：会破坏现有 fail-closed schema/trust 门禁。
+  - 新建第二套跨文档 Preview：会造成语义和失败行为分叉。
+- Consequences:
+  - body SHP 的 rules/art 绑定已可确定性预览；Cameo 需求可交给后续 provider，但绑定仍为 PendingSchema。
+  - AI UI 尚未自动选择/展示该项目模板；素材本体也尚未生成。
+- Follow-up:
+  - 先完成 source-backed Art schema 补强，再把 Cameo/Voxel binding 从 PendingSchema 提升为 Proposed。
+  - 后续 ASSET provider 只消费 Manifest，不获得 Apply/Save 权限。
+
+## Decision: Art schema 与 Asset Provider 分权，Provider 只产出有界内存 Artifact
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): FIELD-REGISTRY-ART-1, ASSET-PROVIDER-1
+- Context:
+  - YR `artmd.ini` 已明确 `Cameo/AltCameo/Voxel/Remapable`，旧 Manifest 因缺少 `Cameo`
+    authoring schema 只能保留 PendingSchema。
+  - Application 必须保持 Core-only；把本地路径或文件写权限放进 provider 会破坏 Host authority。
+- Decision:
+  - 四个 YR ArtObject 基础字段进入 source-backed BuiltIn schema；当前 SHP profile 只消费 Cameo。
+  - public provider protocol 接受 Host 显式提交的有界内容，返回 Manifest-closed Artifact、SHA-256
+    与 `IdentityExtensionAndHash` 级别。
+  - Existing provider 全成功或零产物；不加入当前 INI Gateway，不读取/写入磁盘。
+- Rejected Alternatives:
+  - Manifest 直接携带本地路径或执行复制：引入路径权限、TOCTOU 和隐式写盘。
+  - 只公开 interface、隐藏所有返回值构造：外部 provider 无法真正实现接口。
+  - 仅凭扩展名宣称 SHP/VXL/HVA 有效：没有 codec/parser 证据。
+- Consequences:
+  - rules/art Project Preview 现在含 rules Image、art Image、art Cameo 三项操作。
+  - Provider plugin boundary 已可用，但素材持久化、格式解析、生成器和 AI UI 仍需后续阶段。
+
+## Decision: Work 项目提案复用现有 Project authority，Asset Manifest 保持非阻塞
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-PROJECT-UI-1
+- Context:
+  - rules/art Project Template、Preview、原子 Apply、compound Undo 和多文件 Diff 已完成，但 AI
+    Work 面板仍只消费单文档 Proposal。
+  - INI 可以合法引用尚不存在的素材；把素材存在性作为项目 Apply 前置会错误耦合两个生命周期。
+- Decision:
+  - 扩展现有唯一 Coordinator/Workspace active proposal 链，使 Proposal 严格区分 Document/Project，
+    Project 分支直接复用 `ExpandProjectTemplate`、`PreviewProject`、`ApplyProject` 和现有 Diff Builder。
+  - Manifest 只在提案卡显示为非阻塞素材待办，不调用 Provider，不参与 ApplyPolicy、Diagnostics 或 Save。
+  - Work 继续使用两次 DeepSeek；第一次选择 project capability，第二次只提交固定模板参数。
+- Rejected Alternatives:
+  - 新建第二个 Project AI coordinator：会分裂 active proposal、Dismiss 和 supersede 权威。
+  - 依次执行两个单文档 Apply：无法保证 no-partial 与 compound Undo。
+  - 在 UI 检查或写入素材：混淆 INI proposal 与可选资产工作流。
+  - 重写 Project Diff：现有 builder 已支持按文件投影。
+- Consequences:
+  - Work 现可生成并显示 rules/art 两文件修改；Apply 仍只更新内存且需用户显式确认。
+  - v1 仍只绑定现有 Techno，不创建完整对象或素材。
+- Follow-up:
+  - 自动门禁已通过；真实 DeepSeek、Project Diff、Apply、Ctrl+Z/Ctrl+Y 与 Save Current 由用户按手工脚本验收。
+
+## Decision: 明确项目 capability 权威高于 provider 派生分类元数据
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-PROJECT-UI-1-NF2
+- Context:
+  - 同一合法 rules/art 请求在不同真实响应中分别得到 `completion_level=complete` 与
+    `domain_intent_id=techno`；两者都携带精确 `techno-rules-art-binding` capability。
+  - capability 已唯一选择一个只读 Project Snapshot、一个固定五参数工具和一个本地确定性 compiler，
+    继续让描述性元数据否决它只会造成 provider 表述漂移被误报为协议损坏。
+- Decision:
+  - 先严格验证 tool、根字段、枚举、allowlist 与 capability/outcome；随后只对精确
+    `techno-rules-art-binding` 把 domain/completion 归一化为 `art-animation + Field`。
+  - capability、project availability、tool schema、Application compiler 与 Host transaction 继续是
+    权威门禁；归一化不授予任何新增操作、文件、Apply、Save 或素材权限。
+- Rejected Alternatives:
+  - 为每次真实响应继续追加 domain/completion 单值兼容：无法消除同类返工。
+  - 放宽 JSON/tool schema 或 adapter：第二阶段真实响应已完整符合现有契约，没有证据支持放宽。
+  - 自动重试或模型 fallback：掩盖本地准入错误并扩大成本与状态复杂度。
+- Consequences:
+  - provider 可使用任一已声明 domain/completion 描述同一明确项目 capability，但第二阶段始终消费
+    canonical metadata；未知 schema 值仍 fail closed。
+  - UI 诊断中的 `Deltas=0/Characters=0` 仍只统计正文 delta；tool-call fragment 不是正文，数值为零不表示空响应。
+- Follow-up:
+  - 用户在新构建上复验原始 prompt；若仍失败，必须保留 RequestId 并按阶段边界诊断，不再扩大准入白名单。
+
+## Decision: 本地 Work 拒绝不得伪装成 Provider/Protocol 失败
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-PROJECT-UI-1-NF3
+- Context:
+  - 最新真实 rules/art 意图 tool call 已严格通过 parser，但用户仍只看到通用 ProtocolError。
+  - Pipeline 已有精确 Project availability 分类和安全消息，Shell 的 FailureKind formatter 却隐藏了它们。
+- Decision:
+  - 在既有 internal `Ra2AiResponse` 中增加瞬态 `LocalRejection` 分支，不新建平行 DTO。
+  - Local rejection 必须无 provider `ErrorMessage`、无 ToolCalls、`FailureKind=None`，只显示本地固定安全原因。
+  - Provider、HTTP、SSE 和 transport failure 继续使用既有 FailureKind 与脱敏 UI formatter。
+- Rejected Alternatives:
+  - 继续扩大 prompt 或 domain/completion 白名单：真实响应已经可解析，无法解决本地原因被吞掉的问题。
+  - 把本地原因塞入 provider `ErrorMessage`：会继续混淆信任边界并受 Shell 脱敏规则屏蔽。
+  - 遇到 PairMissing 时自动创建 art/rules 文件：超出当前只绑定既有唯一 pair 的契约与 Save 权限。
+- Consequences:
+  - 用户能区分“模型/网络失败”和“当前项目不满足结构化修改前置条件”。
+  - 旧截图无法确定六种准入原因中的哪一种；必须在新构建复验后依据具体文案处理。
+  - 无 public API、持久化格式、文件扫描、Preview/Apply/Undo/Save 或资产行为变化。
+
+## Decision: Work 项目成员以 Project Session 为权威，不以 UI 树为权威
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-PROJECT-UI-1-NF4
+- Context:
+  - 正确项目 `H:\RA2\YR_Test` 含唯一顶层 `rulesmd.ini + artmd.ini`，但用户仍遇到 pair 不可用。
+  - Shell 曾从 `ProjectExplorer.Items` 捕获项目文件；该集合是界面投影，不应控制编辑事务准入。
+- Decision:
+  - 成功打开项目时由 `ShellViewModel` 保存不可变 `ProjectOpenResult.Files`。
+  - `Ra2ProjectDocumentSessionStore.MemberFilePaths` 是当前 Work 项目成员与目标配对的唯一运行时权威。
+  - UI 树只负责显示；Work 摘要必须显示完整根路径及本地 admission 结果，避免要求用户靠提示词猜状态。
+- Rejected Alternatives:
+  - 在提示词中要求用户重复绝对路径或 rules/art 文件名：不能修复 Host 已捕获错误上下文的问题。
+  - 递归搜索或自动选择最近项目：会引入错误目录、歧义和隐式权限扩张。
+  - 自动创建空 art/rules：越过 Preview/Apply/Save 与既有文件边界。
+- Consequences:
+  - 空 `artmd.ini` 和额外非配对 INI 保持合法；只有 pair 缺失、重复或同时存在两套 pair 才拒绝。
+  - 不新增 public API、持久化格式或文件写权限；Shell XAML 与全局布局不变。
+
+## Decision: Source-backed 开放引用不得被观测 Enum 列表封闭
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-24
+- Task(s): CONTENT-PROJECT-UI-1-NF5
+- Context:
+  - Global 用户字段包可能把学习或迁移中见过的 `Image` 值保存为 Enum；这些值是建议/样本，不是 RA2
+    素材命名空间的完整集合。
+  - project binding compiler 过去直接复用 effective schema 的 Enum 闭集校验，使 `HTNKART` 这类
+    合法新引用因未出现在旧列表中而被拒绝，即使模型工具参数、项目配对和 Section 都正确。
+- Decision:
+  - 模板字段规格拥有 internal 验证策略，默认继续遵循 effective schema。
+  - 仅经 source-backed profile 明确声明的 rules/art `Image` 与 `Cameo` 使用开放引用验证：字段 schema
+    必须存在、trust/authoring 门禁保持、值必须是安全 identifier，但 observed Enum 不作为闭集。
+  - 该策略属于 Application 模板定义，不写入字段库、不序列化、不改变 Project > Global > BuiltIn 优先级。
+- Rejected Alternatives:
+  - 修改或删除用户 Global 字段包：会破坏用户数据且不能解决未来导入的同类问题。
+  - 全局降低 Enum 校验或改变 provider priority：影响 Completion、Hover、Diagnostics 和其他模板。
+  - 让模型重试、猜已有枚举值或增加 prompt 约束：根因在本地 authority，不应增加付费调用或限制新 ID。
+  - 完全绕过字段 schema/trust：会丢失字段存在性、Blocked 和安全 identifier 门禁。
+- Consequences:
+  - 新 body/Cameo/art ID 可以形成可复核 Project Proposal，旧观测值仍可作为字段智能提示使用。
+  - 其他模板与真正封闭的 Enum 继续按原 schema 校验；开放引用必须由模板逐字段显式声明。
+
+## Decision: DeepSeek 拥有 Work 项目内容语义，Host 只执行最低结构与事务安全
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-25
+- Task(s): CONTENT-PROJECT-UI-1-NF6
+- Context:
+  - NF5 证明模型给出的 `HTNK/HTNKART/HTNKBODY/HTNKICON` 正确，失败来自本地旧 Enum/Profile；
+    继续给 Profile 增加例外仍会让本地不完整知识成为第二内容权威。
+  - 用户明确要求由 DeepSeek 完成构建或说明不可确定，内置程序除最低安全界限外不得干涉 AI 输出。
+- Decision:
+  - 生产 Work rules/art 路由使用通用 `preview_ini_project_edit_plan`，由模型决定具体 Section、字段、值、
+    注册关系和 rules/art 绑定；无法确定必要目标时返回 `needs_clarification`。
+  - Host 只验证结构、资源上限、安全 identifier、符号 rules/art 范围、captured snapshot、canonical
+    Preview、显式 Apply、single-use/stale 与原子回滚。Field Registry/Diagnostics 是 advisory evidence，
+    不得否决通用模型计划。
+  - 旧固定 project template 保留为 headless compatibility surface，但不再是生产 AI 项目路由的内容权威。
+- Rejected Alternatives:
+  - 持续扩展 Profile/OpenReference 例外：仍会对未知合法 mod 形成封闭世界误拒绝并持续返工。
+  - 删除路径、snapshot、Apply、事务和资源门禁：会把模型内容自由错误扩大为越权写入与不可恢复修改。
+  - 允许模型提交任意文件路径或完整候选文本：绕过已验证 Project membership 与 semantic Preview。
+- Consequences:
+  - 新 mod-specific 字段和值即使不在字段库中，也能进入可视化 Project Diff，并由用户决定是否 Apply。
+  - 诊断与信任信息仍可提示风险，但不会阻断项目显式 Apply；Apply 仍只修改内存且不自动 Save。
+  - Experimental Preview 对 `ExpectedSectionKind.Unknown` 的 blocked trust 行为有语义变更；具体类型的
+    headless 模板行为保持不变，详见 Public API Ledger。
+
+## Decision: Rules/Art 跨域知识按 capability 选择专用 Skill
+
+- Status: Accepted / implemented / verified
+- Date: 2026-08-25
+- Task(s): AGENT-KNOWLEDGE-1-R2
+- Context:
+  - NF6 正确移除了 Host 内容否决，但真实 DeepSeek 把用户角色词 `Art/Body/Cameo` 直译为 rules 字段。
+  - 原路由只加载一个 normalized domain primary；project capability 被归一为 `art-animation` 时，现有 Skill
+    只要求“区分概念”，没有提供精确 rules Owner.Image → art Section → asset/cameo 图。
+- Decision:
+  - 新增 `ra2-rules-art-binding`，以实际 INI、ModEnc 逆向条目及 Ares/Phobos 官方文档为来源，冻结
+    Techno rules/art 图、对象家族 body 规则、registration、Voxel/Cameo 所有权及 `ArtImageSwap` 条件。
+  - PromptBuilder 对 `ProjectRulesArtBindingPreview` 按 capability 显式选择该 Skill；普通请求继续沿用
+    ExactDomainPrimary + extension + trust，不建立第二 loader/resolver。
+  - Skill 只影响模型知识，不成为 Host validator；未知事实由模型 clarification，Field Registry 保持 advisory。
+- Rejected Alternatives:
+  - 在 Adapter 中禁止 `Art/Body/Cameo`：会重新建立用户已拒绝的本地内容权威，且无法覆盖所有错误语义。
+  - 只在通用 system prompt 增加当前例句：不可审计、不可版本化，也不能覆盖对象家族与扩展差异。
+  - 一次加载所有 16 个 Skill：超出渐进披露原则并引入跨领域冲突与 token 浪费。
+- Consequences:
+  - 同一 project capability 不再受 provider domain 表述漂移影响；第二阶段始终获得专用绑定知识。
+  - 对 Infantry/Vehicle/Aircraft 的不同 ArtSection/BodyAsset，若没有 `ArtImageSwap=true` 等必要事实，
+    正确结果可能是 clarification，而不是无条件 proposal。
+  - public API、Field Registry 数据、Project Preview/Apply/Save 与 Shell/UI 均不变。
+
+## Decision: Work 第一轮基于同一 Catalog Manifest 推荐 Skill，Host 保留最终解析权
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): AGENT-SKILL-ROUTING-2
+- Context:
+  - 旧流程的第一轮只输出 intent/domain，不知道当前 16 个 Skill；第二轮由 PromptBuilder 独立按 domain
+    选择，无法表达跨域组合、知识缺口，也无法证明两阶段使用同一目录快照。
+  - 直接提供 Skill 文件读取工具会增加第三次 provider 往返并扩大工具面，不符合已接受的两调用 Work 契约。
+- Decision:
+  - 唯一 `Ra2AgentSkillCatalog` 同时产生不含正文的紧凑 Manifest、解析模型推荐并提供最终正文。
+  - 第一轮工具结果增加最多 6 个有序 Skill ID 与 6 个知识缺口；未知 ID 由 Host 记录并省略，不否决整个意图包。
+  - Host 按 capability 补齐必选 Skill 与 field trust，稳定去重、校验模式和 14 KiB 正文预算；第二轮只能消费
+    这份显式 resolution，不能重新按 domain 选择。
+  - Chat 保持单调用与本地选择；Work 保持一次分析加一次执行，不新增 retry、provider 或权限。
+- Rejected Alternatives:
+  - 第三次 `list/read_skill` 工具循环：增加延迟、成本和失败面。
+  - 模型拥有最终 Skill 权威：可能漏掉 project binding 等 capability-critical 知识。
+  - 把所有正文塞进第一轮：违背渐进披露并浪费 prompt 预算。
+  - 建立第二个 manifest registry：产生目录漂移和重复缓存。
+- Consequences:
+  - 第一轮推荐可覆盖跨域需求，第二轮注入可审计且与 Manifest 同源；模型遗漏不再移除关键 Skill。
+  - Provider tool JSON shape 有 Experimental additive breaking change；真实 DeepSeek schema compliance 尚待人工验收。
+  - public API、持久化、Shell/UI、Field Registry 和 Preview/Apply/Save 权限不变。
+
+## Decision: Work 两阶段共享捕获上下文，并在两调用之间执行有界 HLI 只读查询
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): AGENT-CONTEXT-3
+- Context:
+  - 第一轮此前看不到最近会话与 rules/art 捕获快照，无法可靠选择需要核实的项目事实；第二轮只能依赖
+    光标附近文本、Skill 与模型猜测。
+  - 增加第三次模型工具循环会提高延迟、成本和失败面；新建 parser/project index 会复制既有 HLI 权威。
+- Decision:
+  - 两次 Work 请求使用同一受限会话、当前主题和 request-lifetime 文档投影。
+  - 第一轮最多返回 8 个 `get_section` / `resolve_reference` 请求；Host 只对 `current/rules/art` 捕获别名
+    调用既有 Gateway，并将有界结果标为不可信数据交给第二轮。
+  - 捕获快照在两次调用间不可刷新；Chat 保持单调用，Work 保持两次调用。
+- Rejected Alternatives:
+  - 第三次 provider query loop：增加成本且破坏已接受的两调用契约。
+  - 允许模型提交路径或直接读磁盘：绕过项目成员身份、快照一致性和隐私边界。
+  - 在 IDE 复制 Section parser 或建立第二项目索引：造成语义漂移和双重权威。
+- Consequences:
+  - 模型可在执行前核实现有 Section/引用，而不获得编辑、Apply、Save、shell、网络或路径权限。
+  - `context_queries` 是 Experimental provider JSON 的 additive change；真实 DeepSeek schema compliance 仍需手工验收。
+  - Application public API、持久化、XAML、Field Registry、Preview/Apply/Undo/Save 语义不变。
+
+## Decision: Work 允许一次有界结构化重规划作为两调用基线的条件性例外
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): AGENT-REPAIR-1
+- Context:
+  - `AGENT-SKILL-ROUTING-2` 与 `AGENT-CONTEXT-3` 已接受正常 Work 固定为一次分析加一次执行，并拒绝开放式第三次 provider/query loop。
+  - 人工验收已证明 query-target 连续性修复有效，但模型仍可能返回无工具调用、无效参数、错误文档目标或无法通过 canonical preview 的结构化计划；当前只能要求用户重发整条请求。
+  - `PreviewRejected` 和多数 `TemplateExpansionRejected` 当前丢失底层 typed failure，不能可靠地用本地化错误文本决定是否修复。
+- Decision:
+  - 正常 Work 继续严格为两次 provider 调用；Chat 继续为一次。
+  - 仅在第二次执行后的 typed、allowlisted、模型可修正失败上，允许同一 request lifecycle 内追加一次非流式结构化修复调用；Work 总调用上限为三次，修复上限为一次。
+  - 修复复用同一 intent、route、Skill resolution、project projection 与 HLI query results；不重跑分析、Skill 选择或本地查询，不切换 provider/model。
+  - transport、超时、取消、配置、上下文过期、资源上限、安全拒绝与 unexpected failure 永不触发修复。
+  - canonical adapter/template/preview 与显式 Apply/Undo/Save 边界保持唯一权威；Host 不自动 retarget、Apply 或 Save。
+- Rejected Alternatives:
+  - 在 `DeepSeekRa2AiClient` 中做通用 retry：会把语义失败错误归类为传输失败并隐藏成本。
+  - 在 `ShellWindow` 中直接写重试循环：会把 provider 编排和失败政策泄漏到 WPF presentation。
+  - 按中文错误消息匹配：不稳定且无法覆盖 project/template leaf failure。
+  - 重跑第一轮分析、Skill 或 HLI 查询：扩大成本、漂移 request-lifetime facts，并重新打开已拒绝的 provider query loop。
+  - 多轮自愈、模型 fallback 或 Host 静默改写计划：不可预测且破坏用户审阅边界。
+- Consequences:
+  - 最坏 Work 成本由两次调用增加为三次，但只发生在严格白名单失败路径。
+  - IDE 需要内部 typed failure evidence、execution seed、repair policy/orchestrator，以及 `ShellWindow.xaml.cs` 的窄接线；计划 public API 与持久化 diff 为零。
+  - 该决策只覆盖 bounded structured replan，不授权联网知识检索、任意文件访问、自动 Apply/Save 或素材生成。
+
+## Decision: 文件关联启动复用项目会话权威，单实例转发延期
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): SHELL-LAUNCH-1
+- Context:
+  - Windows 将 `.ini` 默认打开方式指向 IDE 后，会把文件路径作为裸进程参数传入；原 App 仅识别自动化文件夹参数，因此只显示空 Shell。
+  - 直接从启动层读取文件会绕过 Project Explorer、编码元数据、Field Registry、高亮、编辑会话和项目事务权威。
+- Decision:
+  - 单个既存 `.ini` 的直接父目录就是本次项目根，目标必须来自该项目成功打开后的顶层 INI 清单。
+  - Shell 完成初始 Dock 生命周期后，启动请求复用菜单项目打开、项目 session store、精确文件加载和现有 editable session 路径。
+  - 保留 `--automation-open-folder`；不新增无需求的通用命令行选项。
+  - 多实例合并、mutex 与 IPC forwarding 延期到独立 `SHELL-LAUNCH-2` 契约。
+- Rejected Alternatives:
+  - App 直接 `File.ReadAllText`：形成第二文件读取与编辑权威。
+  - 向上猜测项目根或递归扫描：项目归属不确定，且改变现有 top-level ProjectOpen 语义。
+  - 本阶段同时实现单实例 IPC：扩大生命周期、并发、脏文档和安全边界，无法由文件关联修复需求证明必要。
+- Consequences:
+  - Explorer 打开 INI 可进入完整项目上下文与可编辑会话；无自动 Save/Apply/AI 行为。
+  - 当前每个 Explorer 请求仍创建独立进程；这是一项显式产品限制，不是本阶段失败。
+  - public .NET API、持久化格式、XAML、Dock 布局和 AutomationId 均不变。
+
+## Decision: SuperWeapon 采用 typed common profiles + model-owned generic fallback
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): CONTENT-2E
+- Context:
+  - 当前已存在 `[SuperWeaponTypes]` 注册编译、Project Preview、显式 Apply/compound Undo、两阶段 Work、
+    Skill 选择与通用模型主导 Project Plan，但没有任何 SuperWeapon complete profile。
+  - Ares 官方明确说明不同 SuperWeapon Type 具有不同默认值和专用字段；单一万能模板会混合不兼容语义。
+  - 用户已明确拒绝由不完整 Field Registry Enum 否决模型产生的新 mod 内容。
+- Decision:
+  - `UnitDelivery` 与 `GenericWarhead` 两个常用 Ares 类型使用 source-backed typed complete profile；
+    其它明确类型复用 model-owned project plan，并在事实不足时 clarification。
+  - typed 与 generic 两轨都进入同一 Project Preview / Diff / Apply / Undo 权威；Field Registry 与
+    Diagnostics 对 generic plan 只提供 advisory evidence。
+  - SuperWeapon v1 只修改唯一 rules/rulesmd 项目成员；art 和素材不是前置条件，不自动 Apply/Save。
+- Rejected Alternatives:
+  - 一个万能 typed SuperWeapon 模板：无法安全表达 type-specific defaults 与互斥 targeting。
+  - 全部继续 blanket unsupported：浪费现有模型知识、Skill、通用 Project Plan 和用户审阅边界。
+  - 全部只走 typed allowlist：重新建立封闭世界内容否决器。
+  - 直接允许模型提交路径或完整文件：绕过 snapshot membership 与 canonical Preview。
+- Consequences:
+  - 常用类型获得确定性对象闭包，其它类型仍可由模型生成可审阅 Proposal；不能宣称所有类型已 typed-certified。
+  - 预期 public API、持久化、Shell/XAML、parser、Registry、Apply/Save authority 零变化。
+  - 真实 DeepSeek 参数服从度和游戏内行为仍需人工验收。
+  - typed profile 先生成既有 document plan，再由 IDE 包装为既有 Project Plan；不伪造 Asset Manifest，
+    不改变 public project-template result invariant。
+  - 经用户批准，Shell 项目快照捕获允许唯一 rules 目标并把匹配 art 视为可选；XAML、布局和其它 Shell 行为不变。
+
+## Decision: Work 从固定单次精确查询升级为有界语义检索闭环
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-25
+- Task(s): AGENT-QUERY-2, AGENT-ENTITY-1, AGENT-CONTEXT-4, AGENT-EVAL-1
+- Context:
+  - 既有 Work 只有分析后的一次 `get_section/resolve_reference` 批次；模型猜错 Section ID 或只知道本地 `Name/UIName` 时，Host 无法搜索和补查。
+  - 用户实际验收中必须手工补充 `GAPOWR/E1/FV`，这与项目已捕获完整 rules 快照的事实不相称。
+- Decision:
+  - 首轮可请求 `search_objects`，Host 基于现有 semantic model 在捕获快照中按规范 ID、`Name`、`UIName` 和短注释确定性搜索。
+  - 必要时允许最多两次紧凑 retrieval refinement；重复查询、无进展或两轮上限立即停止，不做 transport retry 或 provider fallback。
+  - 唯一高置信结果形成瞬态 canonical binding；同分多义绝不静默选择。
+  - SuperWeapon 项目能力在执行前补充 `[SuperWeaponTypes]` 与已绑定实体 Section；所有结果仍只进入现有 Preview/显式 Apply 权威。
+  - 项目执行 prompt 删除无关 caret-local 上下文，保留 Skill、project projection、bindings 与 Host facts。
+- Supersedes:
+  - `AGENT-REPAIR-1` 中“正常 Work 固定两次调用”的成本假设；新的正常 Work 为 2 到 4 次，若随后触发既有一次 repair，绝对上限为 5 次。
+- Consequences:
+  - public HLI、持久化、parser、Field Registry、Diagnostics、Apply/Save/Undo 和 Shell/XAML 均不变。
+  - provider-visible intent query schema 是 additive Experimental change；真实 DeepSeek 服从度仍需人工验收。
+  - 本地不存在的中文 CSF 显示文本仍不能由 Host 自行翻译，必须由模型推断候选或请求澄清。
+
+## Decision: Work admission only enforces authority and resource safety
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-26
+- Task: AGENT-WORK-ENTRY-1
+- Context:
+  - Real UI use showed HTTP 200 tool calls rejected before execution while ideal fixture JSON passed.
+  - The parser treated domain/completion/capability enums, additive fields, list sizes and query placeholders as fatal and
+    the pipeline discarded the exact reason.
+- Decision:
+  - First-call metadata is descriptive. It is normalized, bounded or routed through a generic preview; it cannot veto a
+    model-owned INI plan.
+  - Fatal admission is limited to the tool envelope, bounded valid JSON object and duplicate root identity.
+  - Invalid read-only queries are dropped individually; symbolic target and snapshot membership remain authoritative.
+  - Every production current-document capability uses the generic document-operation tool, and every production rules/art
+    capability uses the generic project-operation tool. Typed Profile compilers remain compatibility/headless helpers,
+    not production semantic gates.
+  - Unknown project capability/domain values use the existing bounded project preview when project authority exists.
+- Rejected alternatives:
+  - Add one more domain/capability whitelist exception: repeats the same failure pattern.
+  - Accept arbitrary target/path to improve convenience: violates snapshot authority.
+  - Delete canonical Preview/Apply/stale/resource checks: confuses semantic freedom with write authority.
+- Consequences:
+  - Provider-visible schema remains guidance; Host parser is forward-compatible with additive variants.
+  - Generic proposal `summary/message` are non-authoritative presentation metadata. They cannot reject valid
+    operations; clarification alone requires a readable bounded message and keeps echoed operations inert.
+  - Real provider behavior is still a manual verification item; deterministic tests no longer count as that evidence.
+
+## Decision: CandidateText is the canonical review result
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-26
+- Task: DIFF-REVIEW-1
+- Context:
+  - A fixed three-line unified Diff could prove changed lines but could not show the full object/file context users need before applying complex proposals.
+- Decision:
+  - The default Result mode displays the exact successful Preview `CandidateText`; it never reconstructs content from Plan operations.
+  - Unified Changes remains the authority for removed-line evidence. Object Context is a bounded, depth-one, read-only index over captured snapshots and can degrade independently.
+  - Review selection, outline and render state remain transient IDE presentation state and never participate in Apply, Undo, Save or layout persistence.
+- Rejected alternatives:
+  - Increasing unified-diff context to the whole file: obscures deletion evidence and still lacks semantic object navigation.
+  - Rebuilding a synthetic object file from Plan operations: can diverge from the exact candidate that Apply will commit.
+  - Partial Section/hunk Apply: changes transaction authority and is outside this review-only stage.
+- Consequences:
+  - Users can inspect complete candidate Sections and direct rules/art references without giving the review UI write authority.
+  - Relation indexing may be partial or unavailable without blocking Result, Changes or existing explicit Apply.
+
+## Decision: 分离式 VXL 以装配体为交付单位，格式事实先探针后冻结
+
+- Status: Accepted / Stage 1A implementation completed / executable structural acceptance later closed by Stage 1B
+- Date: 2026-08-26
+- Task(s): ASSET-VOX-1A
+- Context:
+  - RA2 载具可以由独立 Body、Turret、Barrel VXL/HVA 文件组成，单个 `VoxelSceneSnapshot` 或单文件
+    多 Section 无法表达完整资产身份、父子关系和动画装配。
+  - 本机真实样本包含单 Section 空名称 HVA，证明把所有命名偏差都作为致命格式错误会拒绝既有素材。
+- Decision:
+  - 完整体素资产以有根、无环的 `Ra2VoxelAssetAssembly` 表达，每个节点拥有独立 VXL/HVA identity；
+    `Body -> Turret -> Barrel` 是基础拓扑而非后置特例。
+  - Stage 1A 只公开 internal、只读、受限的装配、元数据和 VXLSE Slice Import 契约；同版本源码已冻结
+    raster axis addressing、slice order、direct-alpha occupancy 和 palette quantization。
+  - Slice importer 会保留透明位置的旧体素且不写 normals，所以只允许导入空 Section，并要求后续重新
+    生成 normals；它调用 session-global land/air 的 DefaultTransforms，因此不能用来推断 pivot/mount。
+  - 单 Section 空名称 HVA 只在配套 VXL 也唯一且无歧义时兼容；不把兼容性放宽为多义猜测。
+  - 用户授权复用 `VoxelNormalForge`；后续只迁移经过审查和测试的 Core 逻辑，不引入其旧 CLI/WPF 层。
+- Rejected Alternatives:
+  - 把炮塔/炮管只当成同一 VXL 的 Section：不能覆盖常见多文件装配。
+  - 直接把整个 VoxelNormalForge 工程作为 IDE 运行时依赖：带入无关 UI/CLI 和并行产品边界。
+  - 只凭截图或论坛描述固定坐标轴和切片方向：会把推测固化为持久格式契约；本阶段改为审阅随包源码并
+    对公式执行非对称全坐标往返测试。
+- Consequences:
+  - 1B 可在稳定装配边界内迁移 reader/writer、体素快照和法线算法，无需重做资产身份模型。
+  - 真实 Barrel 样本不再作为装配模型门禁；它只影响后续 pivot/视觉/游戏标定。
+  - executable GUI import 仍须在 1B 产生确定性 RGBA PNG 后独立验收，但不作为生产自动化协议。
+- Follow-up:
+  - 进入 1B Canonical Voxel Core 与 RGBA SliceStack exporter，再执行 PNG -> VXLSE -> decoded VXL 验收。
+
+## Decision: Canonical voxel authority is one immutable part snapshot; VXL palette is external
+
+- Status: Accepted / Stage 1B implemented / supplied VXLSE structural acceptance passed
+- Date: 2026-08-26
+- Task: ASSET-VOX-1B
+- Context:
+  - Generation, MagicaVoxel exchange, VXLSE slices and decoded VXL need one deterministic comparison surface without
+    making any provider or GUI state authoritative.
+  - VXLSE source declares the 768-byte VXL header `PaletteData` block never used; RA2 VXL colour interpretation depends
+    on an external active palette.
+- Decision:
+  - One immutable internal `Ra2VoxelSceneSnapshot` describes one part only. Stage 1A continues to own detached assembly.
+  - Canonical hashes use a versioned binary encoding, sorted cells/source hashes and copied palette/metadata values.
+  - MagicaVoxel v150 is a restricted one-model exchange format; VXL is read-only and requires an explicit palette profile.
+  - SliceStack PNG is exact 8-bit RGBA with no scale/interpolation/antialias. Direct VXL compilation remains frozen.
+- Rejected alternatives:
+  - Treat the VXL reserved palette bytes as actual colours: contradicts VXLSE and would create dark/incorrect slices.
+  - Import all VoxelNormalForge code as a project dependency: introduces mutable models/CLI and insufficient input bounds.
+  - Let each provider own its own voxel DTO/hash: prevents deterministic replay and cross-validation.
+- Consequences:
+  - Provider output can be normalized and compared before any game-format claim.
+  - Supplied VXLSE structural readback has passed; normal, pivot/mount, HVA and game behavior remain unresolved.
+
+## Decision: High-value voxel algorithms are derived from canonical snapshots, not imported as a parallel VXL model
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-27
+- Task: ASSET-VOX-1F-CORE-1
+- Decision:
+  - Migrate the reviewed visible-face extraction and RA2/TS normal palette/baking logic from the user-authorized
+    VoxelNormalForge source into Application-internal, bounded algorithms.
+  - Surface projections and normal fields are immutable derived data bound to `Ra2VoxelSceneSnapshot.CanonicalHash`.
+    They do not extend the canonical cell schema and are never persisted implicitly.
+  - VOX and VXL use the same path after existing codecs converge on `Ra2VoxelSceneSnapshot`; VOX receives a generated
+    normal review field without pretending to contain VXL `normalIndex` data.
+  - Reuse one neighbourhood authority for style geometry, surface extraction and normal estimation.
+- Rejected alternatives:
+  - Reference the complete VoxelNormalForge project or copy its mutable `VxlModel`: creates a second voxel authority.
+  - Export and reload OBJ inside the IDE: loses palette identity and adds unnecessary file I/O.
+  - Add `normalIndex` to the canonical snapshot immediately: changes schema/authority before preservation and writer
+    contracts are approved.
+- Consequences:
+  - Native 3D preview can consume exact visible faces without reconstructing geometry from SliceStack PNG.
+  - A later VXL writer can consume a reviewed normal field, but existing-normal preservation and file materialization
+    remain separately governed.
+
+## Decision: Generation Provider Host uses a separate transient process boundary
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-26
+- Task: ASSET-VOX-1C
+- Context:
+  - Application explicitly forbids process/file orchestration and owns deterministic content algorithms.
+  - Existing Asset Provider closes final Manifest requirements and cannot represent GLB/VOX/PNG candidates.
+  - General Job/Event/Artifact persistence remains deferred, while 1C needs bounded progress, cancellation and artifacts.
+- Decision:
+  - Add a separate headless AssetHost assembly with an internal versioned local-process protocol and transient workspace.
+  - Freeze the internal boundary to `ProbeAsync`, `RunAsync` and an `IAsyncDisposable` read-only artifact lease; probe is
+    readiness evidence only and Run repeats hash/identity/capability/license checks.
+  - Recover storage only through a dedicated-root marker, per-run marker, exclusive active lock and bounded TTL janitor;
+    this is orphan cleanup, not job recovery.
+  - Drain stdout/stderr concurrently with fixed bounds and atomically arbitrate cancellation, timeout, protocol terminal,
+    process exit and artifact-promotion races before success can be committed.
+  - Treat process isolation as crash/resource isolation, not an OS security sandbox; only trusted configured executables run.
+  - Keep Application public API/friends, final Asset Provider, project write authority and Stage 1B canonical voxel truth unchanged.
+  - Prove the Host with a deterministic managed fixture; certify a real TRELLIS/Hunyuan adapter only in a separately
+    authorized provider-specific slice.
+- Rejected Alternatives:
+  - Extend `IRa2AutomationAssetProvider`: would break final Manifest closure and conflate candidates with final assets.
+  - Put `Process`/file workspace logic in Application: violates a tested pure/headless boundary.
+  - Build the full persistent Job/Event/Artifact runtime now: speculative and explicitly deferred by the roadmap.
+  - Claim working-directory containment is a security sandbox: technically false on Windows without AppContainer/container isolation.
+- Consequences:
+  - 1C can validate lifecycle and compatibility without installing or paying for a real model.
+  - Callers can check readiness without starting generation, but cannot reuse probe as an authorization token.
+  - Successful candidates remain usable only while the workspace lease is alive; no raw workspace path crosses the Host seam.
+  - Child-process protocol/workspace remain R4 compatibility contracts; the approved internal v1 implementation is now
+    covered by 38 AssetHost tests and remains non-public.
+  - UI, remote APIs, persistence, project commit and real model quality remain later stages.
+
+## Decision candidate: certify Hunyuan3D-2mini shape-only as the first real local provider
+
+- Status: Proposed / P1-0 audit passed / external authorization required
+- Date: 2026-08-26
+- Task: ASSET-VOX-1C-P1
+- Context:
+  - The local workstation has an RTX 4080 SUPER with 16,376 MiB VRAM and Windows; Python ML dependencies and model
+    weights are not installed.
+  - Current official TRELLIS.2 guidance is Linux-tested and requires at least 24 GB VRAM, so it is not a credible local
+    certification baseline for this machine.
+  - Current official Hunyuan3D-2 guidance supports Windows and describes a lower shape-only memory requirement plus a
+    smaller Hunyuan3D-2mini family, making it the smallest credible local candidate.
+  - Hunyuan usage is governed by the Tencent Hunyuan 3D 2.0 Community License; the project cannot accept it for the user.
+- Proposed decision:
+  - Use one pinned Hunyuan3D-2mini shape-only revision as the first real provider, launched by a self-contained single-file
+    adapter through the existing `ra2-voxel-generation/1` protocol.
+  - Keep runtime, upstream source and weights in a user-owned external bundle; never install/download during product
+    probe/run and never include them in the source package.
+  - Treat seed behavior as `BestEffort` until real repeated runs prove stronger behavior; defer texture to avoid conflating
+    PBR output with the later RA2 palette pipeline.
+- Rejected alternatives:
+  - TRELLIS.2 on the current Windows/16 GB machine: does not meet the official local baseline.
+  - Persistent local HTTP server: weakens the existing one-run process-tree cancellation/timeout contract.
+  - A second generation Host or voxel DTO: duplicates accepted 1C and 1B authorities.
+- Decision gate:
+  - Candidate becomes Accepted only after explicit user license acceptance and installation/download authorization, then
+    successful P1-1 through P1-5 real certification.
+- Follow-up:
+  - After P1 passes, enter the separately contracted 1D GLB-to-canonical-voxel bridge.
+
+## Decision: Tencent remote generation remains a provider adapter outside AssetHost
+
+- Status: Accepted / P2-1 through P2-4 implemented; P2-3 remote path certified on explicitly authorized call 4
+- Date: 2026-08-26
+- Task: ASSET-VOX-1C-P2
+- Decision:
+  - Keep Tencent HTTP, key, billing confirmation, async JobId polling and signed artifact download inside one dedicated
+    local adapter executable implementing the existing `ra2-voxel-generation/1` protocol.
+  - Keep AssetHost process/workspace/protocol/lease implementation provider-neutral. After clearing inherited environment,
+    retain only `SystemRoot`, `WINDIR`, `TEMP` and `TMP`, which are required by the Windows child runtime.
+  - Require only the dedicated `RA2INI_HY3D_API_KEY` and explicit free-only confirmation. Never fall back to generic
+    OpenAI/DeepSeek/CAM credentials.
+  - Submit at most once per Host run; query only the returned JobId; admit only one HTTPS-downloaded GLB candidate.
+- Consequences:
+  - Remote provider evolution cannot contaminate Application canonical voxel authority or Host lifecycle policy.
+  - API keys, proxy settings, `PATH` and arbitrary user environment remain outside the child process boundary.
+  - Probe proves local configuration only; Tencent console remains the authority for free balance and postpaid state.
+  - A local cancellation cannot cancel an already-submitted remote job until Tencent documents a cancel API; no candidate
+    is committed locally and no automatic resubmission occurs.
+  - The certified response omitted provider credit-consumption fields; Tencent console state remains authoritative before
+    any later explicitly authorized call.
+
+## Decision: GLB conversion is a deterministic internal one-part bridge
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-26
+- Task: ASSET-VOX-1D
+- Context:
+  - Stage 1B already owns immutable single-part voxel truth and Stage 1A already owns Body/Turret/Barrel assembly identity.
+  - The certified P2 GLB is one watertight connected geometry with no material colour or semantic part separation.
+  - Application must remain headless and cannot perform AssetHost lease, file or process orchestration.
+- Decision:
+  - Add an internal, BCL-only restricted GLB reader and deterministic triangle/AABB plus exterior-fill voxelizer in
+    Application.
+  - Map glTF right/up/forward explicitly to canonical right/forward/up, require explicit resolution and palette policy,
+    and produce one caller-declared part plus mandatory review facts.
+  - Reject open, non-manifold, disconnected or unsupported geometry instead of silently repairing it.
+  - Keep Application public allowlist 77, AssetHost exports 0 and all project-write/UI boundaries unchanged.
+- Rejected alternatives:
+  - Add a third-party general 3D runtime: unnecessary package/license surface for the certified restricted path.
+  - Infer turret/barrel from connected components or node names: the real mesh is fused and such inference is not authoritative.
+  - Recover colour from absent GLB material or default to green/remap: would encode a guess as canonical data.
+  - Put voxelization in AssetHost or add a second voxel snapshot: would duplicate the accepted 1B authority.
+- Consequences:
+  - 1D can reliably produce a reviewable Body voxel candidate and existing VOX/SliceStack outputs.
+  - Detached parts, palette recovery, pivot calibration, normals, HVA and final VXL/game validation remain explicit later stages.
+- Follow-up:
+  - After explicit approval, execute 1D-1 through 1D-5 with stage gates from the final contract.
+
+## Decision: natural-language voxel styles compile to a locally validated deterministic plan
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-26
+- Task: ASSET-VOX-1E
+- Context:
+  - Stage 1D produces one deterministic but uniform-colour canonical Body candidate; the accepted geometry-only GLB
+    contains no trustworthy material or semantic-region information.
+  - Users need an AGENTS-like natural-language style source, but built-in Agent Skills are application knowledge rather
+    than mutable project content, and model prose cannot become canonical voxel truth.
+- Decision:
+  - Use bounded project/user `VOXEL_STYLE.md` files as authoring intent, resolved only along one contained ancestor chain.
+  - Compile the ordered source pack through one dedicated structured DeepSeek call into an untrusted proposal, then use
+    local schema, palette, region and remap validation to produce an immutable compiled style plan.
+  - Recolour the existing `Ra2VoxelSceneSnapshot` deterministically without changing dimensions, coordinates, occupancy,
+    part identity or source geometry. Cache only the fully keyed compiled plan as disposable derived data.
+  - Permit text-only deterministic geometry shading, but require an explicit reviewed mask/source material/donor evidence
+    before painting tyre, glass, accent or remap semantics.
+- Rejected alternatives:
+  - Register user styles in `Ra2AgentSkillCatalog`: mixes project content with bundled application guidance.
+  - Inject style prose into the general INI Work prompt: expands unrelated authority and prompt budget.
+  - Let DeepSeek return per-cell colours or paths: makes untrusted output large, brittle and authoritative.
+  - Use AssetHost run storage as a cache: contradicts its leased transient-workspace contract.
+- Consequences:
+  - 1E can add reusable natural-language styling without changing provider, voxel geometry, public API or project Apply.
+  - Text-only results remain coarse/review-required; semantic masks, UI, VXL/HVA and project adoption remain separate.
+- Verification and remaining gate:
+  - User approved 1E-1 through 1E-5 on 2026-08-27. Application 249/249, IDE 2787/2787 and AssetHost 47/47 pass;
+    the existing 20,261-cell Body candidate replays to identical review artifacts without geometry/occupancy changes.
+  - UI, a real DeepSeek style compile, project Apply/Save, VXL/HVA, normals and game validation remain separate decisions.
+
+## Decision: Voxel style review is a dynamic central document with ephemeral acceptance
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-27
+- Task: ASSET-VOX-1E-UI
+- Decision:
+  - Reuse the existing dynamic central `LayoutDocument` pattern rather than add a managed dock tool or separate window.
+  - Admit only an explicitly selected project-contained `.vox`; opening/loading remains local and provider-free.
+  - Keep provider invocation behind the explicit compile command and publish results atomically through a generation-owned
+    headless coordinator.
+  - Treat “accept” as an in-memory workspace decision only; do not imply Apply, Save, export, VXL or HVA authority.
+- Consequences:
+  - The workspace cannot pollute persisted startup layout or appear during layout restoration.
+  - The UI projects existing 1E artifacts and cannot become a second colourization implementation.
+  - Real DeepSeek use, semantic-mask authoring and downstream artifact handoff remain separately authorized boundaries.
+
+## Decision: VXL style input requires an explicit PAL and converges on canonical voxel truth
+
+- Status: Accepted / implemented / automated verified
+- Date: 2026-08-27
+- Task: ASSET-VOX-1E-UI-R2
+- Context:
+  - Users should not need to understand an internal VOX-only staging format when an existing VXL asset is the source.
+  - The existing Stage 1B readers already decode MagicaVoxel VOX, Westwood VXL and Westwood PAL data into the same
+    immutable `Ra2VoxelSceneSnapshot` authority.
+  - A VXL file's reserved palette bytes are not a trustworthy substitute for the theater/unit palette that gives its
+    indices meaning, and one VXL may contain more than one Section.
+  - Ordinary material recolouring is independent of RA2 team-colour/remap semantics.
+- Decision:
+  - The style workspace accepts project-contained single-model VOX directly and single-Section VXL only with an explicit
+    project-contained 768-byte PAL selected by the user.
+  - Both input paths reuse the Stage 1B codecs and converge before compilation; the UI does not own a second parser or
+    colourization implementation.
+  - No embedded-palette guess, implicit `unittem.pal` search or silent first-Section selection is allowed.
+  - When a palette has no remap range, ordinary roles remain valid. Only non-executable, text-inferred remap roles may be
+    removed, and their intent must be retained as a bounded unresolved assumption. Explicit or executable remap still
+    fails closed.
+- Rejected alternatives:
+  - Require conversion to VOX before opening: exposes an unnecessary implementation detail and adds user friction.
+  - Treat the VXL reserved block as authoritative or guess a PAL by filename: can produce convincing but incorrect colour.
+  - Silently use the first VXL Section: loses part identity and makes later turret/barrel work ambiguous.
+  - Require remap colours for every recolour: confuses optional faction tinting with ordinary material shading.
+- Consequences:
+  - Existing VOX workflows remain compatible, while common one-Section VXL assets can be reviewed without pre-conversion.
+  - Multi-Section VXL needs a later explicit part/Section selector; VXL/HVA writing remains outside this stage.
+  - The extra PAL prompt is intentional evidence collection, not a file-format conversion step.
+- Follow-up:
+  - Contract a multi-Section part selector only when turret/body/barrel review enters scope.
+  - Contract accepted-preview handoff and VXL/HVA materialization separately from this read-only workspace.
+
+## 2026-08-27 — Native 3D is a derived view over the canonical voxel surface
+
+- Task: ASSET-VOX-1E-UI-3D
+- Context: SliceStack is valuable for importer diagnosis but does not provide a usable primary spatial review surface.
+- Decision:
+  - Use native WPF `Viewport3D` and the existing `Ra2VoxelSurfaceProjector`; do not add HelixToolkit or another voxel model.
+  - Keep `Ra2VoxelSceneSnapshot` as the sole truth and keep all WPF geometry frozen, cancellable, session-only presentation state.
+  - Use 3D for original/result/region, retain Palette as 2D and retain SliceStack as explicit/failure fallback.
+  - Label current lighting as geometry review only; it must not imply VXL normal-index or game-lighting fidelity.
+- Rejected alternatives:
+  - Render one cube per occupied voxel: needlessly emits internal faces and scales poorly.
+  - Import the old VoxelNormalForge UI/project wholesale: creates a parallel model, writer and dependency boundary.
+  - Replace SliceStack entirely: removes valuable axis/import diagnostics.
+- Consequences: current VOX/VXL review becomes spatially usable without changing file or persistence semantics; multipart
+  composition and normal/game-lighting review remain separate stages.
+
+## 2026-08-27 — Refine voxel conversion candidates without editing the source model
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2A
+- Context:
+  - Direct target-grid rasterization preserved high-frequency bumps and weak X symmetry in the accepted Body candidate.
+  - The user explicitly excluded source-model adjustment; current DeepSeek transport remains text/tool-only.
+- Decision:
+  - Freeze admitted mesh geometry and add a deterministic 2x-supersampled occupancy candidate with one bounded cleanup
+    pass, exact protected-coordinate survival and volume/silhouette/connectivity gates.
+  - Keep symmetry as a separate local-support `Suggest` candidate; do not add silent enforcement.
+  - Add deterministic normal/semantic review facts and a palette-only body contrast candidate that preserves explicit,
+    semantic and remap selections.
+  - Add an internal one-to-three-round early-stoppable DeepSeek coordinator over structured facts; fake tests only.
+- Rejected alternatives:
+  - Taubin/bilateral source-mesh displacement: outside the approved source-model freeze and unnecessary for conversion
+    aliasing reduction.
+  - Model-written cells or palette bytes: makes untrusted output canonical authority.
+  - Global side-copy symmetry: can erase intentional details and unsupported thin structures.
+  - Treat inferred tyre/glass labels as executable masks: text-only evidence is insufficient.
+- Consequences:
+  - Application can produce safer direct/refined/symmetry review candidates without provider regeneration or persistence.
+  - UI composition, live DeepSeek, authoritative visual masks, VXL/HVA and Apply/Save remain independent later decisions.
+
+## 2026-08-27 — Compose geometry candidates and colour candidates as separate session decisions
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2A-UI
+- Context:
+  - The 2A Direct/Refined path requires the admitted GLB; an existing VOX/VXL alone cannot recreate the mesh-derived
+    supersampled candidate.
+  - Geometry quality selection and colour-plan acceptance have different evidence and must not silently replace each other.
+- Decision:
+  - Require an explicit project-contained GLB and expose Verified/UserPaired/Mismatch provenance.
+  - Keep Current/Direct/Refined/optional Symmetry as immutable geometry views, with a separate explicit session-use action.
+  - Compile the existing style pipeline against the selected session geometry and publish ordinary/optional contrast
+    results separately; ordinary valid output is never rejected because contrast is unavailable.
+  - Keep all state IDE-internal and session-only; no writer, serializer, project mutation or provider call is added.
+- Rejected alternatives:
+  - Pretend to refine an already rasterized VOX without the GLB: it would misrepresent the 2A algorithm.
+  - Automatically replace the baseline with Refined: it hides provenance and removes meaningful comparison.
+  - Merge contrast optimization into mandatory colour validation: it would repeat the earlier over-strict validation error.
+- Consequences:
+  - The user can visually compare and compose geometry and colour candidates in one 3D workspace.
+  - A UserPaired GLB remains review-required, and materialization to VOX/VXL/HVA still needs a separate contract.
+
+## 2026-08-27 — Connectivity is a relative candidate-quality fact, not an absolute one-piece rule
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2A connectivity correction
+- Context:
+  - The certified Body mesh is one piece, but the 50% downsample candidate contained one detached voxel and was rejected
+    by the absolute six-neighbour single-component rule.
+  - One disconnected cell among 17,181 occupied cells is not evidence that a vehicle has been split into unsafe parts.
+- Decision:
+  - Reuse `Ra2VoxelSceneSnapshot.Connectivity` as the sole truth and admit multiple components only when one dominant
+    component contains at least 95% of all occupied cells; reject materially fragmented output.
+  - Correct the default coverage threshold to 40%, which makes the certified product-path candidate one component while
+    retaining the existing 5% occupied-volume and 3% silhouette gates.
+  - Show component count and dominant-body share in review metrics rather than hiding attachment evidence.
+- Rejected alternatives:
+  - Keep the absolute one-component gate: it confuses voxel adjacency artefacts with semantic vehicle parts.
+  - Remove connectivity validation entirely: it would admit genuinely fragmented candidates.
+  - Relax volume/silhouette gates: unnecessary because the 40% evidence-backed candidate already passes them.
+- Consequences:
+  - Small detached details no longer cause a false failure, while candidates without a dominant body still fail closed.
+  - No source geometry, canonical snapshot schema, provider, writer, project persistence or public API changed.
+
+## 2026-08-27 — ASSET-VOX-2A-R2 protects topology before smoothing
+
+- Status: Accepted / implemented / automated verified
+- Decision:
+  - Treat sustained rod/plate components, endpoints and attachment neighbourhoods as frozen/transition evidence.
+  - Permit smoothing only on the remaining body field and admit only candidates that are both safe and measurably better.
+  - Replace the dominant-body exception with no-new-component and no-new-cavity gates.
+  - Return `NoSafeImprovement` and retain Direct when no candidate qualifies.
+- Rejected alternatives:
+  - Continue deleting all non-protected one-neighbour cells; that already shortened a barrel.
+  - Use a weighted quality score; a good aggregate could hide one destroyed critical structure.
+  - Let a model or visual guess override cell-level gates; semantic confidence is not topology evidence.
+- Consequences:
+  - Clean geometry may intentionally remain unchanged.
+  - Candidate review gains deterministic difference and structure-protection evidence without changing persistence or writers.
+
+### Physical-review correction
+
+- Protection connectivity must include a directional signature. Axis-agnostic adjacency can merge unrelated roof, hull and
+  turret surface patches into one false semantic structure.
+- A difference view is meaningful only for an admitted, non-identical candidate with non-zero added/removed cells. A
+  Direct fallback must remain labelled Direct and must not expose duplicate Refined/Difference actions.
+- Conservative cleanup may remove an endpoint only when its sole neighbour is a well-supported body cell; an endpoint whose
+  neighbour is part of a low-degree chain remains preserved even if semantic classification is uncertain.
+
+### Physical-review correction 2
+
+- A candidate may not be called surface refinement when it is produced by sequentially deleting individually eligible
+  cells. Scalar roughness/support improvement does not compensate for visually scattered delta topology.
+- Geometry changes now require three independent facts: a weighted local surface proposal, matching supersampled GLB
+  occupancy evidence for the change direction, and membership in a bounded 26-neighbour delta component.
+- Singleton changes are discarded before quality scoring. Conservative and Balanced differ only by minimum coherent
+  component size, preserving deterministic selection without two unrelated algorithms.
+- Source mesh mutation, learned per-cell output and unrestricted morphology remain rejected; the canonical Direct model,
+  frozen structures and existing topology/volume/silhouette gates retain authority.
+
+## 2026-08-27 — AI classifies bounded regions; deterministic code owns symmetry edits
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2B
+- Decision:
+  - Keep local Direct/Refined generation provider-free and expose structure recognition as a separate two-request action.
+  - Send only host-owned region facts and compact silhouettes; DeepSeek cannot return coordinates or geometry edits.
+  - Reconcile two rounds locally. Agreement at confidence >=0.80 may classify a region; disagreement becomes uncertain.
+  - Permit edits only on deterministic mirrored pairs belonging to confirmed structural core. Preserve attachment, thin,
+    uncertain and transition occupancy exactly and retain all topology/quality gates.
+- Rejected alternatives:
+  - Force the entire vehicle to be symmetric: this already damaged barrels and intentional accessories.
+  - Let DeepSeek return a voxel mask: it would make probabilistic output the geometry authority.
+  - Reuse structural labels as material labels: structure does not prove glass, tyre, metal or remap identity.
+- Consequence: symmetry is explicit, review-first and disposable; a separate material-semantic colouring stage is required.
+
+## 2026-08-28 — Bound fragmented symmetry evidence without dropping geometry
+
+- Status: Accepted / implemented / automated and real-product-path verified
+- Task: ASSET-VOX-2B physical-sample correction
+- Context:
+  - The certified Body sample creates more than 64 disconnected mismatch/protected components after local refinement.
+  - One-region-per-component made valid local candidates impossible to send through the bounded two-round classifier.
+- Decision:
+  - Preserve every coordinate in Host-owned derived evidence, but summarize mismatch components through deterministic
+    lateral, height, depth and morphology buckets; summarize protected components as one exact union.
+  - Include connected-component count as an explicit region fact and retain the existing 64-region and prompt limits.
+  - Preserve typed evidence failure details through the IDE result so a future boundary failure is observable.
+- Rejected alternatives:
+  - Raise the tool/prompt region limit: it increases cost and output fragility without improving semantic structure.
+  - Truncate small mismatch components: it silently discards geometry and invalidates partition coverage.
+  - Call DeepSeek before Host compaction: the current provider protocol does not grant model-owned coordinates or masks.
+- Consequences:
+  - The real Body sample reaches explicit AI recognition while exact-coordinate symmetry execution and all local gates
+    remain authoritative.
+  - Aggregated regions may contain multiple disconnected components; the compiler must interpret them as one bounded
+    spatial/morphological class, not as one physical connected part.
+
+## 2026-08-28 — Strict semantic identity, tolerant provider representation
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2B visual/provider correction
+- Decision:
+  - Normalize common equivalent required-tool JSON forms, but retain exact evidence hash, selected plane, known region IDs,
+    complete coverage and bounded disposition/confidence validation.
+  - Keep pre-AI geometric difference and post-AI structural semantics visually separate. Blue is not a synonym for
+    symmetry; cyan identifies confirmed symmetric core.
+  - Add stronger deterministic surface candidates only behind the existing topology and quality gates.
+- Rejected alternatives:
+  - Treat every extra/missing optional JSON field as a malformed proposal; this rejects semantically valid provider output.
+  - Accept incomplete or invented model regions; that would let probabilistic output escape Host-owned evidence.
+  - Paint local frozen cells blue in Difference; users reasonably interpret that as AI-recognized symmetry.
+- Consequences:
+  - Provider formatting variance no longer blocks safe classification, while geometry authority remains deterministic.
+  - Difference review is visually stronger and semantically honest; live provider quality still requires manual acceptance.
+
+## 2026-08-28 — Surface cleanup is not automatically equivalent to smoothing
+
+- Status: Accepted / implemented / focused and certified-local-sample verified
+- Task: ASSET-VOX-2B selection/diagnostic self-audit
+- Decision:
+  - Require a material roughness reduction before any candidate may become the automatic Refined result.
+  - Rank admitted smoothing candidates by roughness before low-support count; keep aggressive cleanup as review-only when
+    it does not satisfy the smoothing threshold.
+  - Expose each candidate's delta and quality facts in the existing review surface and include all behavior parameters in
+    derivation identity.
+  - Preserve exact semantic evidence authority while reporting parser and partition failures precisely.
+- Rejected alternatives:
+  - Prefer the candidate that removes the most low-support cells; the real sample showed this can reward erosion.
+  - Hide non-selected candidates; that makes “no visible difference” impossible to diagnose.
+  - Relax missing/unknown semantic regions; that would make model output the coordinate authority.
+- Consequences:
+  - The selected candidate is smaller but demonstrably smoother; strong cleanup remains observable without being applied.
+  - A live provider may still fail its content contract, but the UI now reports whether the cause is a missing tool call,
+    invalid JSON/field, or evidence/region mismatch instead of one generic error.
+
+## 2026-08-28 — Model-facing symmetry evidence must describe repair questions, not host conclusions
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2B neutral repair-evidence correction
+- Context:
+  - `core` contained only already mirrored cells, while unmatched region IDs described themselves as attached details.
+  - Live two-round recognition consequently protected every repair opportunity and could never produce a changed core pair.
+- Decision:
+  - Keep exact coordinates and execution Host-owned, but present unmatched groups as neutral `repair-*` candidates.
+  - Add mirror-target GLB coverage and body-contact facts so DeepSeek can distinguish a missing hull counterpart from a
+    genuinely one-sided accessory using bounded evidence.
+  - Keep two-round agreement and all local safety gates unchanged; improve the critic instruction instead of weakening
+    reconciliation.
+- Rejected alternatives:
+  - Force every mismatch to become symmetric locally; this would repeat the barrel/accessory damage.
+  - Relax disagreement to first-round authority; this removes the independent review boundary.
+  - Add a third model call; the missing information was in the evidence contract, not the number of retries.
+- Consequences:
+  - The model can now admit actual repair regions without coordinates or edit authority.
+  - Provider quality still requires one live manual acceptance; no-op remains a safe and explicit result.
+- Follow-up:
+  - Rebuild/restart the IDE and repeat the same Body sample recognition. Confirm that supported hull repair regions become
+    cyan while genuine thin/accessory regions remain blue/amber or violet.
+
+## 2026-08-28 — Agent owns sparse geometry intent; disagreement receives a third arbitration pass
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-2C
+- Decision:
+  - Replace the production two-round closed region classifier with an Agent-owned sparse operation proposal over
+    Host-known aggregate/component target IDs.
+  - Permit the primary pass one bounded coordinate-free detail query. An independent reviewer returns its own complete
+    proposal; compare only the sorted `(target_id, action)` executable fingerprint.
+  - Invoke a third analysis only when those fingerprints differ. Optional query plus arbitration is capped at four total
+    calls; there is no hidden retry or provider/model switch.
+  - Host expands only the final `add_mirror` / `remove_source` operations and retains stale/bounds/overlap/protection,
+    connectivity, cavity, volume and silhouette safety. It no longer changes direction through coverage, roughness,
+    support or semantic-label heuristics.
+  - Project exact selected subcomponents in the existing structure view and show the final candidate against its refined
+    baseline as a real 3D geometry difference.
+- Supersedes:
+  - The ASSET-VOX-2B rule that local two-round label agreement is the semantic authority for production symmetry edits.
+    Its immutable evidence, compaction, protection facts and safety analyzers remain reused.
+- Consequences:
+  - Intentional asymmetry can be preserved because omitted targets are no-ops and Agent direction is authoritative.
+  - Provider cost is usually two analysis calls, three on disagreement, and at most four when one detail query is also used.
+  - The result is still session-only and review-first; no Shell, persistence, Apply/Save or VXL/HVA authority is added.
+
+## 2026-08-28 — Image-driven generation enters through a fixed bundle and session-only façade
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-3A
+- Decision:
+  - The first product generation path is exactly one explicit PNG/JPEG reference image to one fixed bundled Tencent
+    Hunyuan 3D Provider job. Text-only generation and arbitrary provider discovery remain unsupported.
+  - The IDE references a narrow public AssetHost façade. Host protocol DTOs, process handles, workspace paths and leases
+    remain internal; successful artifacts are copied into bounded owned memory before lease disposal.
+  - Probe is offline. The remote job starts only after an explicit per-run privacy/cost confirmation. There is no retry,
+    persistence, project write or asset writer.
+  - Generated GLB becomes a `GeneratedSession` source with no invented file path. Existing 1D voxelization, 2A local
+    quality candidates, 1E style inheritance and user-triggered 2C structure recognition are reused.
+- Consequences:
+  - Natural-language design text is provenance only for the current image-driven Provider and is labelled accordingly.
+  - Live provider behavior remains unverified until a separately approved manual probe.
+
+## 2026-08-28 — Explicit immutable candidate is the sole VOX export authority
+
+- Status: Accepted / implemented / automated verification pending final gates
+- Task: ASSET-VOX-3B
+- Decision:
+  - A user action freezes exactly one materializable canonical snapshot as immutable session state. Merely switching review
+    modes does not change it; changing the source, adopted geometry or compiled style invalidates it.
+  - VOX export is Save-As from that frozen snapshot only. Difference, structure-region, mask and palette projections are
+    review surfaces and can never become export authority.
+  - Reuse `Ra2MagicaVoxelCodec`; write a same-directory temporary file, physically flush, decode/re-encode with exact byte
+    equality, then publish atomically. The currently loaded source VOX cannot be overwritten in this phase.
+  - Export remains independent from project Apply/Save, manifests, asset registration and VXL/HVA materialization.
+- Rejected alternatives:
+  - Export the current visible mode directly; view navigation could silently change file content.
+  - Add another VOX writer in the IDE; this would split format authority and round-trip behavior.
+  - Treat export as project Save; that would mix an asset-copy operation with document transaction semantics.
+- Consequences:
+  - Generated/session-only or reviewed candidates can now become real VOX files without giving the Agent direct disk
+    authority.
+  - VXL/HVA, separated assembly and project binding remain explicit later phases.
+
+## 2026-08-28 — Voxel workspace camera is session presentation state, not authoring truth
+
+- Status: Accepted / implemented / automated verified; physical DPI review pending
+- Task: ASSET-VOX-UI-R1
+- Context:
+  - The current workspace rebuilds the 3D scene for review-mode changes and unconditionally resets the camera after every
+    successful build. Temporary AvalonDock unload/load also clears and rebuilds the scene.
+  - The page simultaneously measures every workflow and evidence surface inside one two-axis ScrollViewer, making Dock
+    resizing and evidence growth appear as whole-workspace scaling or jumping.
+- Decision:
+  - Keep source/candidate/semantic/export authority in the existing ViewModel and services. Camera pose, selected workflow
+    page, selected evidence page and internal splitter lengths are session-only presentation state owned by the current View.
+  - Restore camera pose by normalized target and bounds-relative distance within one source session. Auto-fit only on first
+    valid scene, a genuinely new source, invalid state or explicit user reset; review-mode changes preserve the view.
+  - Recompose the document as a task inspector, dominant adaptive 3D viewport and resizable tabbed evidence area without
+    changing Shell or introducing root-level scale transforms.
+- Rejected alternatives:
+  - Persist camera and internal panel state in project/user settings; the first UI correction does not justify a new format
+    or migration surface.
+  - Put camera state into the authoring ViewModel; it would mix presentation lifecycle with canonical candidate state.
+  - Fix the symptom with fixed DPI-specific sizes, `Viewbox` or repeated SizeChanged auto-fit; these approaches create new
+    zoom jumps and make font/input geometry inconsistent.
+  - Modify Shell to distinguish close from transient unload; the local View can preserve a lightweight pose and release the
+    heavy scene without expanding the frozen Shell boundary.
+- Consequences:
+  - The same model can be compared across original/direct/refined/difference/structure/colour views without losing the
+    user's review angle.
+  - Camera state is intentionally lost when the document instance is closed; cross-session layout persistence remains a
+    separately approved enhancement.
+- Verification:
+  - The workspace now uses task/evidence tabs, two bounded splitters and a dominant adaptive 3D viewport. No root
+    `Viewbox`, scale transform or full-page two-axis scroller was introduced.
+  - Camera pose is restored by normalized target and bounds-relative distance inside one real source identity. Repeated
+    `SourcePath` notifications no longer masquerade as source replacement; original-snapshot hash changes still start a
+    new camera group for a generated source with the same display label.
+  - Automated camera/layout/voxel suites and the build pass. Physical 1920×1080 at 100%/125% remains the user acceptance
+    gate before this visual baseline is considered screenshot-certified.
+
+## 2026-08-29 — Current working geometry, not GLB reconstruction, is the next-pass authoring baseline
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-3C
+- Context:
+  - The workspace can adopt a Refined or Agent candidate, but the next quality pass captures the original source and
+    rebuilds Direct/Refined from the old GLB.
+  - The success path explicitly clears `_workingGeometry`, so a later Agent pass is correctly hash-bound to the wrong
+    branch and can visually restore the earlier model.
+- Decision:
+  - Keep the admitted source root immutable and introduce one explicit, revisioned, session-only working geometry state.
+  - Derive every later local/Agent candidate from the captured working snapshot. Treat GLB only as alignment/coverage
+    evidence and reject ambiguous registration instead of rebuilding from it.
+  - Advance working state only through the existing explicit adoption action. Read-only candidate generation preserves
+    valid style and frozen export candidates; actual working adoption invalidates them.
+  - Keep lineage outside canonical snapshot serialization and store only root/current/parent facts, not persistent history.
+- Rejected alternatives:
+  - Mutate the source snapshot, use exported VOX as a state bus, or patch only the ViewModel call site.
+  - Make every previously authored cell permanently immutable; later explicit proposals may still remove cells relative to
+    the current baseline.
+- Consequences:
+  - Repeated refinement/Agent passes form one visible linear chain and cannot silently return to an old GLB branch.
+  - A true persistent history/branch/undo system and VXL/HVA materialization remain separate future contracts.
+
+## 2026-08-29 — Center-seam gaps are explicit Agent targets, not automatic Host fill
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-3D
+- Context:
+  - `add_mirror` cannot repair an empty self-mirrored center cell or an empty two-cell half-plane seam once both occupied
+    sides are already symmetric.
+- Decision:
+  - Derive bounded, hash-bound `seam-gap-*` targets only for one/two empty X-axis center cells with immediate occupied
+    anchors on both sides.
+  - Add `bridge_center_gap` as an Agent-selected operation. Host code expands only the selected known target and retains
+    existing physical safety gates.
+  - Keep arbitrary/off-axis/three-cell holes outside this action and keep every omitted seam unchanged.
+- Rejected alternatives:
+  - Automatically fill every center gap after symmetry; this could seal deliberate windows, rings or apertures.
+  - Overload `add_mirror`; a self-mirrored empty cell has no occupied source coordinate and would make the operation
+    semantically ambiguous.
+  - Return raw empty coordinates to DeepSeek; exact geometry remains Host-owned.
+- Consequences:
+  - Short seam repair is reviewable and Agent-led without weakening the 2C authority boundary.
+  - Longer or off-axis repair needs a separate evidence/action contract rather than silent rule expansion.
+
+## 2026-08-29 — Voxel semantics use AI suggestions plus authoritative human overrides
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-4A
+- Context:
+  - DeepSeek V4 receives text, not rendered voxel pixels. Geometry alone cannot authoritatively distinguish glass, rubber,
+    lights, openings or team-colour intent.
+  - The existing colourizer already owns hash-bound explicit masks and palette-safe application; a parallel painter would
+    duplicate authority.
+- Decision:
+  - Host code derives only bounded spatial facts and binary region masks from the current working snapshot. DeepSeek may
+    suggest part/material labels through a two-pass, conditional-third-pass text tool.
+  - Human overrides outrank AI suggestions. Only a human action can approve remap; Unknown remains valid.
+  - Materialize effective assignments through existing `Ra2VoxelExplicitMask` and `Ra2VoxelColourizer`. Re-analysis of the
+    same working hash preserves manual overrides; a working-geometry transition invalidates all semantic state.
+- Rejected alternatives:
+  - Pretend the text model saw the render, infer colours from geometry, or let Host heuristics veto flexible semantic output.
+  - Allow AI to approve remap or directly write palette indices.
+  - Build a second colourizer or persist semantic session state in project/asset formats.
+- Consequences:
+  - The workflow is useful with partial AI knowledge and explicit human correction, while geometry and writer authority stay unchanged.
+  - Fine semantic boundaries and visual-reference material recognition remain future work rather than false automatic claims.
+
+## 2026-08-29 — Fine voxel semantics are a sparse human overlay over the Agent seed
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-4B
+- Context:
+  - 4A region-level assignments cannot separate glass, tyre or attachments that share one coarse Host region.
+  - Giving a text-only model raw cell coordinates or rebuilding Host partitions around every correction would enlarge the
+    wrong authority boundary.
+- Decision:
+  - Keep accepted Agent suggestions and region human assignments immutable as the seed. Store cell-level human corrections
+    in a session-only, working-hash-bound sparse overlay.
+  - Resolve `cell human > region human > accepted Agent > Unknown`, then group the final per-cell result into the existing
+    explicit-mask/style/colourizer path.
+  - Use the existing 3D hit test for a bounded surface brush. Drag/zoom remain camera gestures; a short click edits only in
+    explicit paint/erase mode. Mirror is one atomic operation and brush undo/redo is local to this overlay.
+- Rejected alternatives:
+  - A second painter that writes palette indices directly, persistent semantic metadata, or model-authored cell lists.
+  - A new window or dense slice editor in this stage; the current region controls plus a compact surface brush provide the
+    required correction path with substantially lower UI complexity.
+- Consequences:
+  - Material boundaries can be completed manually without a multimodal stage, while AI remains a useful starting point.
+  - Hidden/internal voxel painting and persistent mask interchange remain outside this stage; visible material authoring is
+    available by rotating the existing 3D model.
+
+## 2026-08-30 — Voxel pointer ownership separates semantic action from camera navigation
+
+- Status: Accepted / implemented / automated verified
+- Task: ASSET-VOX-4B-FIX2
+- Context:
+  - Physical WPF smoke showed that the 4B left-button short-click heuristic can remain silent even after semantic-state
+    admission was corrected. Left press currently starts Orbit, while left release later attempts to reinterpret the gesture.
+  - The viewport discards the actual hit triangle and guesses a cell by nearest centre.
+- Decision:
+  - Reserve left click for semantic select/paint/erase and right drag anywhere on the main input surface for Orbit.
+  - Preserve Shift+right/middle pan and wheel zoom. Keep reset on the existing button.
+  - Carry an IDE-internal scene-lifetime face-to-canonical-coordinate hit map from existing surface projection order; never
+    fall back to nearest-cell guessing.
+- Rejected alternatives:
+  - Increase the 4-DIP threshold, delay painting until mouse-up, retry hit testing, or keep left-button camera ownership.
+  - Introduce another geometry picker or external 3D dependency.
+  - Add continuous drag painting before single-click identity and undo semantics are proven reliable.
+- Consequences:
+  - Navigation works from model or blank viewport space and can no longer consume a paint click.
+  - Scene results gain derived nonserialized hit metadata; canonical geometry and semantic authority remain unchanged.
+  - The pointer portion of the 2026-08-29 4B decision is superseded: left click is semantic action, while camera orbit belongs to right drag.
+  - Physical WPF smoke remains required because source/static tests cannot synthesize trustworthy end-to-end WPF 3D mouse input.
+
+## 2026-08-30 — Continuous semantic painting is one cancellable transaction, not repeated clicks
+
+- Status: Accepted / implemented / automated verified / physical acceptance pending
+- Task: ASSET-VOX-4B-STROKE-1
+- Context:
+  - FIX2 provides exact visible-surface hits, but the current click handler immediately creates a layer, undo item,
+    composition and full scene refresh for every invocation.
+  - Calling it from MouseMove would create fragmented undo history and rebuild storms, while part/material roles already
+    exist in the effective assignment but the viewport only visualizes material.
+- Decision:
+  - Let the viewport own pointer capture, <=4-DIP exact hit sampling, ordered seed deduplication and a presentation-only
+    temporary path overlay. Let the ViewModel own the frozen base layer and atomic begin/commit/cancel lifecycle.
+  - Extend the existing Application mask editor with one deterministic multi-seed operation; retain the single-seed method
+    only as an adapter to that same implementation.
+  - Commit once on left release, create at most one undo item and one formal scene refresh, and cancel without mutation on
+    capture/scene/hash/mode/camera transitions.
+  - Add an IDE-only Part/Material review dimension. Annotation colours visualize existing effective assignments and never
+    become palette indices or semantic authority.
+- Rejected alternatives:
+  - Repeatedly invoke the click handler, commit on every move, infer missing 3D cells between hits, or mutate the manual
+    layer during pointer sampling.
+  - Put stroke state in Application, create a second painter/composition, or encode annotation RGB into VOX output.
+- Consequences:
+  - Fast and slow drag produce one reviewable, undoable surface operation without hidden/back-face painting.
+  - Physical WPF input and DPI smoke remains mandatory; hidden/internal voxel editing stays out of scope.
+
+## 2026-08-30 — Persist voxel semantics as provenance-preserving sidecar layers
+
+- Status: Accepted / implemented / automated verified / physical acceptance pending
+- Task: ASSET-VOX-4D
+- Context:
+  - The current semantic authoring state is session-only, while exporting colours cannot preserve part/material identity or provenance.
+  - Saving only final effective cells would incorrectly elevate accepted Agent suggestions to human authority.
+- Decision:
+  - Persist accepted Agent suggestions, human region overrides and human cell overrides as separate layers in a strict,
+    project-contained `.semantic.json` v1 sidecar.
+  - Bind restoration to exact working snapshot, deterministic evidence and reconstructed manual-layer hashes.
+  - Reuse the existing LayerResolver/MaskComposer and atomic text writer; never embed the sidecar into VOX/VXL/HVA or project INI.
+- Rejected alternatives:
+  - Save review RGB, serialize only region IDs, materialize every effective cell as human, or guess cross-hash migration.
+  - Autosave or silently auto-load in the first persistence version.
+- Consequences:
+  - Exact matching semantic work can survive an IDE restart without changing model or palette authority.
+  - A matching geometry file is still required; undo/redo and global Shell close protection remain outside v1.

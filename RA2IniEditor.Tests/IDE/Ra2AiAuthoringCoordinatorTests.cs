@@ -103,7 +103,7 @@ public sealed class Ra2AiAuthoringCoordinatorTests
     }
 
     [Fact]
-    public void PrepareProposal_InvalidValueThatAddsErrorIsBlocked()
+    public void PrepareProposal_DiagnosticErrorIsReviewEvidenceAndExplicitApplyRemainsAvailable()
     {
         Fixture fixture = new(injectCandidateError: true);
 
@@ -114,13 +114,13 @@ public sealed class Ra2AiAuthoringCoordinatorTests
             CancellationToken.None);
 
         Ra2AiEditProposal proposal = Assert.IsType<Ra2AiEditProposal>(result.Proposal);
-        Assert.Equal(Ra2AiEditProposalApplyPolicy.Blocked, proposal.ApplyPolicy);
+        Assert.Equal(Ra2AiEditProposalApplyPolicy.Caution, proposal.ApplyPolicy);
         Assert.True(proposal.Preview.AddedErrorCount > 0);
 
         Ra2AiEditProposalApplyResult apply = fixture.Coordinator.ApplyConfirmed(proposal);
-        Assert.Equal(Ra2AiEditProposalFailureKind.ApplyBlocked, apply.FailureKind);
-        Assert.Equal(0, fixture.TransactionPort.ApplyCallCount);
-        Assert.Same(proposal, fixture.Coordinator.ActiveProposal);
+        Assert.True(apply.Succeeded, apply.Message);
+        Assert.Equal(1, fixture.TransactionPort.ApplyCallCount);
+        Assert.Null(fixture.Coordinator.ActiveProposal);
     }
 
     [Fact]

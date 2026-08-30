@@ -56,7 +56,7 @@ function Remove-RepositoryItem {
 }
 
 Get-ChildItem -Path $repositoryRoot -Recurse -Force -Directory |
-    Where-Object { $excludedDirectoryNames -contains $_.Name } |
+    Where-Object { ($excludedDirectoryNames -contains $_.Name) -or $_.Name -like ".verify-*" } |
     Sort-Object FullName -Descending |
     ForEach-Object { Remove-RepositoryItem -Item $_ }
 

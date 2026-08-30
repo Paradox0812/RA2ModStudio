@@ -15,9 +15,20 @@ internal sealed class Ra2AiProposalPreparationRunner
         Ra2AuthoringSnapshot currentSnapshot,
         Ra2AiResponse response,
         CancellationToken cancellationToken)
+        => await PrepareAsync(
+            requestContext,
+            new Ra2AiAuthoringRequestContext(currentSnapshot),
+            response,
+            cancellationToken).ConfigureAwait(false);
+
+    internal async Task<Ra2AiEditProposalResult> PrepareAsync(
+        Ra2AiAuthoringRequestContext requestContext,
+        Ra2AiAuthoringRequestContext currentContext,
+        Ra2AiResponse response,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requestContext);
-        ArgumentNullException.ThrowIfNull(currentSnapshot);
+        ArgumentNullException.ThrowIfNull(currentContext);
         ArgumentNullException.ThrowIfNull(response);
 
         try
@@ -29,7 +40,7 @@ internal sealed class Ra2AiProposalPreparationRunner
 
                 return _coordinator.PrepareProposal(
                     requestContext,
-                    currentSnapshot,
+                    currentContext,
                     response,
                     cancellationToken);
             }).ConfigureAwait(false);

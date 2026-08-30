@@ -30,6 +30,7 @@ Excluded directories:
 - `artifacts/`
 - `Logs/`
 - `publish/`
+- `.verify-*/`
 
 Excluded files:
 
@@ -46,7 +47,17 @@ Excluded files:
 - `*.nupkg`
 - `*.snupkg`
 
+Local credential and machine-only override files such as `.env`, `.env.*`,
+`secrets.json`, `*.secrets.json`, and `appsettings.*.Local.json` are ignored by
+Git and excluded by both source-package scripts. Deliberately sanitized
+`.env.example`, `.env.sample`, and `.env.template` files remain packageable.
+
 Local IDE metadata under `.ra2ide/local/` is also excluded.
+
+The repository `.gitattributes` keeps ordinary text at LF, Windows command
+scripts and solution files at CRLF, and voxel/image/archive formats as binary.
+Do not run `git add --renormalize .` as part of an unrelated feature change;
+line-ending normalization belongs in a separately reviewed baseline change.
 
 ## Cleaning
 
@@ -174,6 +185,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead("artifacts/RA2IniEditor-source.zip")
 $zip.Entries.FullName | Where-Object {
     $_ -match '(^|/)(\.vs|bin|obj|TestResults|artifacts|Logs|publish)/' -or
+    $_ -match '(^|/)\.verify-[^/]+/' -or
     $_ -match '\.(suo|user|vsidx|log|tmp|cache|bak|orig|nupkg|snupkg)$' -or
     $_ -match '_wpftmp'
 }

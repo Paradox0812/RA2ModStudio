@@ -52,7 +52,7 @@ public sealed class IdeShellBoundaryTests
     }
 
     [Fact]
-    public void IdeProject_ReferencesCoreAndInfrastructureWithoutLegacyReference()
+    public void IdeProject_ReferencesApprovedRuntimeProjectsWithoutLegacyReference()
     {
         string root = TestRepositoryRoot.Find();
         string ideProjectPath = Path.Combine(root, "RA2IniEditor.IDE", "RA2IniEditor.IDE.csproj");
@@ -65,6 +65,8 @@ public sealed class IdeShellBoundaryTests
         Assert.Contains("..\\RA2IniEditor.Application\\RA2IniEditor.Application.csproj", projectText);
         Assert.Contains("..\\RA2IniEditor.Core\\RA2IniEditor.Core.csproj", projectText);
         Assert.Contains("..\\RA2IniEditor.Infrastructure\\RA2IniEditor.Infrastructure.csproj", projectText);
+        Assert.Contains("..\\RA2IniEditor.AssetHost\\RA2IniEditor.AssetHost.csproj", projectText);
+        Assert.Contains("..\\RA2IniEditor.AssetProviders.TencentHy3D\\RA2IniEditor.AssetProviders.TencentHy3D.csproj", projectText);
         Assert.DoesNotContain("..\\RA2IniEditor.csproj", projectText, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("RA2IniEditor.Tests.csproj", projectText, StringComparison.OrdinalIgnoreCase);
 
@@ -78,6 +80,8 @@ public sealed class IdeShellBoundaryTests
             new[]
             {
                 "..\\RA2IniEditor.Application\\RA2IniEditor.Application.csproj",
+                "..\\RA2IniEditor.AssetHost\\RA2IniEditor.AssetHost.csproj",
+                "..\\RA2IniEditor.AssetProviders.TencentHy3D\\RA2IniEditor.AssetProviders.TencentHy3D.csproj",
                 "..\\RA2IniEditor.Core\\RA2IniEditor.Core.csproj",
                 "..\\RA2IniEditor.Infrastructure\\RA2IniEditor.Infrastructure.csproj"
             },
@@ -482,7 +486,8 @@ public sealed class IdeShellBoundaryTests
         Assert.Contains("DeepSeekRa2AiModelCatalog.Default", shellCodeText);
         Assert.Contains("AiAssistantModelSelector.SelectedValue is DeepSeekRa2AiModel", shellCodeText);
         Assert.Contains("CreateAiAssistantPipeline", shellCodeText);
-        Assert.Contains("pipeline.SendStreamingAsync", shellCodeText);
+        Assert.Contains("Ra2AiBoundedStructuredReplanCoordinator", shellCodeText);
+        Assert.Contains("replanCoordinator.ExecuteAsync", shellCodeText);
         Assert.Contains("Ra2AiIncrementalTextBuffer", shellCodeText);
         Assert.Contains("AiAssistantStreamFlushIntervalMilliseconds = 50", shellCodeText);
         Assert.Contains("AiAssistantStreamImmediateFlushThresholdCharacters = 512", shellCodeText);
@@ -517,7 +522,7 @@ public sealed class IdeShellBoundaryTests
         Assert.Contains("DeepSeekRa2AiClientFactory.CreateClient(configurationSnapshot)", shellCodeText);
         Assert.Contains("UpdateAiAssistantConfigurationStatus(configurationSnapshot)", shellCodeText);
         Assert.Contains("snapshot.UsesCustomEndpoint ? \"自定义端点\" : \"官方端点\"", shellCodeText);
-        Assert.Contains("UpdateAiAssistantRequestPreparationNotice(result.Request)", shellCodeText);
+        Assert.Contains("UpdateAiAssistantRequestPreparationNotice(result.FinalRequest)", shellCodeText);
         Assert.Contains("AiAssistant.RequestDiagnostics", shellCodeText);
         Assert.DoesNotContain("diagnostics.ToString()", shellCodeText);
         Assert.DoesNotContain("new DeepSeekRa2AiClient", shellCodeText);
@@ -529,6 +534,7 @@ public sealed class IdeShellBoundaryTests
         Assert.Contains("IsAiAssistantErrorMessage(response.Kind)", shellCodeText);
         Assert.DoesNotContain("IsTimeoutError", shellCodeText);
         Assert.DoesNotContain("response.ErrorMessage", ExtractDeepSeekAiAssistantResponseFormatterBlock(shellCodeText));
+        Assert.Contains("response.LocalRejectionMessage", ExtractDeepSeekAiAssistantResponseFormatterBlock(shellCodeText));
         Assert.Contains("if (string.IsNullOrWhiteSpace(prompt))", shellCodeText);
         Assert.Contains("AiAssistantMaximumUserPromptCharacters = 8000", shellCodeText);
         Assert.Contains("if (rawPrompt.Length > AiAssistantMaximumUserPromptCharacters)", shellCodeText);

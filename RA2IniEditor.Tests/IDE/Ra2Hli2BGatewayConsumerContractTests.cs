@@ -130,8 +130,9 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
             "Ra2AiInteractionRouter.Resolve(",
             "CreateAiAssistantPipeline(",
             "_aiAssistantRequestLifecycle.TryStart(",
-            "pipeline.SendStreamingAsync(");
+            "replanCoordinator.ExecuteAsync(");
         Assert.Contains("Ra2AiEditAvailabilityKind.ResourceLimitExceeded", method, StringComparison.Ordinal);
+        Assert.Contains("new Ra2AiBoundedStructuredReplanRequest(", method, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -163,9 +164,9 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
         Assert.Equal(Ra2AutomationEditPreviewService.MaximumDocumentCharacters, descriptor.MaximumDocumentCharacters);
         Assert.Equal(Ra2AutomationEditPreviewService.MaximumDiagnosticItems, descriptor.MaximumResultItems);
         Assert.Equal(Ra2IniEditPlan.MaximumOperationCount, descriptor.MaximumOperations);
-        Assert.Equal(59, typeof(Ra2AutomationCapabilityGateway).Assembly.GetExportedTypes().Length);
+        Assert.Equal(77, typeof(Ra2AutomationCapabilityGateway).Assembly.GetExportedTypes().Length);
         Assert.Equal(
-            ["ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "ResolveReference", "Validate"],
+            ["ExpandProjectTemplate", "ExpandTemplate", "FindReferences", "GetCapabilities", "GetFieldSchema", "GetSection", "GetTemplates", "Preview", "PreviewProject", "ResolveReference", "Validate"],
             typeof(IRa2AutomationCapabilityGateway).GetMethods().Select(method => method.Name).Order().ToArray());
     }
 
@@ -280,6 +281,18 @@ public sealed class Ra2Hli2BGatewayConsumerContractTests
             Ra2AutomationTemplateExpansionRequest request,
             CancellationToken cancellationToken = default)
             => _inner.ExpandTemplate(snapshot, request, cancellationToken);
+
+        public Ra2AutomationProjectEditPreviewResult PreviewProject(
+            Ra2AutomationProjectSnapshot snapshot,
+            Ra2AutomationProjectEditPlan plan,
+            CancellationToken cancellationToken = default)
+            => _inner.PreviewProject(snapshot, plan, cancellationToken);
+
+        public Ra2AutomationProjectTemplateExpansionResult ExpandProjectTemplate(
+            Ra2AutomationProjectSnapshot snapshot,
+            Ra2AutomationTemplateExpansionRequest request,
+            CancellationToken cancellationToken = default)
+            => _inner.ExpandProjectTemplate(snapshot, request, cancellationToken);
     }
 
     private sealed class RecordingTransactionPort : IRa2EditorTransactionPort

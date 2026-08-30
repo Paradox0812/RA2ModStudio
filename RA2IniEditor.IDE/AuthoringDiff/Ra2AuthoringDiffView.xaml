@@ -2,82 +2,104 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:diff="clr-namespace:RA2IniEditor.IDE.AuthoringDiff"
+             xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              AutomationProperties.AutomationId="Shell.AuthoringDiff.Document"
              Background="{DynamicResource UiSurfaceBrush}"
-             Loaded="View_OnLoaded" SizeChanged="View_OnSizeChanged">
-    <UserControl.Resources><BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" /></UserControl.Resources>
+             Loaded="View_OnLoaded" Unloaded="View_OnUnloaded" SizeChanged="View_OnSizeChanged"
+             PreviewKeyDown="View_OnPreviewKeyDown">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <Style x:Key="ReviewModeButtonStyle" TargetType="Button" BasedOn="{StaticResource IdeWorkspaceCommandButtonStyle}">
+            <Setter Property="MinWidth" Value="56"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,2,0"/>
+        </Style>
+        <Style x:Key="ReviewResultModeButtonStyle" TargetType="Button" BasedOn="{StaticResource ReviewModeButtonStyle}"><Style.Triggers><DataTrigger Binding="{Binding IsResultMode}" Value="True"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}"/><Setter Property="FontWeight" Value="SemiBold"/></DataTrigger></Style.Triggers></Style>
+        <Style x:Key="ReviewChangesModeButtonStyle" TargetType="Button" BasedOn="{StaticResource ReviewModeButtonStyle}"><Style.Triggers><DataTrigger Binding="{Binding IsChangesMode}" Value="True"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}"/><Setter Property="FontWeight" Value="SemiBold"/></DataTrigger></Style.Triggers></Style>
+        <Style x:Key="ReviewContextModeButtonStyle" TargetType="Button" BasedOn="{StaticResource ReviewModeButtonStyle}"><Style.Triggers><DataTrigger Binding="{Binding IsObjectContextMode}" Value="True"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/><Setter Property="BorderBrush" Value="{DynamicResource UiAccentBrush}"/><Setter Property="FontWeight" Value="SemiBold"/></DataTrigger></Style.Triggers></Style>
+    </UserControl.Resources>
     <Grid>
-        <Grid.RowDefinitions><RowDefinition MinHeight="32" Height="Auto"/><RowDefinition MinHeight="36" Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition MinHeight="32" Height="Auto"/>
+            <RowDefinition MinHeight="36" Height="Auto"/>
+            <RowDefinition MinHeight="36" Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Border Grid.Row="0" Padding="10,5" BorderBrush="{DynamicResource UiDividerBrush}" BorderThickness="0,0,0,1"
                 AutomationProperties.AutomationId="Shell.AuthoringDiff.StatusBar">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{DynamicResource UiSurfaceBrush}" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsBlocked}" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource UiDangerSoftBrush}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding IsStale}" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource UiWarningSoftBrush}" />
-                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsBlocked}" Value="True"><Setter Property="Background" Value="{DynamicResource UiDangerSoftBrush}" /></DataTrigger>
+                        <DataTrigger Binding="{Binding IsStale}" Value="True"><Setter Property="Background" Value="{DynamicResource UiWarningSoftBrush}" /></DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Border.Style>
             <DockPanel LastChildFill="False">
                 <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" Foreground="{DynamicResource UiTextPrimaryBrush}" />
-                <TextBlock Margin="14,0,0,0" Text="{Binding StatsText}" Foreground="{DynamicResource UiTextSecondaryBrush}"
-                           AutomationProperties.AutomationId="Shell.AuthoringDiff.Stats" />
-                <TextBlock x:Name="DiagnosticSummaryText" Margin="14,0,0,0" Text="{Binding DiagnosticSummary}"
-                           Foreground="{DynamicResource UiWarningBrush}" AutomationProperties.AutomationId="Shell.AuthoringDiff.DiagnosticSummary" />
+                <TextBlock Margin="14,0,0,0" Text="{Binding StatsText}" Foreground="{DynamicResource UiTextSecondaryBrush}" AutomationProperties.AutomationId="Shell.AuthoringDiff.Stats" />
+                <TextBlock x:Name="DiagnosticSummaryText" Margin="14,0,0,0" Text="{Binding DiagnosticSummary}" Foreground="{DynamicResource UiWarningBrush}" AutomationProperties.AutomationId="Shell.AuthoringDiff.DiagnosticSummary" />
             </DockPanel>
         </Border>
         <Grid Grid.Row="1" Margin="8,3">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <Button x:Name="ReturnButton" Content="返回源文件" HorizontalAlignment="Left" ToolTip="返回源文件"
-                    Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Click="ReturnButton_OnClick"
+            <Button x:Name="ReturnButton" Content="返回源文件" HorizontalAlignment="Left" ToolTip="返回源文件" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Click="ReturnButton_OnClick"
                     AutomationProperties.AutomationId="Shell.AuthoringDiff.ReturnToSourceButton" AutomationProperties.Name="返回源文件" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Margin="0,0,6,0" Content="放弃修改" IsEnabled="{Binding IsDismissEnabled}"
-                        Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Click="DismissButton_OnClick"
-                        AutomationProperties.AutomationId="Shell.AuthoringDiff.DismissButton" />
-                <Button Content="应用全部" IsEnabled="{Binding IsApplyEnabled}" Style="{StaticResource IdeBlueCompactButtonStyle}"
-                        Click="ApplyButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.ApplyAllButton" />
+                <Button Margin="0,0,6,0" Content="放弃修改" IsEnabled="{Binding IsDismissEnabled}" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Click="DismissButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.DismissButton" />
+                <Button Content="应用全部" IsEnabled="{Binding IsApplyEnabled}" Style="{StaticResource IdeBlueCompactButtonStyle}" Click="ApplyButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.ApplyAllButton" />
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="2">
-            <ListBox x:Name="RowsList" ItemsSource="{Binding Rows}" BorderThickness="0" Background="Transparent"
-                     FontFamily="{StaticResource UiCodeFontFamily}" ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True"
-                     VirtualizingPanel.VirtualizationMode="Recycling" AutomationProperties.AutomationId="Shell.AuthoringDiff.Rows">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Focusable" Value="False"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.Added}"><Setter Property="Background" Value="{StaticResource AuthoringDiffAddedRowBrush}"/></DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.Removed}"><Setter Property="Background" Value="{DynamicResource UiDangerSoftBrush}"/></DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.HunkHeader}"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/></DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid MinHeight="22">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <TextBlock Text="{Binding OldLineNumber}" Padding="4,2" TextAlignment="Right" Foreground="{DynamicResource UiTextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="1" Text="{Binding NewLineNumber}" Padding="4,2" TextAlignment="Right" Foreground="{DynamicResource UiTextSecondaryBrush}"/>
-                            <TextBlock Grid.Column="2" Text="{Binding Marker}" Padding="4,2" TextAlignment="Center" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="3" Text="{Binding Text}" Padding="6,2" Foreground="{DynamicResource UiTextPrimaryBrush}" TextWrapping="NoWrap"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
-            <Border VerticalAlignment="Top" Margin="8" Padding="8,4" Background="{DynamicResource UiWarningSoftBrush}"
-                    Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibilityConverter}}"
-                    AutomationProperties.AutomationId="Shell.AuthoringDiff.StaleNotice">
-                <TextBlock Text="该提案已失效或已处理；差异仅供阅读。" Foreground="{DynamicResource UiWarningBrush}" />
+        <Grid Grid.Row="2" Margin="8,2,8,4">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <ToggleButton x:Name="OutlineToggle" Content="大纲" Margin="0,0,6,0" Visibility="Collapsed" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Checked="OutlineToggle_OnChanged" Unchecked="OutlineToggle_OnChanged" AutomationProperties.AutomationId="Shell.AuthoringDiff.OutlineToggle"/>
+            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <ListBox x:Name="DocumentSelector" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument, Mode=TwoWay}" BorderThickness="0" Background="Transparent" Margin="0,0,12,0" SelectionChanged="DocumentSelector_OnSelectionChanged" AutomationProperties.AutomationId="Shell.AuthoringDiff.DocumentSelector">
+                        <ListBox.Style><Style TargetType="ListBox"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding HasMultipleDocuments}" Value="False"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></ListBox.Style>
+                        <ListBox.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="10,5"/><Setter Property="Margin" Value="0,0,2,0"/><Setter Property="AutomationProperties.AutomationId" Value="Shell.AuthoringDiff.DocumentTab"/><Setter Property="ToolTip" Value="{Binding RelativePath}"/></Style></ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding DisplayName}"/></DataTemplate></ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button Content="结果" Style="{StaticResource ReviewResultModeButtonStyle}" Click="ResultModeButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.Mode.Result" AutomationProperties.Name="结果" AutomationProperties.ItemStatus="{Binding IsResultMode}"/>
+                    <Button Content="差异" Style="{StaticResource ReviewChangesModeButtonStyle}" Click="ChangesModeButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.Mode.Changes" AutomationProperties.Name="差异" AutomationProperties.ItemStatus="{Binding IsChangesMode}"/>
+                    <Button Content="对象上下文" Style="{StaticResource ReviewContextModeButtonStyle}" Click="ContextModeButton_OnClick" AutomationProperties.AutomationId="Shell.AuthoringDiff.Mode.ObjectContext" AutomationProperties.Name="对象上下文" AutomationProperties.ItemStatus="{Binding IsObjectContextMode}"/>
+                </StackPanel>
+            </ScrollViewer>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Content="上一个更改" Margin="6,0,2,0" IsEnabled="{Binding HasChangedLocations}" Click="PreviousChangeButton_OnClick" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" ToolTip="上一个更改；首项后循环到末项" AutomationProperties.AutomationId="Shell.AuthoringDiff.PreviousChangeButton"/>
+                <Button Content="下一个更改" IsEnabled="{Binding HasChangedLocations}" Click="NextChangeButton_OnClick" Style="{StaticResource IdeWorkspaceCommandButtonStyle}" ToolTip="下一个更改；末项后循环到首项" AutomationProperties.AutomationId="Shell.AuthoringDiff.NextChangeButton"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions><ColumnDefinition x:Name="OutlineColumn" Width="220" MinWidth="0" MaxWidth="360"/><ColumnDefinition x:Name="OutlineSplitterColumn" Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border x:Name="OutlinePanel" BorderBrush="{DynamicResource UiDividerBrush}" BorderThickness="0,0,1,0" Background="{DynamicResource UiPanelBrush}">
+                <ListBox x:Name="OutlineList" ItemsSource="{Binding OutlineItems}" SelectedItem="{Binding SelectedOutlineItem, Mode=TwoWay}" SelectionChanged="OutlineList_OnSelectionChanged" BorderThickness="0" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.AutomationId="Shell.AuthoringDiff.Outline">
+                    <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="8,6"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="AutomationProperties.AutomationId" Value="Shell.AuthoringDiff.OutlineItem"/><Setter Property="AutomationProperties.Name" Value="{Binding AccessibleName}"/></Style></ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate><DataTemplate><Grid ToolTip="{Binding Reason}"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Padding="4,1" Margin="0,0,7,0" Background="{DynamicResource UiAccentSoftBrush}" CornerRadius="2"><TextBlock Text="{Binding Badge}" FontSize="11" Foreground="{DynamicResource UiAccentBrush}"/></Border><TextBlock Grid.Column="1" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/></Grid></DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
             </Border>
+            <GridSplitter x:Name="OutlineSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+            <Grid Grid.Column="2">
+                <avalonEdit:TextEditor x:Name="ResultEditor" Text="{Binding ResultText, Mode=OneWay}" IsReadOnly="True" ShowLineNumbers="True" WordWrap="False" FontFamily="{StaticResource UiCodeFontFamily}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Shell.AuthoringDiff.ResultEditor">
+                    <avalonEdit:TextEditor.Style><Style TargetType="avalonEdit:TextEditor"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsResultMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></avalonEdit:TextEditor.Style>
+                </avalonEdit:TextEditor>
+                <ListBox x:Name="RowsList" ItemsSource="{Binding Rows}" BorderThickness="0" Background="Transparent" FontFamily="{StaticResource UiCodeFontFamily}" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" AutomationProperties.AutomationId="Shell.AuthoringDiff.Rows">
+                    <ListBox.Style><Style TargetType="ListBox"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsChangesMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></ListBox.Style>
+                    <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Focusable" Value="False"/><Style.Triggers><DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.Added}"><Setter Property="Background" Value="{StaticResource AuthoringDiffAddedRowBrush}"/></DataTrigger><DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.Removed}"><Setter Property="Background" Value="{DynamicResource UiDangerSoftBrush}"/></DataTrigger><DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.HunkHeader}"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/></DataTrigger><DataTrigger Binding="{Binding Kind}" Value="{x:Static diff:Ra2AuthoringDiffRowKind.FileHeader}"><Setter Property="Background" Value="{DynamicResource UiAccentSoftBrush}"/><Setter Property="MinHeight" Value="28"/><Setter Property="AutomationProperties.AutomationId" Value="Shell.AuthoringDiff.FileHeader"/></DataTrigger></Style.Triggers></Style></ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate><DataTemplate><Grid MinHeight="22"><Grid x:Name="NormalDiffRow"><Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition Width="44"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><TextBlock Text="{Binding OldLineNumber}" Padding="4,2" TextAlignment="Right" Foreground="{DynamicResource UiTextSecondaryBrush}"/><TextBlock Grid.Column="1" Text="{Binding NewLineNumber}" Padding="4,2" TextAlignment="Right" Foreground="{DynamicResource UiTextSecondaryBrush}"/><TextBlock Grid.Column="2" Text="{Binding Marker}" Padding="4,2" TextAlignment="Center" FontWeight="SemiBold"/><TextBlock Grid.Column="3" Text="{Binding Text}" Padding="6,2" Foreground="{DynamicResource UiTextPrimaryBrush}" TextWrapping="NoWrap"/></Grid><StackPanel x:Name="FileHeaderPanel" Orientation="Horizontal" Margin="10,4" Visibility="Collapsed"><TextBlock Text="{Binding FileHeaderName}" FontFamily="{DynamicResource UiFontFamily}" FontWeight="SemiBold" Foreground="{DynamicResource UiTextPrimaryBrush}"/><TextBlock Margin="8,0,0,0" Text="{Binding FileHeaderPath}" FontFamily="{DynamicResource UiFontFamily}" Foreground="{DynamicResource UiTextSecondaryBrush}" Visibility="{Binding DataContext.ShowRelativeFilePaths, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibilityConverter}}"/></StackPanel></Grid><DataTemplate.Triggers><DataTrigger Binding="{Binding IsFileHeader}" Value="True"><Setter TargetName="NormalDiffRow" Property="Visibility" Value="Collapsed"/><Setter TargetName="FileHeaderPanel" Property="Visibility" Value="Visible"/></DataTrigger></DataTemplate.Triggers></DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <Grid x:Name="ContextPanel">
+                    <Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsObjectContextMode}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Grid.Style>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <Border Padding="10,6" Background="{DynamicResource UiAccentSoftBrush}" AutomationProperties.AutomationId="Shell.AuthoringDiff.RelationNotice"><TextBlock Text="关联 Section 未被本次提案修改，仅供审阅。" Foreground="{DynamicResource UiTextSecondaryBrush}"/></Border>
+                    <StackPanel Grid.Row="1" Margin="10,6"><TextBlock Text="{Binding ContextTitle}" FontWeight="SemiBold"/><TextBlock Text="{Binding RelationMessage}" Foreground="{DynamicResource UiTextSecondaryBrush}" TextWrapping="Wrap" AutomationProperties.AutomationId="Shell.AuthoringDiff.RelationUnavailable"/></StackPanel>
+                    <avalonEdit:TextEditor x:Name="ContextEditor" Grid.Row="2" Text="{Binding ContextText, Mode=OneWay}" IsReadOnly="True" ShowLineNumbers="True" WordWrap="False" FontFamily="{StaticResource UiCodeFontFamily}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.AutomationId="Shell.AuthoringDiff.ContextEditor"/>
+                </Grid>
+                <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <Border VerticalAlignment="Top" Margin="8" Padding="8,4" Background="{DynamicResource UiWarningSoftBrush}" Visibility="{Binding IsStale, Converter={StaticResource BoolToVisibilityConverter}}" AutomationProperties.AutomationId="Shell.AuthoringDiff.StaleNotice"><TextBlock Text="该提案已失效或已处理；审阅内容仅供阅读。" Foreground="{DynamicResource UiWarningBrush}" /></Border>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

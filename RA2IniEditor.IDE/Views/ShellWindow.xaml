@@ -185,6 +185,10 @@
                                   Click="ClearIssuesFromShell" />
                     </MenuItem>
                     <MenuItem Header="工具">
+                        <MenuItem AutomationProperties.AutomationId="Shell.Menu.VoxelStyleWorkspace"
+                                  Header="体素风格预览"
+                                  Click="OpenVoxelStyleWorkspace_OnClick" />
+                        <Separator />
                         <MenuItem Header="选项"
                                   IsEnabled="False" />
                         <MenuItem Header="打开日志目录"
@@ -404,8 +408,10 @@
                                    GridSplitterHorizontalStyle="{StaticResource IdeDockSplitterStyle}"
                                    GridSplitterWidth="4"
                                    GridSplitterVerticalStyle="{StaticResource IdeDockSplitterStyle}"
+                                   IsHitTestVisible="False"
                                    IsVirtualizingAnchorable="True"
-                                   IsVirtualizingDocument="False">
+                                   IsVirtualizingDocument="False"
+                                   Opacity="0">
             <avalondock:LayoutRoot>
                 <avalondock:LayoutPanel x:Name="ShellRootDockLayout" Orientation="Horizontal">
                     <avalondock:LayoutPanel x:Name="EditorDockLayout" DockWidth="*" Orientation="Vertical">

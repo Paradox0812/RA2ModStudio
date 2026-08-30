@@ -23,6 +23,23 @@ internal sealed record Ra2AgentSkillDescriptor(
     string Instructions,
     string ContentHash);
 
+internal sealed record Ra2AgentSkillManifestEntry(
+    string Id,
+    string Description,
+    string Version,
+    IReadOnlyList<string> Domains,
+    Ra2AgentSkillMode Modes,
+    int InstructionCharacters,
+    string ContentHash);
+
+internal sealed record Ra2AgentSkillSelectionResolution(
+    IReadOnlyList<string> RequestedSkillIds,
+    IReadOnlyList<string> RequiredSkillIds,
+    IReadOnlyList<Ra2AgentSkillDescriptor> ActiveSkills,
+    IReadOnlyList<string> UnavailableSkillIds,
+    IReadOnlyList<string> OmittedByBudgetSkillIds,
+    IReadOnlyList<string> KnowledgeGaps);
+
 internal sealed class Ra2AgentSkillCatalog
 {
     internal const int MaximumSkillCount = 64;
@@ -47,6 +64,112 @@ internal sealed class Ra2AgentSkillCatalog
     }
 
     public IReadOnlyList<Ra2AgentSkillDescriptor> Skills => _skills;
+
+    public IReadOnlyList<Ra2AgentSkillManifestEntry> CreateManifest()
+        => _skills
+            .Select(skill => new Ra2AgentSkillManifestEntry(
+                skill.Name,
+                skill.Description,
+                skill.Version,
+                skill.Domains,
+                skill.Modes,
+                skill.Instructions.Length,
+                skill.ContentHash))
+            .ToArray();
+
+    public Ra2AgentSkillSelectionResolution Resolve(
+        IReadOnlyList<string> requestedSkillIds,
+        IReadOnlyList<string> knowledgeGaps,
+        string capabilityId,
+        string domainIntentId,
+        Ra2AiUserMode userMode,
+        string? userPrompt)
+    {
+        ArgumentNullException.ThrowIfNull(requestedSkillIds);
+        ArgumentNullException.ThrowIfNull(knowledgeGaps);
+
+        Ra2AgentSkillMode requiredMode = userMode == Ra2AiUserMode.Work
+            ? Ra2AgentSkillMode.Work
+            : Ra2AgentSkillMode.Chat;
+        List<string> requested = StableDistinct(requestedSkillIds);
+        List<string> required = RequiredSkillIds(capabilityId);
+        if (_skills.Any(skill =>
+                string.Equals(skill.Name, "ra2-field-schema-trust", StringComparison.Ordinal) &&
+                (skill.Modes & requiredMode) != 0))
+        {
+            required.Add("ra2-field-schema-trust");
+        }
+
+        if (ContainsExtensionMarker(userPrompt) &&
+            _skills.Any(skill =>
+                string.Equals(skill.Name, "ra2-ares-phobos-extensions", StringComparison.Ordinal) &&
+                (skill.Modes & requiredMode) != 0))
+        {
+            required.Add("ra2-ares-phobos-extensions");
+        }
+        if (string.Equals(capabilityId, "superweapon-project-edit", StringComparison.Ordinal))
+        {
+            if (userPrompt?.Contains("phobos", StringComparison.OrdinalIgnoreCase) == true)
+                required.Add("ra2-superweapon-phobos-extensions");
+            else if (userPrompt?.Contains("ares", StringComparison.OrdinalIgnoreCase) == true)
+                required.Add("ra2-superweapon-ares-types");
+        }
+        required = StableDistinct(required);
+
+        List<string> unavailable = [];
+        List<string> omitted = [];
+        List<Ra2AgentSkillDescriptor> active = [];
+        int characters = 0;
+
+        void AddById(string id)
+        {
+            if (active.Any(skill => string.Equals(skill.Name, id, StringComparison.Ordinal)))
+                return;
+            Ra2AgentSkillDescriptor? skill = _skills.FirstOrDefault(candidate =>
+                string.Equals(candidate.Name, id, StringComparison.Ordinal));
+            if (skill is null || (skill.Modes & requiredMode) == 0)
+            {
+                if (!unavailable.Contains(id, StringComparer.Ordinal))
+                    unavailable.Add(id);
+                return;
+            }
+
+            int next = checked(characters + skill.Instructions.Length);
+            if (next > MaximumSelectedSkillCharacters)
+            {
+                if (!omitted.Contains(id, StringComparer.Ordinal))
+                    omitted.Add(id);
+                return;
+            }
+
+            active.Add(skill);
+            characters = next;
+        }
+
+        foreach (string id in required)
+            AddById(id);
+        foreach (string id in requested)
+            AddById(id);
+
+        bool hasUsableRequested = requested.Any(id => active.Any(skill =>
+            string.Equals(skill.Name, id, StringComparison.Ordinal)));
+        if (!hasUsableRequested)
+        {
+            string fallbackDomain = string.Equals(capabilityId, "techno-rules-art-binding", StringComparison.Ordinal)
+                ? "rules-art-binding"
+                : domainIntentId;
+            foreach (Ra2AgentSkillDescriptor skill in Select(fallbackDomain, userMode, userPrompt))
+                AddById(skill.Name);
+        }
+
+        return new Ra2AgentSkillSelectionResolution(
+            Array.AsReadOnly(requested.ToArray()),
+            Array.AsReadOnly(required.ToArray()),
+            Array.AsReadOnly(active.ToArray()),
+            Array.AsReadOnly(unavailable.ToArray()),
+            Array.AsReadOnly(omitted.ToArray()),
+            Array.AsReadOnly(StableDistinct(knowledgeGaps).ToArray()));
+    }
 
     public IReadOnlyList<Ra2AgentSkillDescriptor> Select(
         string domainIntentId,
@@ -100,6 +223,34 @@ internal sealed class Ra2AgentSkillCatalog
         => !string.IsNullOrWhiteSpace(prompt) &&
            (prompt.Contains("ares", StringComparison.OrdinalIgnoreCase) ||
             prompt.Contains("phobos", StringComparison.OrdinalIgnoreCase));
+
+    private static List<string> RequiredSkillIds(string? capabilityId)
+        => capabilityId switch
+        {
+            "techno-rules-art-binding" => ["ra2-rules-art-binding"],
+            "weapon-chain-skeleton" or "weapon-chain-complete" or "techno-dual-armament-complete"
+                => ["ra2-weapon-chain"],
+            "arcing-projectile-complete" or "homing-projectile-complete"
+                => ["ra2-projectile-trajectory"],
+            "yr-core-warhead-complete" => ["ra2-warhead-damage"],
+            "ares-unitdelivery-superweapon-complete" or "ares-genericwarhead-superweapon-complete"
+                => ["ra2-superweapon-authoring", "ra2-superweapon-ares-types"],
+            "superweapon-project-edit" => ["ra2-superweapon-authoring"],
+            _ => []
+        };
+
+    private static List<string> StableDistinct(IEnumerable<string> values)
+    {
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        List<string> result = [];
+        foreach (string value in values)
+        {
+            string normalized = value?.Trim() ?? string.Empty;
+            if (normalized.Length > 0 && seen.Add(normalized))
+                result.Add(normalized);
+        }
+        return result;
+    }
 
     public static Ra2AgentSkillCatalog LoadBundled(string? rootPath = null)
     {

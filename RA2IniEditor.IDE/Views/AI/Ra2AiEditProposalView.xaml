@@ -3,6 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              AutomationProperties.AutomationId="AiAssistant.EditProposalCard"
              Focusable="False">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+    </UserControl.Resources>
     <Border Margin="0,6,0,2"
             Padding="8"
             Background="{DynamicResource UiSurfaceBrush}"
@@ -12,6 +15,8 @@
             SnapsToDevicePixels="True">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -45,7 +50,22 @@
                        TextTrimming="CharacterEllipsis"
                        AutomationProperties.AutomationId="AiAssistant.EditProposalCard.Summary" />
 
-            <ListBox Grid.Row="2"
+            <TextBlock Grid.Row="2"
+                       Margin="0,0,0,3"
+                       Text="{Binding ProjectSummary}"
+                       Visibility="{Binding IsProject, Converter={StaticResource BoolToVisibilityConverter}}"
+                       Style="{StaticResource IdeAiMetadataTextStyle}"
+                       AutomationProperties.AutomationId="AiAssistant.EditProposalCard.ProjectSummary" />
+
+            <TextBlock Grid.Row="3"
+                       Margin="0,0,0,3"
+                       Text="{Binding AssetManifestSummary}"
+                       Visibility="{Binding IsProject, Converter={StaticResource BoolToVisibilityConverter}}"
+                       Style="{StaticResource IdeAiMetadataTextStyle}"
+                       TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="AiAssistant.EditProposalCard.AssetManifestSummary" />
+
+            <ListBox Grid.Row="4"
                      MaxHeight="240"
                      Padding="0"
                      BorderThickness="0"
@@ -100,7 +120,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <StackPanel Grid.Row="3" Margin="0,6,0,0">
+            <StackPanel Grid.Row="5" Margin="0,6,0,0">
                 <TextBlock Text="{Binding RiskSummary}"
                            Style="{StaticResource IdeAiMetadataTextStyle}"
                            AutomationProperties.AutomationId="AiAssistant.EditProposalCard.DiagnosticSummary" />
@@ -110,7 +130,7 @@
                            AutomationProperties.AutomationId="AiAssistant.EditProposalCard.ResultMessage" />
             </StackPanel>
 
-            <WrapPanel Grid.Row="4"
+            <WrapPanel Grid.Row="6"
                        Margin="0,8,0,0"
                        HorizontalAlignment="Right">
                 <Button Margin="0,0,6,0"

@@ -471,6 +471,107 @@ public sealed class Ra2AiPromptBuilderTests
         Assert.DoesNotContain("run tools, or call shell commands", request.PromptText);
     }
 
+    [Fact]
+    public void Build_RepairContextIsBoundedRedactedAndDoesNotChangeToolAuthority()
+    {
+        string oversizedArguments =
+            "{\"path\":\"H:\\\\RA2\\\\YR_Test\\\\rules.ini\",\"token\":\"ds-secretvalue123\",\"data\":\"" +
+            new string('X', 6000) + "\"}";
+        Ra2AiStructuredFailureEvidence evidence = Ra2AiStructuredFailureEvidence
+            .FromAdapter(Ra2AiEditProposalFailureKind.InvalidArgumentsJson, "invalid arguments")
+            .WithTool(new Ra2AiToolCall("call-1", "preview_ini_edit", oversizedArguments));
+
+        Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
+        {
+            UserPrompt = "Update Strength.",
+            Context = CreateContext(),
+            CapabilityMode = Ra2AiCapabilityMode.CurrentDocumentEditPreview,
+            UserMode = Ra2AiUserMode.Work,
+            RepairContext = new Ra2AiStructuredRepairContext(evidence)
+        });
+
+        Assert.Contains("## Bounded Structured Repair Context", request.UserContentText);
+        Assert.Contains("Repair attempt: 1/1", request.UserContentText);
+        Assert.Contains("return a patch to the prior JSON", request.UserContentText);
+        Assert.Contains("[redacted absolute path]", request.UserContentText);
+        Assert.DoesNotContain("H:\\RA2", request.PromptText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("YR_Test", request.PromptText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("rules.ini", request.PromptText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ds-secretvalue123", request.PromptText, StringComparison.Ordinal);
+        Assert.True(request.PreparationFlags.HasFlag(Ra2AiRequestPreparationFlags.SensitiveContentRedacted));
+        Assert.True(request.PromptCharacterCount <= 65536);
+        Assert.Single(request.Tools);
+        Assert.Equal(Ra2AiToolChoiceMode.Required, request.ToolChoice);
+    }
+
+    [Fact]
+    public void Build_WithoutRepairContextDoesNotAddRepairSection()
+    {
+        Ra2AiRequest request = BuildRequest(
+            "Update Strength.",
+            capabilityMode: Ra2AiCapabilityMode.CurrentDocumentEditPreview);
+
+        Assert.DoesNotContain("## Bounded Structured Repair Context", request.PromptText);
+    }
+
+    [Fact]
+    public void Build_ProjectWork_PrioritizesHostFactsAndOmitsUnrelatedCaretContext()
+    {
+        Ra2AiContextQueryRequest query = new(
+            Ra2AiContextQueryKind.GetSection,
+            "rules",
+            "FV",
+            string.Empty,
+            null,
+            null,
+            0);
+        Ra2AiContextQueryResult queryResult = new(
+            query,
+            true,
+            string.Empty,
+            "ok",
+            new(
+                "FV",
+                "Vehicle",
+                0,
+                12,
+                [new("Name", "IFV", 14)],
+                false),
+            null);
+        Ra2AiContext context = CreateContext(
+            selectedText: "UNRELATED_SELECTED_SENTINEL",
+            nearbyText: "UNRELATED_NEARBY_SENTINEL",
+            fieldEvidence:
+            [
+                new("Strength", "Hit Points", "Vehicle", "Integer", "UNRELATED_EVIDENCE_SENTINEL", null, null, null, "test", 1)
+            ],
+            diagnostics:
+            [
+                new("TEST", "Warning", "UNRELATED_DIAGNOSTIC_SENTINEL", 1, "HTNK", "Strength", "test", "test")
+            ]);
+
+        Ra2AiRequest request = new Ra2AiPromptBuilder().Build(new Ra2AiPromptBuildRequest
+        {
+            UserPrompt = "在项目中使用 IFV。",
+            Context = context,
+            CapabilityMode = Ra2AiCapabilityMode.ProjectRulesArtBindingPreview,
+            UserMode = Ra2AiUserMode.Work,
+            DomainIntentId = "art-animation",
+            ProjectContext = new(null, null, [new("rules", "rulesmd.ini", 1, 1)]),
+            ContextQueryResults = [queryResult],
+            EntityBindings = [new("delivery-type", "rules", "FV", "Vehicle", "IFV", "Name", 920)],
+            RetrievalStopReason = Ra2AiSemanticRetrievalStopReason.EvidenceReady
+        });
+
+        Assert.Contains("canonical_section=FV", request.UserContentText, StringComparison.Ordinal);
+        Assert.Contains("ResolvedSection: [FV]", request.UserContentText, StringComparison.Ordinal);
+        Assert.DoesNotContain("UNRELATED_SELECTED_SENTINEL", request.PromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("UNRELATED_NEARBY_SENTINEL", request.PromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("UNRELATED_EVIDENCE_SENTINEL", request.PromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("UNRELATED_DIAGNOSTIC_SENTINEL", request.PromptText, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Current IDE Context", request.UserContentText, StringComparison.Ordinal);
+    }
+
     private static Ra2AiRequest BuildRequest(
         string userPrompt,
         Ra2AiContext? context = null,

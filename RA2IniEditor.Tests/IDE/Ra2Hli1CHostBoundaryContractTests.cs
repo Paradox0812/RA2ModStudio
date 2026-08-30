@@ -18,19 +18,23 @@ public sealed class Ra2Hli1CHostBoundaryContractTests
             typeof(Ra2IniEditPreview),
             typeof(IRa2IniEditPreviewService),
             typeof(Ra2IniEditApplyRequest),
+            typeof(Ra2ProjectEditPreview),
+            typeof(Ra2ProjectEditApplyRequest),
+            typeof(Ra2ProjectEditorTransactionCoordinator),
+            typeof(Ra2ProjectDocumentSessionStore),
             typeof(IRa2EditorTransactionPort)
         ];
 
         Assert.All(hostTypes, type => Assert.False(type.IsPublic));
         Assert.Equal(
-            ["Apply", "InvalidateActivePreview", "Preview", "TryDiscardActivePreview"],
+            ["Apply", "ApplyProject", "InvalidateActivePreview", "Preview", "PreviewProject", "TryDiscardActivePreview", "TryDiscardActiveProjectPreview"],
             typeof(IRa2IniAuthoringWorkspace).GetMethods().Select(method => method.Name).Order().ToArray());
         Assert.Equal(["Preview"], typeof(IRa2IniEditPreviewService).GetMethods().Select(method => method.Name).ToArray());
-        Assert.Equal(["Apply"], typeof(IRa2EditorTransactionPort).GetMethods().Select(method => method.Name).ToArray());
+        Assert.Equal(["Apply", "ApplyProject"], typeof(IRa2EditorTransactionPort).GetMethods().Select(method => method.Name).Order().ToArray());
         Assert.Equal(
             ["ExplicitConfirmationGranted", "PreviewId"],
             typeof(Ra2IniEditApplyRequest).GetProperties().Select(property => property.Name).Order().ToArray());
-        Assert.Equal(59, typeof(Ra2AutomationEditPreviewService).Assembly.GetExportedTypes().Length);
+        Assert.Equal(77, typeof(Ra2AutomationEditPreviewService).Assembly.GetExportedTypes().Length);
     }
 
     [Fact]

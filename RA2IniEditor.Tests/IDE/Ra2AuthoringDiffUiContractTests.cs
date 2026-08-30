@@ -25,6 +25,20 @@ public sealed class Ra2AuthoringDiffUiContractTests
         Assert.Contains("DiagnosticSummaryText.Visibility = Visibility.Visible", code, StringComparison.Ordinal);
         Assert.Contains("width < 640", code, StringComparison.Ordinal);
         Assert.Contains("ReturnButton.Content = width < 640 ? \"↩\"", code, StringComparison.Ordinal);
+        Assert.Contains("viewModel.SetCompactLayout(width < 640)", code, StringComparison.Ordinal);
+        Assert.Contains("avalonEdit:TextEditor x:Name=\"ResultEditor\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Text=\"{Binding ResultText, Mode=OneWay}\" IsReadOnly=\"True\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("ShowLineNumbers=\"True\" WordWrap=\"False\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Ra2KnownFieldHighlightingTransformer", code, StringComparison.Ordinal);
+        Assert.Contains("Ra2AuthoringResultChangeRenderer", code, StringComparison.Ordinal);
+        Assert.Contains("width < 900", code, StringComparison.Ordinal);
+        Assert.Contains("new GridLength(220)", code, StringComparison.Ordinal);
+        Assert.Contains("Math.Min(280, width * 0.72)", code, StringComparison.Ordinal);
+        Assert.Contains("new GridLength(180)", code, StringComparison.Ordinal);
+        Assert.Contains("Grid.SetColumnSpan(OutlinePanel, overlay ? 3 : 1)", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("TextChanged=", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Save", xaml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ApplySection", xaml + code, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -60,6 +74,22 @@ public sealed class Ra2AuthoringDiffUiContractTests
         "Shell.AuthoringDiff.ApplyAllButton",
         "Shell.AuthoringDiff.ScrollViewer",
         "Shell.AuthoringDiff.Rows",
+        "Shell.AuthoringDiff.FileHeader",
         "Shell.AuthoringDiff.StaleNotice"
+        ,"Shell.AuthoringDiff.DocumentSelector"
+        ,"Shell.AuthoringDiff.DocumentTab"
+        ,"Shell.AuthoringDiff.Mode.Result"
+        ,"Shell.AuthoringDiff.Mode.Changes"
+        ,"Shell.AuthoringDiff.Mode.ObjectContext"
+        ,"Shell.AuthoringDiff.Outline"
+        ,"Shell.AuthoringDiff.OutlineItem"
+        ,"Shell.AuthoringDiff.OutlineToggle"
+        ,"Shell.AuthoringDiff.ResultEditor"
+        ,"Shell.AuthoringDiff.ResultEditor.TextArea"
+        ,"Shell.AuthoringDiff.ContextEditor"
+        ,"Shell.AuthoringDiff.PreviousChangeButton"
+        ,"Shell.AuthoringDiff.NextChangeButton"
+        ,"Shell.AuthoringDiff.RelationNotice"
+        ,"Shell.AuthoringDiff.RelationUnavailable"
     ];
 }

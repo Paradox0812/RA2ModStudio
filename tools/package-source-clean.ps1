@@ -47,7 +47,17 @@ $excludedFilePatterns = @(
     "*.cache",
     "*.bak",
     "*.orig",
-    "*_wpftmp*"
+    "*_wpftmp*",
+    "secrets.json",
+    "*.secrets.json",
+    "appsettings.Local.json",
+    "appsettings.*.Local.json"
+)
+
+$allowedEnvironmentTemplateNames = @(
+    ".env.example",
+    ".env.sample",
+    ".env.template"
 )
 
 $fullRequiredEntries = @(
@@ -86,6 +96,9 @@ $forbiddenEntryPatterns = @(
     "(^|/)coverage/",
     "(^|/)Logs/",
     "(^|/)publish/",
+    "(^|/)\.verify-[^/]+/",
+    "(^|/)\.env($|\.(?!example$|sample$|template$)[^/]+$)",
+    "(^|/)(secrets\.json|[^/]+\.secrets\.json|appsettings\.Local\.json|appsettings\.[^/]+\.Local\.json)$",
     "\.(user|suo|rsuser|userosscache|vsidx|log|tmp|cache|bak|orig|nupkg|snupkg|zip|7z|rar)$",
     "\.sln\.docstates$",
     "\.DotSettings\.user$",
@@ -128,7 +141,7 @@ $ideOnlyExcludedRootEntries = @(
 function Test-IsExcludedDirectory {
     param([System.IO.DirectoryInfo]$Directory)
 
-    return $excludedDirectoryNames -contains $Directory.Name
+    return ($excludedDirectoryNames -contains $Directory.Name) -or $Directory.Name -like ".verify-*"
 }
 
 function Test-IsIdeOnlyExcludedRootEntry {
@@ -139,6 +152,14 @@ function Test-IsIdeOnlyExcludedRootEntry {
 
 function Test-IsExcludedFile {
     param([System.IO.FileInfo]$File)
+
+    if ($allowedEnvironmentTemplateNames -contains $File.Name) {
+        return $false
+    }
+
+    if ($File.Name -eq ".env" -or $File.Name -like ".env.*") {
+        return $true
+    }
 
     foreach ($pattern in $excludedFilePatterns) {
         if ($File.Name -like $pattern) {
@@ -268,7 +289,9 @@ try {
     Write-Host "Package profile: $Profile"
     Write-Host "Packaged file count: $($entries.Count)"
     Write-Host "Excluded directories: $($excludedDirectoryNames -join ', ')"
+    Write-Host "Excluded directory patterns: .verify-*"
     Write-Host "Excluded file patterns: $($excludedFilePatterns -join ', ')"
+    Write-Host "Excluded local environment files: .env, .env.* (except templates)"
 }
 finally {
     if (Test-Path $stagingRoot) {

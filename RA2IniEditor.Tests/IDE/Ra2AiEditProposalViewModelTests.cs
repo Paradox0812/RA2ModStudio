@@ -128,6 +128,8 @@ public sealed class Ra2AiEditProposalViewModelTests
                      "AiAssistant.EditProposalCard",
                      "AiAssistant.EditProposalCard.Status",
                      "AiAssistant.EditProposalCard.Summary",
+                     "AiAssistant.EditProposalCard.ProjectSummary",
+                     "AiAssistant.EditProposalCard.AssetManifestSummary",
                      "AiAssistant.EditProposalCard.OperationList",
                      "AiAssistant.EditProposalCard.DiagnosticSummary",
                      "AiAssistant.EditProposalCard.OpenDiffButton",

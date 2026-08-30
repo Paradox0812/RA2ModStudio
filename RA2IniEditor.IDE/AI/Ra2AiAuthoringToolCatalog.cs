@@ -9,14 +9,20 @@ internal enum Ra2AiCapabilityMode
     CurrentDocumentDualArmamentPreview,
     CurrentDocumentArcingProjectilePreview,
     CurrentDocumentHomingProjectilePreview,
-    CurrentDocumentYrCoreWarheadPreview
+    CurrentDocumentYrCoreWarheadPreview,
+    ProjectRulesArtBindingPreview,
+    ProjectAresUnitDeliverySuperWeaponPreview,
+    ProjectAresGenericWarheadSuperWeaponPreview,
+    ProjectSuperWeaponEditPreview
 }
 
 /// <summary>集中声明 AI 创作工具，避免 prompt、transport 和 adapter 各自维护协议。</summary>
 internal static class Ra2AiAuthoringToolCatalog
 {
     public const string PreviewIniEditPlanToolName = "preview_ini_edit_plan";
+    public const string PreviewIniProjectEditPlanToolName = "preview_ini_project_edit_plan";
     public const string ExpandIniContentTemplateToolName = "expand_ini_content_template";
+    public const string ExpandIniProjectContentTemplateToolName = "expand_ini_project_content_template";
     public const string TrustedPlanOrigin = "DeepSeekToolCall";
 
     private static readonly IReadOnlyList<Ra2AiToolDefinition> CurrentDocumentToolList =
@@ -38,12 +44,10 @@ internal static class Ra2AiAuthoringToolCatalog
                     },
                     "summary": {
                       "type": "string",
-                      "minLength": 1,
                       "maxLength": 512
                     },
                     "message": {
                       "type": "string",
-                      "minLength": 1,
                       "maxLength": 512
                     },
                     "operations": {
@@ -356,17 +360,181 @@ internal static class Ra2AiAuthoringToolCatalog
                 """)
         ]);
 
+    private static readonly IReadOnlyList<Ra2AiToolDefinition> ProjectRulesArtBindingToolList =
+        Array.AsReadOnly(
+        [
+            new Ra2AiToolDefinition(
+                PreviewIniProjectEditPlanToolName,
+                "Propose bounded structured field edits for the current rules/art project pair. " +
+                "The model owns the INI content decision; the host only creates a local preview and never applies or saves automatically.",
+                """
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["outcome"],
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "enum": ["proposal", "needs_clarification"]
+                    },
+                    "summary": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    "documents": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 2,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["target", "operations"],
+                        "properties": {
+                          "target": {
+                            "type": "string",
+                            "enum": ["rules", "art"]
+                          },
+                          "operations": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 128,
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": ["kind", "section", "key", "value"],
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": ["upsert_field", "replace_field_value"]
+                                },
+                                "section": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "value": {
+                                  "type": "string",
+                                  "maxLength": 8192
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """)
+        ]);
+
+    private static readonly IReadOnlyList<Ra2AiToolDefinition> ProjectSuperWeaponEditToolList =
+        ProjectRulesArtBindingToolList;
+
+    private static readonly IReadOnlyList<Ra2AiToolDefinition> ProjectAresUnitDeliverySuperWeaponToolList =
+        CreateSuperWeaponTemplateToolList(
+            "ares-unitdelivery-superweapon-complete",
+            "Expand a complete Ares UnitDelivery SuperWeapon into a rules-only project preview.",
+            "\"deliveryTypeIds\", \"deliveryOwner\"",
+            """
+            "deliveryTypeIds": { "type": "string", "minLength": 1, "maxLength": 4096, "description": "Comma-separated existing TechnoType Section IDs. Prefer Host-verified Section IDs; exact unique Name/UIName aliases are normalized locally." },
+            "deliveryOwner": { "type": "string", "enum": ["invoker", "neutral", "special", "civilian"] }
+            """);
+
+    private static readonly IReadOnlyList<Ra2AiToolDefinition> ProjectAresGenericWarheadSuperWeaponToolList =
+        CreateSuperWeaponTemplateToolList(
+            "ares-genericwarhead-superweapon-complete",
+            "Expand a complete Ares GenericWarhead SuperWeapon into a rules-only project preview.",
+            "\"warheadId\", \"damage\"",
+            """
+            "warheadId": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "damage": { "type": "integer" }
+            """);
+
     public static IReadOnlyList<Ra2AiToolDefinition> GetTools(Ra2AiCapabilityMode capabilityMode)
         => capabilityMode switch
         {
             Ra2AiCapabilityMode.AdvisoryOnly => [],
             Ra2AiCapabilityMode.CurrentDocumentEditPreview => CurrentDocumentToolList,
-            Ra2AiCapabilityMode.CurrentDocumentTemplatePreview => CurrentDocumentTemplateToolList,
-            Ra2AiCapabilityMode.CurrentDocumentCompleteTemplatePreview => CurrentDocumentCompleteTemplateToolList,
-            Ra2AiCapabilityMode.CurrentDocumentDualArmamentPreview => CurrentDocumentDualArmamentToolList,
-            Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview => CurrentDocumentArcingProjectileToolList,
-            Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview => CurrentDocumentHomingProjectileToolList,
-            Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview => CurrentDocumentYrCoreWarheadToolList,
+            Ra2AiCapabilityMode.CurrentDocumentTemplatePreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.CurrentDocumentCompleteTemplatePreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.CurrentDocumentDualArmamentPreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.CurrentDocumentArcingProjectilePreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.CurrentDocumentHomingProjectilePreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.CurrentDocumentYrCoreWarheadPreview => CurrentDocumentToolList,
+            Ra2AiCapabilityMode.ProjectRulesArtBindingPreview => ProjectRulesArtBindingToolList,
+            // Production Work authoring is model-owned. Typed SuperWeapon capability IDs
+            // select Skills and retrieval policy, but execution uses the same bounded
+            // rules/art operation plan as every other project request. The legacy typed
+            // template definitions remain available to explicit headless callers only.
+            Ra2AiCapabilityMode.ProjectAresUnitDeliverySuperWeaponPreview => ProjectRulesArtBindingToolList,
+            Ra2AiCapabilityMode.ProjectAresGenericWarheadSuperWeaponPreview => ProjectRulesArtBindingToolList,
+            Ra2AiCapabilityMode.ProjectSuperWeaponEditPreview => ProjectSuperWeaponEditToolList,
             _ => throw new ArgumentOutOfRangeException(nameof(capabilityMode))
         };
+
+    /// <summary>
+    /// Returns whether the capability must prepare proposals against the captured project snapshot.
+    /// This is the canonical scope classification shared by prompt preparation and proposal execution.
+    /// </summary>
+    internal static bool UsesProjectContext(Ra2AiCapabilityMode capabilityMode)
+        => capabilityMode is
+            Ra2AiCapabilityMode.ProjectRulesArtBindingPreview or
+            Ra2AiCapabilityMode.ProjectAresUnitDeliverySuperWeaponPreview or
+            Ra2AiCapabilityMode.ProjectAresGenericWarheadSuperWeaponPreview or
+            Ra2AiCapabilityMode.ProjectSuperWeaponEditPreview;
+
+    private static IReadOnlyList<Ra2AiToolDefinition> CreateSuperWeaponTemplateToolList(
+        string templateId,
+        string description,
+        string effectRequired,
+        string effectProperties)
+        => Array.AsReadOnly(
+        [
+            new Ra2AiToolDefinition(
+                ExpandIniProjectContentTemplateToolName,
+                description + " The Host validates registration, provider, references, preview authority, and never applies or saves automatically.",
+                $$"""
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["outcome"],
+                  "properties": {
+                    "outcome": { "type": "string", "enum": ["proposal", "needs_clarification"] },
+                    "template_id": { "type": "string", "enum": ["{{templateId}}"] },
+                    "template_version": { "type": "integer", "enum": [1] },
+                    "arguments": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["superWeaponId", "providerMode", "uiName", "name", "isPowered", "rechargeTime", "action", "sidebarImage", "showTimer", "disableableFromShell", "aiTargeting", {{effectRequired}}],
+                      "properties": {
+                        "superWeaponId": { "type": "string", "minLength": 1, "maxLength": 256 },
+                        "providerMode": { "type": "string", "enum": ["building", "always-granted"] },
+                        "providerBuildingId": { "type": "string", "minLength": 1, "maxLength": 256, "description": "Existing provider Building Section ID. Prefer a Host-verified ID; an exact unique captured Name/UIName alias is accepted." },
+                        "providerSlot": { "type": "string", "enum": ["SuperWeapon", "SuperWeapon2"] },
+                        "uiName": { "type": "string", "minLength": 1, "maxLength": 8192 },
+                        "name": { "type": "string", "minLength": 1, "maxLength": 8192 },
+                        "isPowered": { "type": "boolean" },
+                        "rechargeTime": { "type": "number", "minimum": 0 },
+                        "action": { "type": "string", "minLength": 1, "maxLength": 8192 },
+                        "sidebarImage": { "type": "string", "minLength": 1, "maxLength": 256 },
+                        "showTimer": { "type": "boolean" },
+                        "disableableFromShell": { "type": "boolean" },
+                        "aiTargeting": { "type": "string", "minLength": 1, "maxLength": 256 },
+                        {{effectProperties}}
+                      }
+                    },
+                    "message": { "type": "string", "minLength": 1, "maxLength": 512 }
+                  }
+                }
+                """)
+        ]);
 }

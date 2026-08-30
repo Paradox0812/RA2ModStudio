@@ -18,6 +18,8 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
     internal const int HomingProjectileTemplateVersion = 1;
     internal const string YrCoreWarheadTemplateId = "weapon-warhead-yr-core-complete";
     internal const int YrCoreWarheadTemplateVersion = 1;
+    internal const string TechnoRulesArtAssetBindingTemplateId = "techno-rules-art-asset-binding";
+    internal const int TechnoRulesArtAssetBindingTemplateVersion = 1;
 
     private static readonly Ra2ContentTemplateDefinition WeaponChainDefinition = new(
         WeaponChainTemplateId,
@@ -49,6 +51,7 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
     private static readonly IReadOnlyList<Ra2AutomationTemplateDescriptor> Templates =
         Array.AsReadOnly<Ra2AutomationTemplateDescriptor>(
         [
+            .. Ra2SuperWeaponProfileCatalog.CreateDescriptors(),
             new(
                 WeaponChainTemplateId,
                 WeaponChainTemplateVersion,
@@ -126,19 +129,66 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
                 "YR Core Warhead 完整配置",
                 "把现有 Weapon 绑定到一个覆盖原版 11 护甲槽与核心伤害行为的 Warhead；不生成 Ares Versus.* override。",
                 Ra2AutomationTemplateOutputKind.CompleteObject,
-                CreateYrCoreWarheadParameterDescriptors())
+                CreateYrCoreWarheadParameterDescriptors()),
+            new(
+                TechnoRulesArtAssetBindingTemplateId,
+                TechnoRulesArtAssetBindingTemplateVersion,
+                "Techno rules / art 资产绑定",
+                "为现有 TechnoType 生成 rules/art 跨文档绑定，并输出 body SHP 与 cameo 资产需求；不生成素材或自动应用。",
+                Ra2AutomationTemplateOutputKind.ProjectBinding,
+                [
+                    new("ownerSectionId", Ra2AutomationTemplateParameterKind.Identifier, required: true, defaultValue: null),
+                    new("artSectionId", Ra2AutomationTemplateParameterKind.Identifier, required: true, defaultValue: null),
+                    new("bodyAssetId", Ra2AutomationTemplateParameterKind.Identifier, required: true, defaultValue: null),
+                    new("cameoAssetId", Ra2AutomationTemplateParameterKind.Identifier, required: true, defaultValue: null),
+                    new("assetBrief", Ra2AutomationTemplateParameterKind.String, required: true, defaultValue: null)
+                ],
+                isProjectTemplate: true,
+                producesAssetManifest: true)
         ]);
 
     private readonly Ra2AutomationDocumentQueryService _queryService;
     private readonly Ra2ContentTemplateCompiler _compiler;
+    private readonly Ra2ContentProjectTemplateCompiler _projectCompiler;
 
     public Ra2AutomationTemplateService()
     {
         _queryService = new Ra2AutomationDocumentQueryService();
         _compiler = new Ra2ContentTemplateCompiler(_queryService);
+        _projectCompiler = new Ra2ContentProjectTemplateCompiler(_compiler);
     }
 
     public IReadOnlyList<Ra2AutomationTemplateDescriptor> GetTemplates() => Templates;
+
+    public Ra2AutomationProjectTemplateExpansionResult ExpandProjectTemplate(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.TemplateId != TechnoRulesArtAssetBindingTemplateId)
+        {
+            return new Ra2AutomationProjectTemplateExpansionResult(
+                snapshot,
+                Ra2AutomationTemplateExpansionFailureKind.TemplateNotFound,
+                "The requested project template was not found.",
+                null,
+                null);
+        }
+        if (request.TemplateVersion != TechnoRulesArtAssetBindingTemplateVersion)
+        {
+            return new Ra2AutomationProjectTemplateExpansionResult(
+                snapshot,
+                Ra2AutomationTemplateExpansionFailureKind.TemplateVersionMismatch,
+                "The requested project template version is not available.",
+                null,
+                null);
+        }
+
+        return _projectCompiler.CompileTechnoRulesArtBinding(snapshot, request, cancellationToken);
+    }
 
     public Ra2AutomationTemplateExpansionResult ExpandTemplate(
         Ra2AutomationDocumentSnapshot snapshot,
@@ -154,7 +204,8 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
                 DualArmamentTemplateId or
                 ArcingProjectileTemplateId or
                 HomingProjectileTemplateId or
-                YrCoreWarheadTemplateId))
+                YrCoreWarheadTemplateId) &&
+            !Ra2SuperWeaponProfileCatalog.IsProfile(request.TemplateId))
             return Failure(snapshot, Ra2AutomationTemplateExpansionFailureKind.TemplateNotFound, "The requested template was not found.");
         int expectedVersion = request.TemplateId switch
         {
@@ -163,6 +214,7 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
             DualArmamentTemplateId => DualArmamentTemplateVersion,
             ArcingProjectileTemplateId => ArcingProjectileTemplateVersion,
             HomingProjectileTemplateId => HomingProjectileTemplateVersion,
+            _ when Ra2SuperWeaponProfileCatalog.IsProfile(request.TemplateId) => Ra2SuperWeaponProfileCatalog.CurrentVersion,
             _ => YrCoreWarheadTemplateVersion
         };
         if (request.TemplateVersion != expectedVersion)
@@ -171,7 +223,22 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
             return Failure(snapshot, Ra2AutomationTemplateExpansionFailureKind.DocumentTooLarge, "The document exceeds the supported character limit.");
 
         Ra2ContentTemplateDefinition definition = WeaponChainDefinition;
-        if (request.TemplateId == CompleteWeaponChainTemplateId)
+        IEnumerable<KeyValuePair<string, string>> compilationArguments = request.Arguments
+            .Select(argument => new KeyValuePair<string, string>(argument.Name, argument.Value));
+        if (Ra2SuperWeaponProfileCatalog.IsProfile(request.TemplateId))
+        {
+            Ra2SuperWeaponProfilePreparationResult preparation = Ra2SuperWeaponProfileCatalog.Prepare(
+                snapshot,
+                request,
+                _queryService,
+                cancellationToken);
+            if (!preparation.Succeeded)
+                return Failure(snapshot, preparation.FailureKind, preparation.Message);
+
+            definition = preparation.Definition!;
+            compilationArguments = preparation.Arguments;
+        }
+        else if (request.TemplateId == CompleteWeaponChainTemplateId)
         {
             Dictionary<string, string> arguments = request.Arguments
                 .GroupBy(argument => argument.Name, StringComparer.Ordinal)
@@ -248,7 +315,7 @@ public sealed class Ra2AutomationTemplateService : IRa2AutomationTemplateService
 
         Ra2ContentTemplateCompilationResult compilation = _compiler.Compile(
             definition,
-            request.Arguments.Select(argument => new KeyValuePair<string, string>(argument.Name, argument.Value)),
+            compilationArguments,
             snapshot,
             cancellationToken);
         if (!compilation.Succeeded)

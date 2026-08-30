@@ -35,8 +35,18 @@ public interface IRa2AutomationCapabilityGateway
         Ra2AutomationEditPlan plan,
         CancellationToken cancellationToken = default);
 
+    Ra2AutomationProjectEditPreviewResult PreviewProject(
+        Ra2AutomationProjectSnapshot snapshot,
+        Ra2AutomationProjectEditPlan plan,
+        CancellationToken cancellationToken = default);
+
     Ra2AutomationTemplateExpansionResult ExpandTemplate(
         Ra2AutomationDocumentSnapshot snapshot,
+        Ra2AutomationTemplateExpansionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Ra2AutomationProjectTemplateExpansionResult ExpandProjectTemplate(
+        Ra2AutomationProjectSnapshot snapshot,
         Ra2AutomationTemplateExpansionRequest request,
         CancellationToken cancellationToken = default);
 }

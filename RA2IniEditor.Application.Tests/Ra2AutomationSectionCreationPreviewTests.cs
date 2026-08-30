@@ -96,7 +96,7 @@ public sealed class Ra2AutomationSectionCreationPreviewTests
     }
 
     [Fact]
-    public void CreateSection_BlockedTrustFailsButInferredTrustProducesCaution()
+    public void CreateSection_BlockedTrustOnlyFailsForDeclaredKindWhileUnknownKindRemainsAdvisory()
     {
         Ra2AutomationDocumentSnapshot blocked = Editable(
             string.Empty,
@@ -104,9 +104,20 @@ public sealed class Ra2AutomationSectionCreationPreviewTests
         AssertFailure(
             Preview(
                 blocked,
-                [new Ra2AutomationSectionCreateOperation("New", Ra2SectionKind.Unknown)],
+                [new Ra2AutomationSectionCreateOperation("New", Ra2SectionKind.Techno)],
                 [new Ra2AutomationEditOperation(Ra2AutomationEditOperationKind.UpsertField, "New", "Danger", "1")]),
             Ra2AutomationEditPreviewFailureKind.BlockedFieldTrust);
+
+        Ra2AutomationEditPreviewResult unknownKind = Preview(
+            blocked,
+            [new Ra2AutomationSectionCreateOperation("New", Ra2SectionKind.Unknown)],
+            [new Ra2AutomationEditOperation(Ra2AutomationEditOperationKind.UpsertField, "New", "Danger", "1")]);
+
+        Assert.True(unknownKind.Succeeded, unknownKind.Message);
+        Assert.Equal(Ra2AutomationFieldTrustLevel.NonExistent, Assert.Single(unknownKind.OperationPreviews).FieldTrustLevel);
+        Assert.Equal(
+            Ra2AutomationFieldAuthoringDisposition.Caution,
+            Assert.Single(unknownKind.SectionCreationPreviews).AuthoringDisposition);
 
         Ra2AutomationDocumentSnapshot caution = Editable(
             string.Empty,
