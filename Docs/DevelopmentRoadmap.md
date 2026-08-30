@@ -43,7 +43,7 @@
 | DIFF-REVIEW-1 | 完整候选审阅 | canonical Result、unified Changes、有界对象上下文、文档/Section 导航 | Completed / automated verified；manual visual pending |
 | HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after stable CONTENT profiles |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | Manifest/INI binding/Existing Provider completed；palette、codec、generation、Host persistence remain | Partial / provider foundation verified |
-| ASSET-VOX-1/4 | VOX 流水线 | canonical VOX、provider Host、GLB voxelization、Agent geometry/style review、人工语义蒙版、verified VOX export、`.semantic.json` v1 | ASSET-VOX-4D completed / automated verified；physical WPF acceptance pending；project Apply、VXL/HVA deferred |
+| ASSET-VOX-1/4 | VOX 流水线 | canonical VOX、provider Host、GLB voxelization、Agent geometry/style review、人工语义蒙版、verified VOX export、`.semantic.json` v1 | ASSET-VOX-4D completed；Save/Import user-reported passed；4E Contract proposed / awaiting approval；project Apply、VXL/HVA deferred |
 | ASSET-SHP-1 | SHP 动画流水线 | frame spec、palette、anchor、preview、export adapter | Deferred |
 | AUTOMATION-1 | Job/Event/Artifact Runtime | 状态机、取消、恢复、产物登记、审计 | Deferred |
 | ASSEMBLY-1 | 多产物自动装配 | INI + icon + VXL/SHP 引用图、提交策略 | Deferred |
@@ -114,7 +114,8 @@
 
 - Chat 默认零编辑工具；Work 只进入既有结构化 Preview/Apply 边界。
 - 明确“骨架/框架”才使用 skeleton；普通可用 direct-fire 武器链使用 complete profile。
-- 当前 18 个 BuiltIn RA2 Skill 按领域或明确 project capability 渐进披露，禁止 scripts、外部根和直接工具权限。
+- 当前 19 个 BuiltIn RA2 Skill 按领域或明确 project capability 渐进披露，禁止 scripts、外部根和直接工具权限；
+  其中 `ra2-voxel-colour-techniques` 为 Chat-only 上色规则知识包，不授予模型文件写入权限。
 - Field Registry 继续是字段 schema/trust 事实源，Content Profile 是对象完整度事实源，Host 是写入权限源。
 - 最新门禁：Application 147/147、IDE non-UI 2580/2580、clean package 1171 files。
 
@@ -199,22 +200,25 @@ SliceStack。真实 PNG -> 用户提供 VXLSE -> decoded VXL 结构验收已闭�
 当前停止点是：
 
 ```text
-ASSET-VOX-4D completed / automated verified / physical WPF acceptance pending
+ASSET-VOX-4D completed / automated verified / Save+Import user-reported passed
+ASSET-VOX-4E CodeFactAudit + Proposed FinalContract completed / awaiting approval
 ```
 
-4D 已完成三层语义分划的项目内 sidecar 保存/载入。下一步不是继续编码，而是完成一次真实 WPF 验收：
+4D 已完成三层语义分划的项目内 sidecar 保存/载入，用户已报告 Save/Import 测试通过；错误模型拒绝、
+未保存确认和 100%/125% DPI 指针体验仍未确认。
 
-1. 保存并重载包含 Agent、区域和 cell 覆盖的真实 `.semantic.json`。
-2. 用错误模型载入并确认明确拒绝且现有状态不变。
-3. 验证未保存修改只产生一次可理解的确认提示。
-4. 复核连续画笔在 100%/125% DPI 下的真实鼠标体验。
+用户已选择 `ASSET-VOX-4E Mask-Driven Colour Materialization`；CodeFactAudit 与 Proposed FinalContract 已完成。
+合同按用户澄清采用五个与色相无关的规则/技法 policy：控制相对明暗、区域顺序、边缘处理、材质分离与质量
+阈值；具体颜色仍由 style sources 提供。其余采用 semantic requirements、显式 role binding、cache v2 和
+Blocked / NeedsReview / ReviewReady 多维质量门；继续复用现有 colourizer、contrast、freeze 和 `.vox`
+export。下一步是用户审阅批准，随后从 4E-1 开始实现。
 
-验收通过后，单独选择并立约一个方向：
+独立的 `ASSET-VOX-4E-R1` 已基于 8 个用户 ZIP、VXLSE III `RA2/unittem.pal`、公开教程和许可证明确的
+公开 VOX 模型完成 ground/air/large-surface 技法提炼，并加入 Chat-only 内置 Skill。该 Skill 已进入通用
+DeepSeek manifest/Chat 路由，但尚未接入专用 `Ra2VoxelStyleCompiler`；后者仍受 4E 批准门约束。
 
-- `ASSET-VOX-4E Mask-Driven Colour Materialization`：推荐。把已确认 mask 与自然语言风格、PAL/VOX palette
-  确定性组合为可审阅着色候选；仍不写 VXL/HVA，不接项目 Apply/Save。
-- `ASSET-VOX-5A Multipart VXL/HVA Materialization`：调查并冻结 Body/Turret/Barrel、pivot、normal、HVA、
-  VXLSE 兼容与游戏验收边界；不得直接宣称 GameReady。
+`ASSET-VOX-5A Multipart VXL/HVA Materialization` 继续延期；4E 不写 VXL/HVA、不接项目 Apply/Save，
+不得宣称 GameReady。
 
 其它路线保持原有状态：CONTENT-2C AI 写入继续冻结；HOST-1、Job/Event Runtime、SHP 流水线和项目级素材
 Apply/Save 仍需各自独立审计与契约。

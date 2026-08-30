@@ -11,7 +11,7 @@ public sealed class Ra2AgentSkillCatalogTests
     {
         Ra2AgentSkillCatalog catalog = Ra2AgentSkillCatalog.LoadBundled();
 
-        Assert.Equal(18, catalog.Skills.Count);
+        Assert.Equal(19, catalog.Skills.Count);
         Assert.All(catalog.Skills, skill =>
         {
             Assert.Matches("^[a-z0-9]+(?:-[a-z0-9]+)*$", skill.Name);
@@ -228,6 +228,48 @@ public sealed class Ra2AgentSkillCatalogTests
         Assert.Contains("## Active Built-in RA2 Skills", request.PromptText, StringComparison.Ordinal);
         Assert.Contains("Skill ra2-weapon-chain@1", request.PromptText, StringComparison.Ordinal);
         Assert.Contains("do not grant tools", request.PromptText, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(request.Tools);
+    }
+
+    [Fact]
+    public void VoxelColourTechniqueSkill_IsChatRoutedAndRemainsAdvisoryOnly()
+    {
+        Ra2AgentSkillCatalog catalog = Ra2AgentSkillCatalog.LoadBundled();
+        Ra2AgentSkillDescriptor skill = Assert.Single(
+            catalog.Skills,
+            candidate => candidate.Name == "ra2-voxel-colour-techniques");
+
+        Assert.Equal(Ra2AgentSkillMode.Chat, skill.Modes);
+        Assert.Equal(["voxel-colour"], skill.Domains);
+        Assert.Contains("unittem.pal", skill.Instructions, StringComparison.Ordinal);
+        Assert.Contains("16-31", skill.Instructions, StringComparison.Ordinal);
+        Assert.Contains("Ground-unit adaptation", skill.Instructions, StringComparison.Ordinal);
+        Assert.Contains("Air-unit adaptation", skill.Instructions, StringComparison.Ordinal);
+        Assert.Contains("Do not emit voxel coordinates", skill.Instructions, StringComparison.Ordinal);
+
+        Assert.Equal(
+            "voxel-colour",
+            Ra2AiInteractionRouter.ResolveDomainIntentId("请为 A10.vxl 制定上色和 remap 规则"));
+        Assert.Equal(
+            "art-animation",
+            Ra2AiInteractionRouter.ResolveDomainIntentId("解释 VXL 在 artmd.ini 中如何绑定"));
+
+        IReadOnlyList<Ra2AgentSkillDescriptor> selected = catalog.Select(
+            "voxel-colour",
+            Ra2AiUserMode.Chat,
+            "审查这个飞机 VOX 的上色技法");
+        Assert.Equal(
+            ["ra2-voxel-colour-techniques", "ra2-field-schema-trust"],
+            selected.Select(candidate => candidate.Name));
+
+        Ra2AiRequest request = new Ra2AiPromptBuilder(catalog).Build(new Ra2AiPromptBuildRequest
+        {
+            UserPrompt = "审查这个飞机 VOX 的上色技法",
+            Context = EmptyContext(),
+            UserMode = Ra2AiUserMode.Chat,
+            DomainIntentId = "voxel-colour"
+        });
+        Assert.Contains("Skill ra2-voxel-colour-techniques@1", request.PromptText, StringComparison.Ordinal);
         Assert.Empty(request.Tools);
     }
 

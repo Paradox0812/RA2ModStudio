@@ -72,11 +72,20 @@ User/policy           = external cost, overwrite and final commit authority
 - `2A/2B/2C/3D`：质量候选、结构证据、Agent 稀疏几何修复、对称修复和受限中轴短缝连接。
 - `3A/3B/3C`：生成编排、显式固化/VOX 导出、working-geometry continuity。
 - `4A/4B/FIX2/STROKE-1`：Agent 初始语义、人工区域/体素覆盖、精确表面命中和连续笔划。
-- `4D`：项目内 `.semantic.json` v1 的显式保存/载入与三重哈希绑定。
+- `4D`：项目内 `.semantic.json` v1 的显式保存/载入与三重哈希绑定；用户已报告真实 Save/Import 通过。
+- `4E`：CodeFactAudit 与 Proposed FinalContract Rev.3 已完成；DeepSeek 先根据有界证据提出
+  Ground/Air/LargeSurface/Unknown，人工确认/纠正后 Host 只装载对应的一个专用 colouring Skill。人工还必须从
+  active palette 选择 opaque/non-remap 基准 index，主体明暗家族以该 index 为不可移动锚点；五个技法只决定
+  层次。Rev.3 已分离 classification/style 两阶段调用与 cache，并保留对 PaintedSurface 涂平、薄面 Top+Under、
+  contrast 固定阈值和多维质量/人工视觉门的修正；契约级自审为 ReadyForApproval，运行时和物理验证仍未开始。
+- `4E-R1`：8 个用户 ZIP + VXLSE III `RA2/unittem.pal` + 公开教程/许可明确 VOX 模型的上色研究已完成；
+  新增 Chat-only `ra2-voxel-colour-techniques` 供通用 DeepSeek 选择，聚焦测试 16/16 通过。专用 4E style
+  compiler 尚未接入该 Skill；全量测试、package 和真实模型调用未运行。
 
 ## 5. ASSET-VOX-4D 当前基线
 
-状态：Completed / automated verified / physical WPF acceptance pending。
+状态：Completed / automated verified；Save/Import physical acceptance passed (user-reported)，
+错模型/dirty/DPI 项仍为 NotRun/Unknown。
 
 - sidecar 分开保存已接受 Agent 建议、人工区域覆盖和稀疏人工 cell 覆盖。
 - 使用 working snapshot hash、evidence package hash、manual layer hash 三重绑定。
@@ -90,13 +99,15 @@ User/policy           = external cost, overwrite and final commit authority
 - `Docs/ASSET-VOX-4D_PersistentSemanticMaskCodeFactAudit.md`
 - `Docs/ASSET-VOX-4D_PersistentSemanticMaskFinalContract.md`
 - `Docs/ASSET-VOX-4D_StageLedger.md`
+- `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`
+- `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Proposed）
 
 ## 6. Git 基线
 
 ```text
 Remote:   https://github.com/Paradox0812/RA2ModStudio.git
 Branch:   codex/content-2d-baseline
-Commit:   5a226ddf1f0dd04dd416bcbae549cc0a648e5d88
+Commit:   ab92d56b9b57f89f3c417b0b0f9a0fbf1086e66d
 Upstream: origin/codex/content-2d-baseline
 Tag:      content-2d01-verified -> 9bee2e1a064fadd7dc3e4992037b09393ce2540e
 ```
@@ -117,14 +128,15 @@ AssetHost tests:        50/50 Passed
 Debug solution build:   Passed, 0 warning / 0 error
 IdeOnly clean package:  Passed, 1422 files
 Real DeepSeek/Tencent:  NotRun in 4D
-Physical WPF 4D smoke:  NotRun
+Physical WPF Save/Import: Passed (user-reported, 2026-08-30)
+Wrong-model / dirty / DPI: NotRun or Unknown
 ```
 
 这些是阶段完成时的可信证据，不代表后续文档任务重新运行了测试或 Provider。
 
 ## 8. 当前明确不足
 
-- 4D 真实 WPF Save/Open、错模型拒绝、未保存确认框尚未完成物理烟测。
+- 4D 真实 WPF Save/Import 已由用户报告通过；错模型拒绝和未保存确认框尚未确认。
 - 连续画笔的真实鼠标、100%/125% DPI 和视觉体验仍需用户验收。
 - 语义 mask 是上色输入，不是最终游戏 palette 或 GameReady 证明。
 - 尚无项目级素材 Apply/Save、Artifact Registry、自动 INI 注册。
@@ -143,18 +155,14 @@ Physical WPF 4D smoke:  NotRun
 
 ## 10. 下一安全入口
 
-先完成 4D 物理验收：
+用户已选择 `ASSET-VOX-4E Mask-Driven Colour Materialization`；CodeFactAudit 与 Proposed FinalContract Rev.3 已完成。
+下一安全动作是用户审阅合同。批准后从 4E-1 实现 UnitClass evidence/proposal/confirmation、classifier 与三个
+专用 colouring Skills、BaseColour、五个版本化 technique policies、四个 class-derived adaptation policies、
+semantic colour requirements 和 typed binding；4E-4 只按已冻结 UI 契约增加显式判型、证据、人工确认/纠正、
+selected Skill、三个 selector 与质量状态，并请求人工验收。
 
-1. 保存并重载一个包含 Agent、区域和 cell 三层的真实 sidecar。
-2. 用错误模型载入并确认拒绝且状态不变。
-3. 验证未保存修改的单次确认提示。
-
-通过后，只选择一个独立方向：
-
-- 推荐 `ASSET-VOX-4E Mask-Driven Colour Materialization`；或
-- `ASSET-VOX-5A Multipart VXL/HVA Materialization`。
-
-两者都不得跳过代码事实审计、详细契约和相应人工/游戏验证。
+4D 的错模型、dirty confirmation 和 DPI 指针项仍需补验，不得推断为通过。4E 不包含 VXL/HVA、
+项目 Apply/Save 或 GameReady。
 
 ## 11. 新任务最小读取集
 

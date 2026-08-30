@@ -1703,3 +1703,138 @@ CurrentPhase 和对应 Stage Ledger 负责。
 - Consequences:
   - Exact matching semantic work can survive an IDE restart without changing model or palette authority.
   - A matching geometry file is still required; undo/redo and global Shell close protection remain outside v1.
+
+## 2026-08-30 — Mask-driven colour uses typed technique policies and multidimensional quality admission
+
+- Status: Proposed / refined by the ASSET-VOX-4E Rev.2 decision below / awaiting user approval
+- Task: ASSET-VOX-4E
+- Context:
+  - The existing style compiler and colourizer can apply semantic masks, but semantic requirements currently arrive after
+    compilation, cache identity omits them, and the integrator picks the first role in a category.
+  - The user clarified that built-in templates mean colouring rules and techniques, not colour/faction/theatre themes.
+    Quality still needs an explainable admission model without pretending one numeric score proves artistic correctness.
+- Decision:
+  - Add five immutable, versioned technique policies controlling relative luminance, region order, edge handling, material
+    separation and quality thresholds. They contain no hue, RGB, palette index, faction or theatre theme.
+  - Keep colour intent in the existing built-in/project/directory/request `VOXEL_STYLE.md` source pack. Apply the selected
+    technique locally after the bounded structured compiler/cache path, without adding another provider call.
+  - Project each composition into a full CompositionHash plus a role-set RequirementShapeHash. Reuse a compiled plan when
+    only cell boundaries change; recompile when the required material/remap set changes.
+  - Replace category-first guessing with a validated MaterialRole-to-roleId binding plan. PartRole remains review-only in
+    4E v1, and remap still requires explicit human approval.
+  - Admit candidates through Blocked / NeedsReview / ReviewReady facts covering invariants, semantic coverage, palette fit,
+    readability and distribution. Soft warnings require an explicit generation-scoped acknowledgement before freeze.
+- Rejected alternatives:
+  - Colour-themed templates, separate template painter, hard-coded RGB/palette indices, automatic technique guessing,
+    opaque total quality score, or treating review annotation colours as output palette truth.
+  - Include exact composition counts in the provider cache key and repeat a paid call after every brush stroke.
+  - Extend PartRole-specific palette families, persist template selection in the 4D sidecar, or write VXL/HVA in 4E.
+- Consequences:
+  - The same colour intent can be rendered with different, reproducible shading techniques without changing semantic masks.
+  - Provider call count remains governed by the existing style cache/compiler; technique normalization is local.
+  - Quality failures and warnings become reproducible and inspectable without claiming GameReady.
+  - Compiler/cache schema, binding contract and candidate admission change remain R4 and require approval before code.
+- Follow-up:
+  - Approve `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`, then implement 4E-1 through 4E-5 with
+    stage gates and physical WPF acceptance.
+
+## 2026-08-30 — Voxel colouring knowledge is a Chat Skill before it becomes compiler policy
+
+- Status: Accepted / implemented / focused automated verified
+- Task: ASSET-VOX-4E-R1
+- Context:
+  - The user supplied eight VXL/VOX model archives, established VXLSE III RA2 palette identity, and requested ground/air
+    colouring-rule research plus a built-in Skill for DeepSeek.
+  - The general Agent Skill catalog and the dedicated `Ra2VoxelStyleCompiler` are separate prompt paths. Wiring research
+    directly into the dedicated compiler would start the still-unapproved R4 4E implementation.
+- Decision:
+  - Preserve one evidence study and one Chat-only `ra2-voxel-colour-techniques` Skill in the existing auto-discovered
+    Agent Skill catalog. Route only prompts containing both voxel-format and colouring/material markers to its domain.
+  - Keep the Skill advisory: no coordinates, masks, binary writes, Apply/Save, VXL/HVA or GameReady claims.
+  - Treat VXLSE III `RA2/unittem.pal` as the studied palette profile, not a universal theatre palette. Keep remap 16-31
+    explicit-mask-only and keep palette/semantic/geometry facts authoritative over prose.
+  - Leave the dedicated style compiler, cache, colourizer and 4E UI unchanged until the Proposed Contract is approved.
+- Rejected alternatives:
+  - Put the same long rule body into both `AgentSkills` and `VoxelStyles/compiler`; duplicate knowledge would drift.
+  - Route every VXL/art request to the colour Skill; rules/art bindings and binary asset references are different domains.
+  - Copy user or public model assets/palettes into the repository, or infer redistribution rights from public downloads.
+- Consequences:
+  - General DeepSeek Chat can select a source-backed ground/air colouring knowledge package without new tool authority.
+  - The dedicated mask-driven compiler still does not consume the Skill; integrating one authoritative rule source remains
+    part of the approved 4E implementation rather than a hidden prompt change.
+  - Focused catalog/routing/prompt tests pass 16/16. Full tests, package, real DeepSeek and WPF/game visual validation were
+    not run for this content-and-routing slice.
+
+## 2026-08-30 — Voxel body colour is anchored by a human palette selection and adapted by unit class
+
+- Status: Proposed / refined by the ASSET-VOX-4E Rev.3 decision below / awaiting user approval
+- Task: ASSET-VOX-4E FinalContract Rev.2
+- Context:
+  - The user requires the coloured model to be centred on a manually chosen base colour rather than a template colour or
+    model-generated guess.
+  - Ground/air sample research disproves a universal darker-underside rule, and the original Proposed contract mixed local
+    technique identity into cache semantics while leaving the existing contrast optimizer globally hard-coded.
+  - Applying PaintedSurface as one late BodyBase mask would flatten the geometry shading that 4E is intended to create.
+- Decision:
+  - Require a human to select one opaque, non-remap index from the active palette. That exact index owns BodyBase; all
+    derived painted-body roles remain in an anchor-coherent family and neither the Provider nor contrast optimization may
+    move it.
+  - Require an explicit Ground/Air/LargeSurface/Unknown adaptation. Compose it locally with the selected technique; do not
+    infer it from model names or send it to the Provider as editable prose.
+  - Keep Provider compilation cache identity separate from the local materialization bundle, so base/technique/adaptation
+    changes invalidate candidates without causing another model call.
+  - Bind PaintedSurface to BodyGeometryFamily, apply direct semantic materials afterwards, and apply approved remap last.
+    Resolve Top+Under thin-cell conflicts through an adaptation-owned DualSurfacePolicy.
+  - Keep typed C# policies as runtime authority. The existing Chat Skill remains advisory and does not become a second
+    runtime rule source.
+- Rejected alternatives:
+  - Automatically choose the dominant model colour, accept arbitrary RGB outside the active palette, or let prose/model
+    output override the human body anchor.
+  - Give every PartRole its own base colour in v1, jump to another palette family to satisfy luminance, or use a single
+    cache key for both paid compilation and local candidate identity.
+  - Paint every PaintedSurface cell with one late BodyBase rule, or rely on incidental rule order for one-cell-thick wings.
+- Consequences:
+  - Body colour has one explicit human authority and reproducible palette identity; non-body materials remain semantically
+    distinct and are evaluated relative to the same anchor.
+  - Rev.2 requires policy-aware changes to the existing contrast optimizer and colourizer but still preserves one compiler,
+    one normalizer path, one colourizer, current 4D sidecar and current export boundary.
+  - Single-index DirectRole materials/remap can still look flat across several geometry regions; Rev.2 requires a visible
+    warning and defers multi-level semantic/remap families to a later contract.
+- Superseded follow-up:
+  - Rev.3 is now the sole approval target; do not approve or implement Rev.2 directly.
+
+## 2026-08-30 — DeepSeek proposes unit class before one class-specific colouring Skill is routed
+
+- Status: Proposed / awaiting user approval
+- Task: ASSET-VOX-4E FinalContract Rev.3
+- Context:
+  - Ground, air and large-surface units need materially different shading and readability techniques, while the model
+    cannot safely become the final authority for a classification that changes the rule package.
+  - The existing general colouring Skill combines several classes and is Chat-only; the dedicated style compiler is a
+    separate prompt path and must not silently mix all class rules.
+- Decision:
+  - Build bounded geometry/semantic `UnitClassEvidence`, ask DeepSeek for an evidence-referencing `UnitClassProposal`, and
+    require a human confirmation or correction before style compilation.
+  - Route `ConfirmedUnitClass` deterministically in the Host to exactly one class-specific colouring Skill and one typed
+    adaptation policy. The proposal itself has no routing authority; Unknown uses the conservative general Skill and is
+    always NeedsReview.
+  - Keep classification and style compilation as separately visible, cancellable and cached Provider stages. A double
+    cache miss may make at most one call per stage; base colour and technique changes remain local and make no model call.
+  - Keep Skill prose qualitative and typed C# policy/validator thresholds authoritative. DeepSeek proposes bounded roles
+    and bindings; local normalization, masks, quality gates and colourizer write the actual palette indices.
+- Rejected alternatives:
+  - Let the model silently select its own rule package, infer class from filename alone, or skip human confirmation for a
+    high-confidence proposal.
+  - Load Ground, Air and LargeSurface Skills into one style prompt, or expose a separate adaptation selector that can
+    contradict the confirmed class.
+  - Hide classification and style compilation behind one opaque call count or reuse one cache identity for both stages.
+- Consequences:
+  - Misclassification is reviewable and correctable before any colouring plan is generated, and class rules cannot mix by
+    prompt accident.
+  - Worst-case provider cost/latency increases from one to two calls; both stages require independent status, cache,
+    failure and cancellation evidence.
+  - The classifier Skill and class-specific colouring Skills must be implemented and sample-tested in 4E-1; no runtime or
+    XAML change is authorized while the Rev.3 contract remains Proposed.
+- Follow-up:
+  - Review and explicitly approve `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md` Rev.3 before any
+    runtime or XAML implementation starts.

@@ -307,6 +307,9 @@ internal static partial class Ra2AiInteractionRouter
             return "terrain-resource";
         if (ContainsAny(prompt, ["sound", "eva", "声音", "语音", "音效"]))
             return "sound-eva";
+        if (ContainsAny(prompt, ["vxl", "voxel", "vox", "体素"]) &&
+            ContainsAny(prompt, ["上色", "着色", "配色", "色盘", "palette", "remap", "材质", "colour", "color", "paint", "shading"]))
+            return "voxel-colour";
         if (ContainsAny(prompt, ["artmd", "animation", "动画", "美术", "shp", "vxl", "voxel", "cameo", "icon", "图标"]))
             return "art-animation";
         if (ContainsAny(prompt, ["unit", "infantry", "vehicle", "aircraft", "building", "单位", "步兵", "载具", "飞行器", "建筑"]))

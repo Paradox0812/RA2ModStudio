@@ -14,13 +14,17 @@
 
 ## 2. 当前继续入口
 
-当前已提交代码基线为 `ASSET-VOX-4D`，分支 `codex/content-2d-baseline`，
-commit `5a226ddf1f0dd04dd416bcbae549cc0a648e5d88`。新任务优先读取：
+当前已提交运行时代码基线为 `ASSET-VOX-4D`，分支 `codex/content-2d-baseline`；最新文档治理提交为
+`ab92d56b9b57f89f3c417b0b0f9a0fbf1086e66d`，其父提交
+`5a226ddf1f0dd04dd416bcbae549cc0a648e5d88` 固化 4D 代码。当前已选择 4E 并完成 CodeFactAudit。
+新任务优先读取：
 
 1. `Docs/Codex_CurrentPhase.md`
 2. `Docs/RA2IniEditor_IDE_Full_Codex_Context.md`
 3. `Docs/ContextCapsule_ASSET_VOX_4D_GIT_BASELINE.md`
 4. `Docs/ASSET-VOX-4D_StageLedger.md`
+5. `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`
+6. `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Proposed / awaiting approval）
 
 旧累积状态已移入 `Docs/Archive/`。历史文件中的 “next phase” 不覆盖上述当前入口。
 
@@ -68,7 +72,10 @@ commit `5a226ddf1f0dd04dd416bcbae549cc0a648e5d88`。新任务优先读取：
 | 查看规范体素快照、VOX/VXL/PNG/SliceStack 纯核心 | `ASSET-VOX-1B_CanonicalVoxelCoreFinalContract.md`、`ASSET-VOX-1B_StageLedger.md`（implementation + supplied VXLSE structural acceptance completed；visual/game acceptance deferred） |
 | 查看 Generation Provider Host 审计、契约与实现证据 | `ASSET-VOX-1C_GenerationProviderHostCodeFactAudit.md`、`ASSET-VOX-1C_GenerationProviderHostFinalContract.md`、`ASSET-VOX-1C_StageLedger.md`（completed / automated verified） |
 | 查看真实 Hunyuan Provider 环境审计、最终契约与授权门 | `ASSET-VOX-1C-P1_RealProviderEnvironmentCodeFactAudit.md`、`ASSET-VOX-1C-P1_HunyuanMiniProviderFinalContract.md`、`ASSET-VOX-1C-P1_StageLedger.md`（P1-0 completed；P1-1..P1-5 blocked on explicit license/install authorization） |
-| 查看当前体素语义持久化基线 | `ASSET-VOX-4D_PersistentSemanticMaskCodeFactAudit.md`、`ASSET-VOX-4D_PersistentSemanticMaskFinalContract.md`、`ASSET-VOX-4D_StageLedger.md`（completed / automated verified；physical WPF acceptance pending） |
+| 查看当前体素语义持久化基线 | `ASSET-VOX-4D_PersistentSemanticMaskCodeFactAudit.md`、`ASSET-VOX-4D_PersistentSemanticMaskFinalContract.md`、`ASSET-VOX-4D_StageLedger.md`（completed / automated verified；Save/Import user-reported passed；wrong-model/dirty/DPI pending） |
+| 查看 mask 驱动上色模块侦察与下一契约入口 | `ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`（audit completed / implementation not started） |
+| 审阅 mask 驱动上色技法、规则与质量门契约 | `ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Proposed / awaiting approval） |
+| 查看地面/空中单位上色样本、联网来源与内置 Skill 证据 | `ASSET-VOX-4E_GroundAirColourTechniqueSourceStudy.md`（completed；专用 4E compiler 接入未实现） |
 | 查看本地已验证 Git 基线 | `GIT-BASELINE-1_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
