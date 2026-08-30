@@ -1,5 +1,6 @@
 using RA2IniEditor.IDE.AI;
 using RA2IniEditor.IDE.Language;
+using RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring;
 using Xunit;
 
 namespace RA2IniEditor.Tests.IDE;
@@ -11,7 +12,7 @@ public sealed class Ra2AgentSkillCatalogTests
     {
         Ra2AgentSkillCatalog catalog = Ra2AgentSkillCatalog.LoadBundled();
 
-        Assert.Equal(19, catalog.Skills.Count);
+        Assert.Equal(23, catalog.Skills.Count);
         Assert.All(catalog.Skills, skill =>
         {
             Assert.Matches("^[a-z0-9]+(?:-[a-z0-9]+)*$", skill.Name);
@@ -271,6 +272,69 @@ public sealed class Ra2AgentSkillCatalogTests
         });
         Assert.Contains("Skill ra2-voxel-colour-techniques@1", request.PromptText, StringComparison.Ordinal);
         Assert.Empty(request.Tools);
+    }
+
+    [Fact]
+    public void VoxelClassSkills_AreDistinctBoundedPackagesAndDoNotReplaceGeneralChatFallback()
+    {
+        Ra2AgentSkillCatalog catalog = Ra2AgentSkillCatalog.LoadBundled();
+        string[] specialistIds =
+        [
+            "ra2-voxel-unit-classification",
+            "ra2-ground-voxel-colour-techniques",
+            "ra2-air-voxel-colour-techniques",
+            "ra2-large-surface-voxel-colour-techniques"
+        ];
+
+        Ra2AgentSkillDescriptor[] specialists = specialistIds
+            .Select(id => Assert.Single(catalog.Skills, skill => skill.Name == id))
+            .ToArray();
+        Assert.Equal(4, specialists.SelectMany(skill => skill.Domains).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(specialists, skill =>
+        {
+            Assert.Equal(Ra2AgentSkillMode.Chat, skill.Modes);
+            Assert.Single(skill.Domains);
+            Assert.InRange(skill.Instructions.Length, 1, Ra2AgentSkillCatalog.MaximumSelectedSkillCharacters);
+            Assert.Contains("propos", skill.Instructions, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("voxel coordinates", skill.Instructions, StringComparison.OrdinalIgnoreCase);
+        });
+        Assert.Contains("human-confirmed", specialists[1].Instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("universal darker underside", specialists[2].Instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no separate Deck/Hull", specialists[3].Instructions, StringComparison.OrdinalIgnoreCase);
+
+        IReadOnlyList<Ra2AgentSkillDescriptor> selected = catalog.Select(
+            "voxel-colour",
+            Ra2AiUserMode.Chat,
+            "解释未知类别 VOX 的保守上色规则");
+        Assert.Equal(
+            ["ra2-voxel-colour-techniques", "ra2-field-schema-trust"],
+            selected.Select(skill => skill.Name));
+
+        Assert.All(Ra2VoxelUnitAdaptationCatalog.All, policy =>
+            Assert.Contains(catalog.Skills, skill => skill.Name == policy.ColouringSkillId));
+    }
+
+    [Fact]
+    public void VoxelTechniqueDocuments_MatchTypedCatalogIdsAndDeclareTypedPolicyAuthority()
+    {
+        string root = Path.Combine(AppContext.BaseDirectory, "VoxelStyles", "templates");
+
+        Assert.True(Directory.Exists(root));
+        string[] directories = Directory.GetDirectories(root)
+            .Select(Path.GetFileName)
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray()!;
+        Assert.Equal(
+            Ra2VoxelColourTechniqueCatalog.All.Select(policy => policy.TechniqueId).OrderBy(value => value, StringComparer.Ordinal),
+            directories);
+        foreach (Ra2VoxelColourTechniquePolicy policy in Ra2VoxelColourTechniqueCatalog.All)
+        {
+            string path = Path.Combine(root, policy.TechniqueId, "TECHNIQUE.md");
+            string text = File.ReadAllText(path);
+            Assert.Contains($"# {policy.TechniqueId} @ {policy.Revision}", text, StringComparison.Ordinal);
+            Assert.Contains("typed", text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("palette index:", text, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]

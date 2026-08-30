@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE — Current Phase
 
-更新时间：2026-08-30
+更新时间：2026-08-31
 状态类型：CurrentStatus / concise index
 
 ## 1. 当前产品目标
@@ -39,13 +39,15 @@ Upstream:   origin/codex/content-2d-baseline
 - 不保存几何、色板、RGB、相机、undo/redo 或临时笔划。
 - 不支持自动保存/发现、跨 canonical hash 迁移、强制载入或部分恢复。
 
-`ASSET-VOX-4E Mask-Driven Colour Materialization` 已完成 DocsOnly 代码事实侦察，并将 FinalContract 修订为
-Proposed Rev.3；运行时实现尚未开始，等待用户批准。Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
+`ASSET-VOX-4E Mask-Driven Colour Materialization` Rev.3 已批准，`4E-1` internal contracts/policies/Skill packages
+已实现并通过聚焦自动化验证。Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
 Ground/Air/LargeSurface/Unknown，人工确认或纠正后，Host 只装载对应的一个专用 colouring Skill；模型提案不能
 直接取得路由权。人工仍须从 active palette 选择 opaque/non-remap 基准 index，主体明暗家族以该 index 为不可
 移动锚点，五个技法只决定层次。合同分离 classification/style 两阶段模型调用与 cache，并保留
 BodyGeometryFamily、薄面 DualSurfacePolicy、policy-aware contrast 和多维质量/人工视觉门。
-契约级全面自审结论为 `ReadyForApproval`；运行时、自动测试、WPF/真实模型和游戏视觉仍为 NotStarted/NotRun。
+4E-1 已建立 evidence/proposal/confirmation、BaseColour、五个 technique、四个 class-derived adaptation、semantic
+requirements/binding 和四个专用 Skill；Provider/cache、实际 materialization、WPF/真实模型和游戏视觉仍为
+NotStarted/NotRun。
 
 `ASSET-VOX-4E-R1 Ground/Air Colour Technique Research` 已完成：只读分析用户提供的 8 个 ZIP，按用户说明并
 经 VXLSE III 源码复核采用 `RA2/unittem.pal`，结合公开教程和许可证明确的公开 VOX 模型提炼地面、空中及
@@ -59,7 +61,8 @@ BodyGeometryFamily、薄面 DualSurfacePolicy、policy-aware contrast 和多维�
 - `Docs/ASSET-VOX-4D_PersistentSemanticMaskFinalContract.md`
 - `Docs/ASSET-VOX-4D_StageLedger.md`
 - `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`
-- `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Proposed）
+- `Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Approved）
+- `Docs/ASSET-VOX-4E_StageLedger.md`
 - `Docs/ASSET-VOX-4E_GroundAirColourTechniqueSourceStudy.md`
 
 ## 3. 当前主要能力
@@ -104,6 +107,18 @@ Wrong-model / dirty / DPI: NotRun or Unknown
 
 这些数字是 4D 阶段账本的历史验证证据；文档维护任务不得把它们描述为重新运行。
 
+4E-1 最新证据（来源：`Docs/ASSET-VOX-4E_StageLedger.md`）：
+
+```text
+New 4E-1 contract tests: 13/13 Passed
+Affected Application:    45/45 Passed
+Skill catalog:           18/18 Passed
+Affected IDE:            88/88 Passed
+Debug solution build:    Passed, 1 pre-existing CS8602 warning / 0 error
+Full suites/package:     NotRun (4E-5 gate)
+Real DeepSeek/WPF/model: NotRun
+```
+
 ## 5. 当前关键边界
 
 - Legacy root solution、legacy MainWindow 和旧表格编辑器不得恢复。
@@ -123,14 +138,11 @@ Wrong-model / dirty / DPI: NotRun or Unknown
 
 ## 7. 下一安全入口
 
-用户已选择 `ASSET-VOX-4E Mask-Driven Colour Materialization`，代码事实侦察与 Proposed FinalContract Rev.3 已完成。
-下一步是：
+`ASSET-VOX-4E-1` 已完成并验证。下一安全阶段是 `4E-2`：
 
-1. 用户审阅并明确批准 4E FinalContract Rev.3。
-2. 批准后从 4E-1 UnitClass evidence/proposal/confirmation、专用 Skill、BaseColour、Technique/policy、requirements
-   和 binding internal models 开始。
-3. 4E-4 只实现合同冻结的显式判型、证据、人工确认/纠正、selected Skill、基准色/技法 selector 与质量展示，
-   并请求截图/人工验收。
+1. 接入独立 classification request/cache 和 typed proposal validator；不在模型加载时静默调用 Provider。
+2. 人工 confirmation 后由 Host exact route 一个 colouring Skill，并接入 style compiler/cache v2。
+3. 本阶段不得接入实际 palette materialization、contrast/quality 或 XAML；它们分别属于 4E-3/4E-4。
 
 4D 的错模型拒绝、未保存确认和 100%/125% DPI 指针体验仍应补测，但不得把这些未确认项写成通过；
 4E 仍不得宣称 VXL/HVA 或 GameReady。
@@ -142,7 +154,8 @@ Wrong-model / dirty / DPI: NotRun or Unknown
 3. `Docs/Codex_CurrentPhase.md`
 4. `Docs/ContextCapsule_ASSET_VOX_4D_GIT_BASELINE.md`
 5. `Docs/ASSET-VOX-4D_StageLedger.md`
-6. 当前任务直接相关的 CodeFactAudit / FinalContract
+6. `Docs/ASSET-VOX-4E_StageLedger.md`
+7. 当前任务直接相关的 CodeFactAudit / FinalContract
 
 较早阶段细节按需读取对应 Contract、Stage Ledger 或 `Docs/Archive/`，不要把历史
 “next phase” 当成当前指令。

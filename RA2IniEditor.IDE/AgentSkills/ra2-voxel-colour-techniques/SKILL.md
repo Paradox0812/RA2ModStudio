@@ -9,6 +9,13 @@ metadata:
 
 # RA2 voxel colouring techniques
 
+## 4E class-routing boundary
+
+- General Chat may use this Skill to explain or compare all classes. The dedicated 4E style compiler uses it only for a
+  human-confirmed `Unknown` class.
+- A confirmed Ground, Air, or LargeSurface class must use exactly its matching specialist Skill; do not combine class
+  packages or let a model-selected Skill override the Host route.
+
 ## Authority and evidence
 
 - This Skill is advisory knowledge. It grants no binary writer, file, shell, Apply, Save, palette, mask, or model-edit authority.

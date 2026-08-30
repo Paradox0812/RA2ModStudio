@@ -505,3 +505,12 @@ experimental persistence surface; incompatible changes require a new compatibili
 
 `bridge_center_gap`, `seam-gap-*` IDs and their evidence facts are internal request/session contracts. Promotion to a
 serialized provider protocol, plugin API or persisted authoring history requires a separate compatibility review.
+
+## 41. ASSET-VOX-4E-1 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| ASSET-VOX-4E-1 | None | Application/IDE-internal UnitClass, BaseColour, technique/adaptation, semantic requirement/binding and bundled Skill contracts | Establish the approved model/human/policy boundary before Provider or UI integration | 4E-2 classifier/cache/router/compiler; 4E-3 deterministic materialization | Internal / experimental / focused-verified | 13/13 new contract tests; 45/45 affected Application; 18/18 Skill catalog; 88/88 affected IDE | No public type, serializer, sidecar, Provider protocol, project-write, writer or XAML delta |
+
+All new C# types remain internal and session/derived-only. Skill/Technique Markdown is bundled content, not a public .NET,
+plugin or persistence API. Promotion to a public façade or serialized workspace format requires a separate compatibility review.
