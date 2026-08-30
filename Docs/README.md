@@ -12,7 +12,19 @@
 5. `Docs/DevelopmentRoadmap.md`：从当前实现到最终目标的阶段路线。
 6. 当前任务明确点名的契约、Stage Ledger 或 Context Capsule。
 
-## 2. 面向不同读者
+## 2. 当前继续入口
+
+当前已提交代码基线为 `ASSET-VOX-4D`，分支 `codex/content-2d-baseline`，
+commit `5a226ddf1f0dd04dd416bcbae549cc0a648e5d88`。新任务优先读取：
+
+1. `Docs/Codex_CurrentPhase.md`
+2. `Docs/RA2IniEditor_IDE_Full_Codex_Context.md`
+3. `Docs/ContextCapsule_ASSET_VOX_4D_GIT_BASELINE.md`
+4. `Docs/ASSET-VOX-4D_StageLedger.md`
+
+旧累积状态已移入 `Docs/Archive/`。历史文件中的 “next phase” 不覆盖上述当前入口。
+
+## 3. 面向不同读者
 
 | 目的 | 首选文档 |
 |---|---|
@@ -56,10 +68,11 @@
 | 查看规范体素快照、VOX/VXL/PNG/SliceStack 纯核心 | `ASSET-VOX-1B_CanonicalVoxelCoreFinalContract.md`、`ASSET-VOX-1B_StageLedger.md`（implementation + supplied VXLSE structural acceptance completed；visual/game acceptance deferred） |
 | 查看 Generation Provider Host 审计、契约与实现证据 | `ASSET-VOX-1C_GenerationProviderHostCodeFactAudit.md`、`ASSET-VOX-1C_GenerationProviderHostFinalContract.md`、`ASSET-VOX-1C_StageLedger.md`（completed / automated verified） |
 | 查看真实 Hunyuan Provider 环境审计、最终契约与授权门 | `ASSET-VOX-1C-P1_RealProviderEnvironmentCodeFactAudit.md`、`ASSET-VOX-1C-P1_HunyuanMiniProviderFinalContract.md`、`ASSET-VOX-1C-P1_StageLedger.md`（P1-0 completed；P1-1..P1-5 blocked on explicit license/install authorization） |
+| 查看当前体素语义持久化基线 | `ASSET-VOX-4D_PersistentSemanticMaskCodeFactAudit.md`、`ASSET-VOX-4D_PersistentSemanticMaskFinalContract.md`、`ASSET-VOX-4D_StageLedger.md`（completed / automated verified；physical WPF acceptance pending） |
 | 查看本地已验证 Git 基线 | `GIT-BASELINE-1_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 
-## 3. 状态词
+## 4. 状态词
 
 - **Completed / Verified**：实现存在且有阶段台账、测试或用户验收证据。
 - **Implemented / Visual Acceptance Pending**：代码和自动化门禁完成，真实视觉验收尚未完成。
@@ -68,7 +81,7 @@
 - **Not Implemented**：代码事实审计确认不存在。
 - **Unknown / Pending Verification**：证据不足，不能猜测。
 
-## 4. 历史文档边界
+## 5. 历史文档边界
 
 `Docs/Archive/` 保存被替代的累积状态快照。阶段契约和 Stage Ledger 继续作为
 历史证据保留，但它们不自动成为当前需求。不要修改历史台账来配合新计划；

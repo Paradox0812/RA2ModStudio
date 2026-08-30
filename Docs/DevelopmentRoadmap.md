@@ -1,6 +1,6 @@
 # RA2IniEditor.IDE 开发路线图
 
-更新时间：2026-08-26
+更新时间：2026-08-30
 目标来源：`Docs/ProductVisionAndRequirements.md`  
 当前能力来源：`Docs/CurrentCapabilities.md`
 
@@ -43,7 +43,7 @@
 | DIFF-REVIEW-1 | 完整候选审阅 | canonical Result、unified Changes、有界对象上下文、文档/Section 导航 | Completed / automated verified；manual visual pending |
 | HOST-1 | 独立 Agent Host | wire/session/permission、read/query/preview、IDE-mediated Apply | Deferred after stable CONTENT profiles |
 | ASSET-ICON-1 | Cameo/Icon 流水线 | Manifest/INI binding/Existing Provider completed；palette、codec、generation、Host persistence remain | Partial / provider foundation verified |
-| ASSET-VOX-1/4 | VOX 流水线 | canonical VOX、provider Host、GLB voxelization、Agent geometry/style review、人工语义蒙版、accepted candidate、verified VOX export | VOX review/export and session semantic masks completed；project Apply、VXL/HVA deferred |
+| ASSET-VOX-1/4 | VOX 流水线 | canonical VOX、provider Host、GLB voxelization、Agent geometry/style review、人工语义蒙版、verified VOX export、`.semantic.json` v1 | ASSET-VOX-4D completed / automated verified；physical WPF acceptance pending；project Apply、VXL/HVA deferred |
 | ASSET-SHP-1 | SHP 动画流水线 | frame spec、palette、anchor、preview、export adapter | Deferred |
 | AUTOMATION-1 | Job/Event/Artifact Runtime | 状态机、取消、恢复、产物登记、审计 | Deferred |
 | ASSEMBLY-1 | 多产物自动装配 | INI + icon + VXL/SHP 引用图、提交策略 | Deferred |
@@ -199,34 +199,22 @@ SliceStack。真实 PNG -> 用户提供 VXLSE -> decoded VXL 结构验收已闭�
 当前停止点是：
 
 ```text
-AGENT-QUERY-2 completed / automated verified
+ASSET-VOX-4D completed / automated verified / physical WPF acceptance pending
 ```
 
-AGENT-QUERY-2 已让 Work 在捕获项目中搜索、补查并规范绑定现有对象，同时保持 Project Diff/显式 Apply/
-compound Undo 权威。下一步应先用真实 DeepSeek 验收自然语言实体检索；UI 只读摘要按
-`AGENT-TRACE-1_CompactRetrievalSummaryUiContract.md` 单独批准后实现。随后再决定扩展下一批 source-backed
-SuperWeapon profile 或审计自动化游戏测试 Host。`ASSET-HOST-1` 的显式持久化/冲突/回滚仍后置，
-CONTENT-2C AI 写入继续冻结。
-HOST-1 在这些高优先级语义面稳定后
-冻结 wire/session/permission。持久化模板、外部/可执行 Skill、multi-file、public Apply/Save、
-Job Runtime 和素材写入仍不在范围内。
-## ASSET-VOX next boundary after 1E-UI
+4D 已完成三层语义分划的项目内 sidecar 保存/载入。下一步不是继续编码，而是完成一次真实 WPF 验收：
 
-`ASSET-VOX-1E-UI-R2` is implemented and automated verified. The review workspace now accepts canonical VOX or an
-explicit VXL/PAL pair, and ordinary shading no longer depends on remap metadata. The next asset stage should not expand
-the same UI ad hoc.
-Choose one separately contracted direction after manual review:
+1. 保存并重载包含 Agent、区域和 cell 覆盖的真实 `.semantic.json`。
+2. 用错误模型载入并确认明确拒绝且现有状态不变。
+3. 验证未保存修改只产生一次可理解的确认提示。
+4. 复核连续画笔在 100%/125% DPI 下的真实鼠标体验。
 
-1. persistent semantic-mask interchange/import beyond the completed 4B session editor; or
-2. an accepted-preview handoff that keeps AssetHost/project-write/VXL-HVA authority explicit and reviewable.
+验收通过后，单独选择并立约一个方向：
 
-2026-08-28：第二条中的最小 handoff 已由 `ASSET-VOX-3B` 完成：用户显式固化一个不可变候选，并可导出经
-canonical codec 回读验证的 VOX 副本。它不是项目 Apply/Save，也不写 VXL/HVA。下一安全路线应在以下两者中
-单独立约：语义材质/部件识别与上色，或 VOX -> 分件 VXL/HVA 的确定性 materialization。
+- `ASSET-VOX-4E Mask-Driven Colour Materialization`：推荐。把已确认 mask 与自然语言风格、PAL/VOX palette
+  确定性组合为可审阅着色候选；仍不写 VXL/HVA，不接项目 Apply/Save。
+- `ASSET-VOX-5A Multipart VXL/HVA Materialization`：调查并冻结 Body/Turret/Barrel、pivot、normal、HVA、
+  VXLSE 兼容与游戏验收边界；不得直接宣称 GameReady。
 
-2026-08-29：第一条的会话内 authoring 已由 `ASSET-VOX-4A/4B` 完成：DeepSeek 提供可选初稿，用户可在现有
-3D 工作区用区域赋值和稀疏表面画笔完成材质边界。持久化 mask interchange 和 VXL/HVA 仍需独立契约。
-
-2026-08-30：`ASSET-VOX-4B-STROKE-1` 已把稀疏表面画笔升级为单事务连续笔划，并增加部件/材质审阅配色。
-自动验证完成，当前安全停止点是用户物理 WPF 鼠标与 DPI 验收。通过后再决定持久化 mask interchange、
-上色工作流深化或 VOX → 分件 VXL/HVA；不在本阶段自动展开。
+其它路线保持原有状态：CONTENT-2C AI 写入继续冻结；HOST-1、Job/Event Runtime、SHP 流水线和项目级素材
+Apply/Save 仍需各自独立审计与契约。

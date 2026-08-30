@@ -12,6 +12,9 @@ The current active product direction is **RA2IniEditor.IDE-only**. The legacy ta
 - Current build entry: `RA2IniEditor.IDE.sln`
 - Current clean package profile: `IdeOnly`
 - Current source package target: `RA2IniEditor.IDE.SourceClean.zip`
+- Current Git branch: `codex/content-2d-baseline`
+- Current committed baseline: `5a226ddf1f0dd04dd416bcbae549cc0a648e5d88`
+- Current handoff capsule: `Docs/ContextCapsule_ASSET_VOX_4D_GIT_BASELINE.md`
 
 Use these commands for the current IDE-only package:
 
@@ -52,6 +55,7 @@ Start from `Docs/README.md`. Current active documents are:
 - `Docs/UserGuide.md`
 - `Docs/ReleaseChecklist.md`
 - `Docs/DeveloperNotes.md`
+- `Docs/ContextCapsule_ASSET_VOX_4D_GIT_BASELINE.md`
 - `IDE_ONLY_PACKAGE_NOTE.md`
 
 Use this archive index only to find historical implementation context.
@@ -150,13 +154,17 @@ When using an archived handoff document:
 ## Superseded Accumulated Status Snapshots
 
 The following large append-only status files were replaced by concise current-state
-documents on 2026-08-22. They remain evidence only:
+documents. They remain evidence only:
 
 - `Docs/Archive/Codex_CurrentPhase_Accumulated_Through_2026-08-22.md`
 - `Docs/Archive/RA2IniEditor_IDE_Full_Codex_Context_Accumulated_Through_2026-08-22.md`
+- `Docs/Archive/Codex_CurrentPhase_Accumulated_Through_2026-08-30.md`
+- `Docs/Archive/RA2IniEditor_IDE_Full_Codex_Context_Accumulated_Through_2026-08-30.md`
 
 ## Next Phase
 
-The current safe entry is HLI-0B confirmation, followed by
-`AUTOMATION-HLI-1A0 Dependency Cone Characterization Contract`. See
-`Docs/Codex_CurrentPhase.md`; historical UI “next phase” entries are superseded.
+The current safe entry is the physical WPF acceptance for `ASSET-VOX-4D`: sidecar
+Save/Open, wrong-model rejection, unsaved-change confirmation and real pointer/DPI smoke.
+After acceptance, choose a separately contracted `ASSET-VOX-4E` colour-materialization
+or `ASSET-VOX-5A` multipart VXL/HVA investigation. See `Docs/Codex_CurrentPhase.md`;
+all historical “next phase” entries are superseded.
