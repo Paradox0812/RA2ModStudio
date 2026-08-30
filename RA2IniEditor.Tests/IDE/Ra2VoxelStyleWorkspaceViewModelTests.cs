@@ -117,7 +117,9 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         TestContext test = CreateContext();
         using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
         await viewModel.LoadSourceAsync(test.VoxPath);
+        await PrepareColourInputsAsync(viewModel);
         await viewModel.CompileAsync();
+        viewModel.QualityWarningsAccepted = true;
         viewModel.AcceptCurrentSession();
         Ra2VoxelAcceptedCandidate accepted = Assert.IsType<Ra2VoxelAcceptedCandidate>(viewModel.AcceptedCandidate);
 
@@ -139,7 +141,9 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         TestContext test = CreateContext();
         using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
         await viewModel.LoadSourceAsync(test.VoxPath);
+        await PrepareColourInputsAsync(viewModel);
         await viewModel.CompileAsync();
+        viewModel.QualityWarningsAccepted = true;
         viewModel.AcceptCurrentSession();
         Ra2VoxelAcceptedCandidate frozen = Assert.IsType<Ra2VoxelAcceptedCandidate>(viewModel.AcceptedCandidate);
         viewModel.SelectQualitySource(test.GlbPath);
@@ -157,7 +161,9 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         TestContext test = CreateContext();
         using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
         await viewModel.LoadSourceAsync(test.VoxPath);
+        await PrepareColourInputsAsync(viewModel);
         await viewModel.CompileAsync();
+        viewModel.QualityWarningsAccepted = true;
         viewModel.AcceptCurrentSession();
         Assert.Equal(Ra2VoxelAcceptedCandidateKind.Styled, viewModel.AcceptedCandidate!.Kind);
 
@@ -175,6 +181,7 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         TestContext test = CreateContext();
         using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
         await viewModel.LoadSourceAsync(test.VoxPath);
+        await PrepareColourInputsAsync(viewModel);
         await viewModel.CompileAsync();
 
         viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.RegionMask);
@@ -270,7 +277,9 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         viewModel.UseCurrentQualityCandidateForSession();
         Ra2VoxelSceneSnapshot working = Assert.IsType<Ra2VoxelSceneSnapshot>(viewModel.ActiveGeometrySnapshot);
 
+        await PrepareColourInputsAsync(viewModel);
         await viewModel.CompileAsync();
+        viewModel.QualityWarningsAccepted = true;
 
         Assert.True(viewModel.HasPreview);
         Assert.True(viewModel.IsResultMode);
@@ -279,7 +288,7 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         Assert.Contains("调整了", viewModel.PaletteContrastText, StringComparison.Ordinal);
         Assert.Equal(working.CanonicalHash, viewModel.ActiveGeometrySnapshot!.CanonicalHash);
         Assert.Equal(working.OccupancyCount, viewModel.CurrentPreviewSnapshot!.OccupancyCount);
-        Assert.Equal(1, client.CallCount);
+        Assert.Equal(2, client.CallCount);
 
         viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.Contrast);
 
@@ -693,9 +702,23 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
                 new Ra2VoxelStylePlanCache(CacheRoot),
                 StylePath,
                 InstructionsPath,
-                _ => configurationReady);
+                _ => configurationReady,
+                new Ra2VoxelUnitClassProposalCache(Path.Combine(CacheRoot, "unit-class")),
+                Ra2AgentSkillCatalog.LoadBundled());
             return new(coordinator, () => ProjectRoot, () => DeepSeekRa2AiModel.V4Flash);
         }
+    }
+
+    private static async Task PrepareColourInputsAsync(Ra2VoxelStyleWorkspaceViewModel viewModel)
+    {
+        await viewModel.AnalyzeUnitClassAsync();
+        Assert.NotNull(viewModel.SelectedUnitClass);
+        viewModel.ConfirmUnitClass();
+        Assert.True(viewModel.HasConfirmedUnitClass);
+        viewModel.SelectedBaseColour = Assert.Single(
+            viewModel.BaseColourOptions,
+            value => value.PaletteIndex == 100);
+        Assert.True(viewModel.CanCompile);
     }
 
     private static Ra2AiResponse ContrastProposalResponse() => Ra2AiResponse.CreateToolCalls(
@@ -704,7 +727,7 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
             "style-ui-vm-contrast",
             Ra2VoxelStyleCompiler.ToolName,
             """
-            {"outcome":"proposal","message":"","title":"Soft olive vehicle","summary":"Ordinary candidate with optional contrast","remap_policy":"none","interior_role_id":"body.dark","roles":[{"id":"body.base","category":"body_base","exact_palette_index":-1,"target_rgb":[100,100,100],"source_scope_ids":["built-in"]},{"id":"body.light","category":"body_light","exact_palette_index":-1,"target_rgb":[102,102,102],"source_scope_ids":["built-in"]},{"id":"body.mid","category":"body_mid","exact_palette_index":-1,"target_rgb":[99,99,99],"source_scope_ids":["built-in"]},{"id":"body.dark","category":"body_dark","exact_palette_index":-1,"target_rgb":[97,97,97],"source_scope_ids":["built-in"]}],"rules":[{"region":"whole_part","role_id":"body.base","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"top_exposed","role_id":"body.light","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"side_exposed","role_id":"body.mid","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"interior","role_id":"body.dark","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]}],"unresolved_assumptions":[]}
+            {"outcome":"proposal","message":"","title":"Soft olive vehicle","summary":"Ordinary candidate with optional contrast","remap_policy":"none","interior_role_id":"body.dark","roles":[{"id":"body.base","category":"body_base","exact_palette_index":-1,"target_rgb":[100,100,100],"source_scope_ids":["built-in"]},{"id":"body.light","category":"body_light","exact_palette_index":-1,"target_rgb":[102,102,102],"source_scope_ids":["built-in"]},{"id":"body.mid","category":"body_mid","exact_palette_index":-1,"target_rgb":[99,99,99],"source_scope_ids":["built-in"]},{"id":"body.dark","category":"body_dark","exact_palette_index":-1,"target_rgb":[97,97,97],"source_scope_ids":["built-in"]},{"id":"underside","category":"underside","exact_palette_index":-1,"target_rgb":[80,80,80],"source_scope_ids":["built-in"]},{"id":"edge","category":"body_light","exact_palette_index":-1,"target_rgb":[120,120,120],"source_scope_ids":["built-in"]}],"rules":[{"region":"whole_part","role_id":"body.base","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"top_exposed","role_id":"body.light","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"side_exposed","role_id":"body.mid","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"under_exposed","role_id":"underside","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"edge_or_ridge","role_id":"edge","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]},{"region":"interior","role_id":"body.dark","evidence":"deterministic_geometry","mask_id":"","source_scope_ids":["built-in"]}],"semantic_bindings":[],"unresolved_assumptions":[]}
             """)
     ]);
 
@@ -715,7 +738,30 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
 
         public Task<Ra2AiResponse> SendAsync(Ra2AiRequest request, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             CallCount++;
+            if (request.Tools.Any(tool => string.Equals(
+                    tool.Name,
+                    Ra2VoxelUnitClassClassifier.ToolName,
+                    StringComparison.Ordinal)))
+            {
+                string[] lines = request.UserContentText.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+                string hash = lines.Single(line => line.StartsWith("evidence_hash: ", StringComparison.Ordinal))["evidence_hash: ".Length..];
+                string[] facts = lines.Where(line => line.StartsWith("fact: ", StringComparison.Ordinal))
+                    .Select(line => line["fact: ".Length..line.IndexOf(" kind=", StringComparison.Ordinal)])
+                    .Take(3)
+                    .ToArray();
+                string json = JsonSerializer.Serialize(new
+                {
+                    proposed_class = "ground",
+                    confidence_band = "high",
+                    evidence_fact_ids = facts,
+                    reason = "Bounded geometry, semantic, and orientation facts support a ground-unit proposal.",
+                    evidence_hash = hash
+                });
+                return Task.FromResult(Ra2AiResponse.CreateToolCalls(
+                    [new Ra2AiToolCall("class-ui-vm", Ra2VoxelUnitClassClassifier.ToolName, json)]));
+            }
             if (_responses.Count == 0)
                 throw new InvalidOperationException("Quality generation must not call the AI client.");
             return Task.FromResult(_responses.Dequeue());

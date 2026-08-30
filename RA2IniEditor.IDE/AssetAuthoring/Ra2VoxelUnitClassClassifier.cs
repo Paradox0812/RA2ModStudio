@@ -172,24 +172,29 @@ internal sealed class Ra2VoxelUnitClassClassifier
         }
         try
         {
-            using JsonDocument document = JsonDocument.Parse(response.ToolCalls[0].ArgumentsJson,
-                new JsonDocumentOptions { AllowTrailingCommas = false, CommentHandling = JsonCommentHandling.Disallow, MaxDepth = 8 });
+            using JsonDocument document = JsonDocument.Parse(
+                NormalizeArgumentsJson(response.ToolCalls[0].ArgumentsJson),
+                new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip, MaxDepth = 8 });
             JsonElement root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object || !HasExactProperties(root, RootProperties))
                 return Invalid("The unit-class proposal root shape is invalid.");
-            string[] factIds = ReadStringArray(root.GetProperty("evidence_fact_ids"), 32, 96);
+            string[] factIds = ReadStringArray(root.GetProperty("evidence_fact_ids"), 32, 96, "evidence_fact_ids");
             Ra2VoxelUnitClassProposalInput input = new(
                 ParseClass(ReadString(root, "proposed_class", 32)),
                 ParseConfidence(ReadString(root, "confidence_band", 16)),
                 Array.AsReadOnly(factIds),
-                ReadString(root, "reason", 512),
+                ReadNormalizedReason(root),
                 skill.Name,
                 skill.Version,
                 skill.ContentHash,
                 ReadString(root, "evidence_hash", 64));
             return Ra2VoxelUnitClassProposal.Validate(evidence, input);
         }
-        catch (Exception exception) when (exception is JsonException or InvalidDataException or InvalidOperationException or FormatException)
+        catch (InvalidDataException exception)
+        {
+            return Invalid($"The unit-class proposal contains an invalid bounded field ({exception.Message}).");
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or FormatException)
         {
             return Invalid("The unit-class proposal JSON is malformed or outside local bounds.");
         }
@@ -242,7 +247,7 @@ internal sealed class Ra2VoxelUnitClassClassifier
             Ra2VoxelUnitClassProposalResult result = Ra2VoxelUnitClassProposal.Validate(evidence, new(
                 ParseClass(root.GetProperty("proposed_class").GetString()!),
                 ParseConfidence(root.GetProperty("confidence_band").GetString()!),
-                Array.AsReadOnly(ReadStringArray(root.GetProperty("evidence_fact_ids"), 32, 96)),
+                Array.AsReadOnly(ReadStringArray(root.GetProperty("evidence_fact_ids"), 32, 96, "evidence_fact_ids")),
                 root.GetProperty("reason").GetString()!,
                 skill.Name,
                 skill.Version,
@@ -284,47 +289,100 @@ internal sealed class Ra2VoxelUnitClassClassifier
         return actual.SetEquals(expected);
     }
 
+    private static string NormalizeArgumentsJson(string value)
+    {
+        string current = value.Trim();
+        if (current.StartsWith("```", StringComparison.Ordinal))
+        {
+            int firstLine = current.IndexOf('\n');
+            int closing = current.LastIndexOf("```", StringComparison.Ordinal);
+            if (firstLine >= 0 && closing > firstLine)
+                current = current[(firstLine + 1)..closing].Trim();
+        }
+        for (int depth = 0; depth < 2; depth++)
+        {
+            using JsonDocument wrapper = JsonDocument.Parse(current, new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 12
+            });
+            if (wrapper.RootElement.ValueKind == JsonValueKind.String)
+            {
+                current = wrapper.RootElement.GetString()?.Trim() ?? throw new InvalidDataException("arguments");
+                continue;
+            }
+            if (wrapper.RootElement.ValueKind == JsonValueKind.Object &&
+                !HasExactProperties(wrapper.RootElement, RootProperties) &&
+                wrapper.RootElement.TryGetProperty("arguments", out JsonElement arguments))
+            {
+                current = arguments.ValueKind == JsonValueKind.String
+                    ? arguments.GetString()?.Trim() ?? throw new InvalidDataException("arguments")
+                    : arguments.GetRawText();
+                continue;
+            }
+            return current;
+        }
+        return current;
+    }
+
     private static string ReadString(JsonElement root, string propertyName, int maximum)
     {
         JsonElement value = root.GetProperty(propertyName);
         if (value.ValueKind != JsonValueKind.String)
-            throw new InvalidDataException();
+            throw new InvalidDataException(propertyName);
         string result = value.GetString()?.Trim() ?? string.Empty;
         if (!IsBounded(result, maximum))
-            throw new InvalidDataException();
+            throw new InvalidDataException(propertyName);
         return result;
     }
 
-    private static string[] ReadStringArray(JsonElement element, int maximumCount, int maximumLength)
+    private static string ReadNormalizedReason(JsonElement root)
+    {
+        JsonElement value = root.GetProperty("reason");
+        if (value.ValueKind != JsonValueKind.String)
+            throw new InvalidDataException("reason");
+        string normalized = string.Join(' ', (value.GetString() ?? string.Empty)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        return IsBounded(normalized, 512)
+            ? normalized
+            : throw new InvalidDataException("reason");
+    }
+
+    private static string[] ReadStringArray(
+        JsonElement element,
+        int maximumCount,
+        int maximumLength,
+        string fieldName)
     {
         if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() < 1 || element.GetArrayLength() > maximumCount)
-            throw new InvalidDataException();
+            throw new InvalidDataException(fieldName);
         string[] values = element.EnumerateArray().Select(value =>
         {
-            if (value.ValueKind != JsonValueKind.String) throw new InvalidDataException();
+            if (value.ValueKind != JsonValueKind.String) throw new InvalidDataException(fieldName);
             string text = value.GetString()?.Trim() ?? string.Empty;
-            return IsBounded(text, maximumLength) ? text : throw new InvalidDataException();
+            return IsBounded(text, maximumLength) ? text : throw new InvalidDataException(fieldName);
         }).ToArray();
         if (values.Distinct(StringComparer.Ordinal).Count() != values.Length)
-            throw new InvalidDataException();
+            throw new InvalidDataException(fieldName);
         return values;
     }
 
-    private static Ra2VoxelUnitClass ParseClass(string value) => value switch
+    private static Ra2VoxelUnitClass ParseClass(string value) => value.ToLowerInvariant() switch
     {
         "ground" => Ra2VoxelUnitClass.Ground,
         "air" => Ra2VoxelUnitClass.Air,
         "large_surface" => Ra2VoxelUnitClass.LargeSurface,
         "unknown" => Ra2VoxelUnitClass.Unknown,
-        _ => throw new InvalidDataException()
+        _ => throw new InvalidDataException("proposed_class")
     };
 
-    private static Ra2VoxelUnitClassConfidenceBand ParseConfidence(string value) => value switch
+    private static Ra2VoxelUnitClassConfidenceBand ParseConfidence(string value) => value.ToLowerInvariant() switch
     {
         "high" => Ra2VoxelUnitClassConfidenceBand.High,
         "medium" => Ra2VoxelUnitClassConfidenceBand.Medium,
         "low" => Ra2VoxelUnitClassConfidenceBand.Low,
-        _ => throw new InvalidDataException()
+        _ => throw new InvalidDataException("confidence_band")
     };
 
     private static string FormatClass(Ra2VoxelUnitClass value) => value switch

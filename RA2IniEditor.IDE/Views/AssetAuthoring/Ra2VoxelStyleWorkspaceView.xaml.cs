@@ -85,6 +85,15 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
             await viewModel.CompileAsync();
     }
 
+    private async void AnalyzeUnitClass_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } viewModel)
+            await viewModel.AnalyzeUnitClassAsync();
+    }
+
+    private void ConfirmUnitClass_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.ConfirmUnitClass();
+
     private void ChooseGenerationReference_OnClick(object sender, RoutedEventArgs e)
     {
         if (ViewModel is not { } viewModel)

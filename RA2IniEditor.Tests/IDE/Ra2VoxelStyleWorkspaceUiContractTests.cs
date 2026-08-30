@@ -46,6 +46,17 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Semantics.Accept",
             "VoxelStyle.Semantics.Discard",
             "VoxelStyle.Semantics.Status",
+            "VoxelStyle.UnitClass.Analyze",
+            "VoxelStyle.UnitClass.Status",
+            "VoxelStyle.UnitClass.Evidence",
+            "VoxelStyle.UnitClass.Selector",
+            "VoxelStyle.UnitClass.Confirm",
+            "VoxelStyle.UnitClass.Skill",
+            "VoxelStyle.BaseColour.Selector",
+            "VoxelStyle.BaseColour.Swatch",
+            "VoxelStyle.BaseColour.Status",
+            "VoxelStyle.Template.Selector",
+            "VoxelStyle.Template.Description",
             "VoxelStyle.Semantics.PartRows",
             "VoxelStyle.Semantics.MaterialRows",
             "VoxelStyle.Semantics.RemapApproval",
@@ -117,6 +128,10 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Quality.SemanticLegend",
             "VoxelStyle.Quality.SemanticReview",
             "VoxelStyle.Quality.PaletteContrast",
+            "VoxelStyle.ColourQuality.Status",
+            "VoxelStyle.ColourQuality.Metrics",
+            "VoxelStyle.ColourQuality.Warnings",
+            "VoxelStyle.ColourQuality.AcceptWarnings",
             "VoxelStyle.Status"
         ];
 
@@ -159,6 +174,14 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
         Assert.DoesNotContain("Style=\"{StaticResource IdeDockSplitterStyle}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"选择模型…\"", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("Content=\"选择 VOX…\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Click=\"AnalyzeUnitClass_OnClick\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Click=\"ConfirmUnitClass_OnClick\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("SelectedItem=\"{Binding SelectedBaseColour, Mode=TwoWay}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("SelectedItem=\"{Binding SelectedTechnique, Mode=TwoWay}\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("IsEnabled=\"{Binding HasReviewableColourWarnings}\"", xaml, StringComparison.Ordinal);
+        int classAnalyze = xaml.IndexOf("VoxelStyle.UnitClass.Analyze", StringComparison.Ordinal);
+        int styleSources = xaml.IndexOf("VoxelStyle.StyleSources", StringComparison.Ordinal);
+        Assert.True(classAnalyze >= 0 && styleSources > classAnalyze);
 
         Assert.Contains("<Viewport3D", viewportXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"InputSurface\"", viewportXaml, StringComparison.Ordinal);

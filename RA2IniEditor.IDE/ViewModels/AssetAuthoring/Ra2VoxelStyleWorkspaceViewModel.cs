@@ -33,6 +33,19 @@ using Ra2VoxelSemanticManualMaskLayer = Ra2Application::RA2IniEditor.Application
 using Ra2VoxelSemanticMaskComposition = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposition;
 using Ra2VoxelSemanticMaskComposer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposer;
 using Ra2VoxelSemanticMaskEditor = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskEditor;
+using Ra2Rgba32 = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2Rgba32;
+using Ra2VoxelBaseColourSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBaseColourSelection;
+using Ra2VoxelColourAdmissionState = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourAdmissionState;
+using Ra2VoxelColourQualityMetric = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourQualityMetric;
+using Ra2VoxelColourTechniqueCatalog = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniqueCatalog;
+using Ra2VoxelColourTechniquePolicy = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniquePolicy;
+using Ra2VoxelConfirmedUnitClass = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelConfirmedUnitClass;
+using Ra2VoxelUnitClass = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClass;
+using Ra2VoxelUnitClassConfirmationSource = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassConfirmationSource;
+using Ra2VoxelUnitClassEvidence = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassEvidence;
+using Ra2VoxelUnitClassProposal = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassProposal;
+using Ra2VoxelUnitClassConfirmationResult = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassConfirmationResult;
+using Ra2VoxelUnitAdaptationCatalog = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitAdaptationCatalog;
 
 namespace RA2IniEditor.IDE.ViewModels.AssetAuthoring;
 
@@ -72,6 +85,14 @@ internal sealed record Ra2VoxelStyleRuleRow(
 
 internal sealed record Ra2VoxelSemanticPartOption(Ra2VoxelSemanticPartRole Value, string Display);
 internal sealed record Ra2VoxelSemanticMaterialOption(Ra2VoxelSemanticMaterialRole Value, string Display);
+internal sealed record Ra2VoxelUnitClassOption(Ra2VoxelUnitClass Value, string Display);
+internal sealed record Ra2VoxelTechniqueOption(Ra2VoxelColourTechniquePolicy Policy)
+{
+    public string TechniqueId => Policy.TechniqueId;
+    public string DisplayName => Policy.DisplayName;
+    public string Description => Policy.Description;
+}
+internal sealed record Ra2VoxelPaletteColourOption(byte PaletteIndex, string Display, Brush Swatch, string RgbHex);
 
 internal sealed class Ra2VoxelSemanticAssignmentRow : INotifyPropertyChanged
 {
@@ -261,6 +282,18 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     private string _semanticPersistenceStatus = "语义分划尚未保存。";
     private string _semanticInstructions = string.Empty;
     private Ra2VoxelSemanticAssignmentRow? _selectedSemanticAssignment;
+    private Ra2VoxelUnitClassEvidence? _unitClassEvidence;
+    private Ra2VoxelUnitClassProposal? _unitClassProposal;
+    private Ra2VoxelConfirmedUnitClass? _confirmedUnitClass;
+    private Ra2VoxelColourSkillRoute? _colourSkillRoute;
+    private Ra2VoxelUnitClassOption? _selectedUnitClass;
+    private Ra2VoxelPaletteColourOption? _selectedBaseColour;
+    private Ra2VoxelBaseColourSelection? _baseColourSelection;
+    private Ra2VoxelTechniqueOption _selectedTechnique;
+    private string _unitClassStatus = "NotAnalyzed";
+    private string? _unitClassProviderModelIdentity;
+    private bool _manualUnitClassFallbackAllowed;
+    private bool _qualityWarningsAccepted;
 
     internal Ra2VoxelStyleWorkspaceViewModel(
         Ra2VoxelStylePreviewCoordinator coordinator,
@@ -276,6 +309,17 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         _generationOrchestrator = generationOrchestrator ?? new Ra2VoxelGenerationOrchestrator(coordinator);
         _voxExportService = voxExportService ?? new Ra2VoxelVoxExportService();
         _semanticSidecarStore = semanticSidecarStore ?? new Ra2VoxelSemanticSidecarStore();
+        UnitClassOptions = Array.AsReadOnly(new[]
+        {
+            new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.Ground, "地面载具"),
+            new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.Air, "空中载具"),
+            new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.LargeSurface, "大型水面单位"),
+            new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.Unknown, "未知 / 保守模式")
+        });
+        TechniqueOptions = Array.AsReadOnly(Ra2VoxelColourTechniqueCatalog.All
+            .Select(value => new Ra2VoxelTechniqueOption(value)).ToArray());
+        _selectedTechnique = TechniqueOptions.Single(value =>
+            string.Equals(value.TechniqueId, Ra2VoxelColourTechniqueCatalog.Default.TechniqueId, StringComparison.Ordinal));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -287,6 +331,11 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public ObservableCollection<Ra2VoxelQualityMetricRow> QualityMetrics { get; } = [];
     public ObservableCollection<Ra2VoxelSemanticRegionRow> SemanticRegions { get; } = [];
     public ObservableCollection<Ra2VoxelSemanticAssignmentRow> SemanticAssignments { get; } = [];
+    public ObservableCollection<Ra2VoxelPaletteColourOption> BaseColourOptions { get; } = [];
+    public ObservableCollection<string> ColourQualityMetrics { get; } = [];
+    public ObservableCollection<string> ColourQualityWarnings { get; } = [];
+    public IReadOnlyList<Ra2VoxelUnitClassOption> UnitClassOptions { get; }
+    public IReadOnlyList<Ra2VoxelTechniqueOption> TechniqueOptions { get; }
     public Ra2VoxelSemanticAssignmentRow? SelectedSemanticAssignment
     {
         get => _selectedSemanticAssignment;
@@ -463,13 +512,109 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public IReadOnlyList<Ra2VoxelSemanticLegendItem> SemanticReviewLegend => _semanticReviewDimension == Ra2VoxelSemanticReviewDimension.Part
         ? Ra2VoxelSemanticReviewPalette.PartLegend
         : Ra2VoxelSemanticReviewPalette.MaterialLegend;
-    public bool CanCompile => HasSource && !_isBusy;
+    public Ra2VoxelUnitClassOption? SelectedUnitClass
+    {
+        get => _selectedUnitClass;
+        set
+        {
+            if (Equals(_selectedUnitClass, value)) return;
+            _selectedUnitClass = value;
+            _confirmedUnitClass = null;
+            _colourSkillRoute = null;
+            OnPropertyChanged();
+            InvalidateColourCandidate("单位类型选择已更改，请确认后重新编译。");
+            RaiseColourInputProperties();
+        }
+    }
+    public Ra2VoxelPaletteColourOption? SelectedBaseColour
+    {
+        get => _selectedBaseColour;
+        set
+        {
+            if (Equals(_selectedBaseColour, value)) return;
+            _selectedBaseColour = value;
+            _baseColourSelection = null;
+            if (value is not null && ActiveGeometrySnapshot is { } snapshot)
+            {
+                var selected = Ra2VoxelBaseColourSelection.Create(
+                    snapshot.Palette, snapshot.Palette.ProfileHash, value.PaletteIndex);
+                if (selected.IsSuccess) _baseColourSelection = selected.Selection;
+            }
+            OnPropertyChanged();
+            InvalidateColourCandidate("主体基准色已更改；本地候选需要重新生成，不会增加模型调用。");
+            RaiseColourInputProperties();
+        }
+    }
+    public Ra2VoxelTechniqueOption SelectedTechnique
+    {
+        get => _selectedTechnique;
+        set
+        {
+            if (value is null || Equals(_selectedTechnique, value)) return;
+            _selectedTechnique = value;
+            OnPropertyChanged();
+            InvalidateColourCandidate("上色技法已更改；本地候选需要重新生成，不会增加模型调用。");
+            RaiseColourInputProperties();
+        }
+    }
+    public string UnitClassStatusText => _unitClassStatus;
+    public string UnitClassEvidenceText => _unitClassProposal is null
+        ? _manualUnitClassFallbackAllowed
+            ? "DeepSeek 当前不可用或超时；可人工选择类型并以“未经过 AI 评估”方式确认，候选将强制人工审阅。"
+            : "尚无判型提案。DeepSeek 只读取有界几何、语义和方向事实。"
+        : $"提案：{UnitClassName(_unitClassProposal.ProposedClass)} · 置信度 {_unitClassProposal.ConfidenceBand} · " +
+          $"依据 {string.Join(", ", _unitClassProposal.EvidenceFactIds)} · {_unitClassProposal.Reason}";
+    public string UnitClassSkillText => _colourSkillRoute is null
+        ? "确认单位类型后显示唯一 colouring Skill。"
+        : $"{_colourSkillRoute.ColourSkill.Name}@{_colourSkillRoute.ColourSkill.Version} · DeepSeek 提案，Host 确定性着色";
+    public string BaseColourStatusText => _baseColourSelection is null
+        ? "未选择。必须从当前 active palette 的 opaque / non-remap 条目中人工锁定。"
+        : $"{ActiveGeometrySnapshot!.Palette.ProfileId} · {_baseColourSelection.PaletteProfileHash[..12]} · " +
+          $"#{_baseColourSelection.PaletteIndex} · {SelectedBaseColour!.RgbHex} · 主体基准色由人工锁定";
+    public Brush? BaseColourSwatch => _selectedBaseColour?.Swatch;
+    public string TechniqueDescription => $"{_selectedTechnique.DisplayName} · revision {_selectedTechnique.Policy.Revision} · " +
+        $"{_selectedTechnique.Description} 只改变相对明暗、边缘和材质分离，不改变颜色主题。";
+    public bool CanAnalyzeUnitClass => HasSource && ActiveGeometrySnapshot is not null && !_isBusy;
+    public bool CanSelectUnitClass => !_isBusy &&
+        (_unitClassProposal is not null || _manualUnitClassFallbackAllowed);
+    public bool CanConfirmUnitClass => !_isBusy && _selectedUnitClass is not null &&
+        (_unitClassProposal is not null || _manualUnitClassFallbackAllowed);
+    public bool HasConfirmedUnitClass => _confirmedUnitClass is not null && _colourSkillRoute is not null;
+    public bool CanEditColourInputs => HasSource && !_isBusy;
+    public string ColourQualityStatusText => _preview?.Materialization?.Ordinary?.Quality is { } quality
+        ? quality.State switch
+        {
+            Ra2VoxelColourAdmissionState.Blocked => "已阻止：候选未通过硬门，不能固化或导出。",
+            Ra2VoxelColourAdmissionState.NeedsReview => _qualityWarningsAccepted
+                ? "需要审阅：本 generation 的警告已由人工确认，可固化候选。"
+                : "需要审阅：请查看警告并显式确认后再固化。",
+            _ => "可审阅：技术硬门与自动质量门已通过；VisualAcceptance 仍为 Pending。"
+        }
+        : "尚未生成 4E 上色质量报告。";
+    public bool HasReviewableColourWarnings => _preview?.Materialization?.Ordinary?.Quality.State ==
+        Ra2VoxelColourAdmissionState.NeedsReview;
+    public bool QualityWarningsAccepted
+    {
+        get => _qualityWarningsAccepted;
+        set
+        {
+            if (_qualityWarningsAccepted == value) return;
+            _qualityWarningsAccepted = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ColourQualityStatusText));
+            OnPropertyChanged(nameof(CanAccept));
+        }
+    }
+    public bool CanCompile => HasSource && !_isBusy && _confirmedUnitClass is not null &&
+        _colourSkillRoute is not null && _baseColourSelection is not null && _selectedTechnique is not null;
     public bool CanCancel => _isBusy;
     public bool CanAccept
     {
         get
         {
             if (_isBusy || !TryGetMaterializableCandidate(out Ra2VoxelSceneSnapshot? snapshot, out Ra2VoxelAcceptedCandidateKind kind, out _))
+                return false;
+            if (!CanAdmitColourCandidate(kind))
                 return false;
             return snapshot is not null && (_acceptedCandidate is null ||
                 _acceptedCandidate.Kind != kind ||
@@ -593,9 +738,10 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             if (_source?.IsSuccess == true)
             {
                 InvalidateOperation();
-                _hasPendingStyleChanges = _preview?.IsSuccess == true;
-                ClearAcceptedCandidate();
-                SetStatus(_hasPendingStyleChanges ? "风格说明已更改，请重新编译预览。" : "可以编译风格预览。", isError: false);
+                bool hadPreview = _preview?.IsSuccess == true;
+                ClearStylePreview();
+                _qualityWarningsAccepted = false;
+                SetStatus(hadPreview ? "风格说明已更改；旧计划和候选已失效，请重新编译预览。" : "可以编译风格预览。", isError: false);
                 RaiseStateProperties();
             }
         }
@@ -627,12 +773,14 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         ClearSemanticState();
         ClearQualityState();
         ClearStylePreview();
+        ResetUnitClassState(clearBaseColour: true);
+        PopulateBaseColourOptions(result.Snapshot!);
         _originalImage = CreateImage(result.OriginalSliceStackPng!);
         _isSliceFallback = false;
         ClearReviewProjection();
         RefreshStyleSources();
         SetPreviewMode(Ra2VoxelStylePreviewMode.Original);
-        SetStatus("体素模型已载入。输入风格说明后，手动编译预览。", isError: false);
+        SetStatus("体素模型已载入。请先判型并人工确认，再选择基准色和上色技法。", isError: false);
         RaiseStateProperties();
     }
 
@@ -718,6 +866,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         ClearSemanticState();
         ClearQualityState();
         ClearStylePreview();
+        ResetUnitClassState(clearBaseColour: true);
+        PopulateBaseColourOptions(session.Candidate.Snapshot!);
         _originalImage = CreateImage(session.Candidate.OriginalSliceStackPng!);
         _isSliceFallback = false;
         ClearReviewProjection();
@@ -915,6 +1065,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         bool preserveManualOverrides = _semanticEvidence is not null &&
             string.Equals(_semanticEvidence.SourceSnapshotHash, result.Evidence.SourceSnapshotHash, StringComparison.Ordinal);
         _semanticEvidence = result.Evidence;
+        ResetUnitClassState(clearBaseColour: false);
+        ClearStylePreview();
         _semanticCompilerResult = result.CompilerResult;
         _loadedSemanticSuggestions = [];
         _semanticSuggestionsAccepted = false;
@@ -973,6 +1125,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         }
         bool preserveManual = _semanticEvidence is not null && string.Equals(_semanticEvidence.SourceSnapshotHash, hash, StringComparison.Ordinal);
         _semanticEvidence = evidence;
+        ResetUnitClassState(clearBaseColour: false);
+        ClearStylePreview();
         _semanticCompilerResult = null;
         _loadedSemanticSuggestions = [];
         _semanticSuggestionsAccepted = false;
@@ -1317,6 +1471,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
 
         Ra2VoxelSemanticSidecarState state = result.State;
         _semanticEvidence = state.Evidence;
+        ResetUnitClassState(clearBaseColour: false);
+        ClearStylePreview();
         _semanticCompilerResult = null;
         _loadedSemanticSuggestions = state.AgentSuggestions.ToArray();
         _semanticSuggestionsAccepted = state.AgentSuggestionsAccepted;
@@ -1340,6 +1496,97 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         RaiseSemanticProperties();
     }
 
+    internal async Task AnalyzeUnitClassAsync()
+    {
+        ThrowIfDisposed();
+        if (_source?.IsSuccess != true || ActiveGeometrySnapshot is not { } snapshot)
+        {
+            SetStatus("请先载入有效体素模型。", isError: true);
+            return;
+        }
+        Ra2VoxelSemanticMaskComposition composition = ResolveColourComposition(snapshot);
+        Ra2VoxelStyleSourceLoadResult source = _source with { Snapshot = snapshot };
+        DeepSeekRa2AiModel model = _modelAccessor();
+        _unitClassProviderModelIdentity = DeepSeekRa2AiModelCatalog.GetApiModelId(model);
+        _unitClassStatus = "Analyzing";
+        _manualUnitClassFallbackAllowed = false;
+        RaiseColourInputProperties();
+        (long generation, CancellationToken token) = BeginOperation("正在请求 DeepSeek 判断单位类型…");
+        Ra2VoxelUnitClassPreviewResult result = await _coordinator.AnalyzeUnitClassAsync(
+            source, composition, model, token);
+        if (!IsCurrent(generation)) return;
+        EndOperation();
+        _unitClassEvidence = result.Evidence;
+        _unitClassProposal = result.Assessment?.Proposal;
+        _confirmedUnitClass = null;
+        _colourSkillRoute = null;
+        _qualityWarningsAccepted = false;
+        if (result.IsSuccess && _unitClassProposal is not null)
+        {
+            _selectedUnitClass = UnitClassOptions.Single(value => value.Value == _unitClassProposal.ProposedClass);
+            _unitClassStatus = "ProposalReady";
+            SetStatus(result.Assessment?.CacheHit == true
+                ? "单位类型提案已从精确缓存载入；请人工确认或纠正。"
+                : "DeepSeek 单位类型提案已返回；请人工确认或纠正。", isError: false);
+        }
+        else
+        {
+            _selectedUnitClass = null;
+            _unitClassStatus = "Failed";
+            _manualUnitClassFallbackAllowed = result.FailureKind is
+                Ra2VoxelUnitClassAssessmentFailureKind.ProviderUnavailable or
+                Ra2VoxelUnitClassAssessmentFailureKind.ProviderTimeout;
+            SetStatus(string.IsNullOrWhiteSpace(result.Message) ? "单位类型判定失败。" : result.Message,
+                isError: result.FailureKind != Ra2VoxelUnitClassAssessmentFailureKind.Cancelled);
+        }
+        OnPropertyChanged(nameof(SelectedUnitClass));
+        InvalidateColourCandidate(null);
+        RaiseColourInputProperties();
+        RaiseStateProperties();
+    }
+
+    internal void ConfirmUnitClass()
+    {
+        if (_unitClassEvidence is null || _selectedUnitClass is null || !CanConfirmUnitClass)
+            return;
+        Ra2VoxelUnitClassConfirmationSource source;
+        if (_unitClassProposal is null)
+        {
+            source = Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment;
+        }
+        else
+        {
+            source = _selectedUnitClass.Value == _unitClassProposal.ProposedClass
+                ? Ra2VoxelUnitClassConfirmationSource.HumanConfirmedProposal
+                : Ra2VoxelUnitClassConfirmationSource.HumanOverride;
+        }
+        Ra2VoxelUnitClassConfirmationResult confirmation = Ra2VoxelConfirmedUnitClass.Create(
+            _unitClassEvidence,
+            _selectedUnitClass.Value,
+            source,
+            _unitClassProposal);
+        if (!confirmation.IsSuccess || confirmation.Confirmation is null)
+        {
+            SetStatus(confirmation.Message, isError: true);
+            return;
+        }
+        Ra2VoxelColourSkillRouteResult route = _coordinator.ResolveColourSkill(
+            _unitClassEvidence, confirmation.Confirmation);
+        if (!route.IsSuccess || route.Route is null)
+        {
+            SetStatus(route.Message, isError: true);
+            return;
+        }
+        _confirmedUnitClass = confirmation.Confirmation;
+        _colourSkillRoute = route.Route;
+        _unitClassStatus = source == Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment
+            ? "ManualFallback"
+            : "Confirmed";
+        InvalidateColourCandidate("单位类型已确认；请选择人工基准色并编译着色预览。");
+        RaiseColourInputProperties();
+        RaiseStateProperties();
+    }
+
     internal async Task CompileAsync()
     {
         ThrowIfDisposed();
@@ -1349,25 +1596,30 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             return;
         }
 
-        Ra2VoxelStyleSourceLoadResult source = _source with { Snapshot = ActiveGeometrySnapshot };
+        if (_unitClassEvidence is null || _confirmedUnitClass is null || _colourSkillRoute is null ||
+            _baseColourSelection is null || _selectedTechnique is null || ActiveGeometrySnapshot is not { } activeSnapshot)
+        {
+            SetStatus("请先完成单位判型确认、人工基准色和上色技法选择。", isError: true);
+            return;
+        }
+
+        Ra2VoxelStyleSourceLoadResult source = _source with { Snapshot = activeSnapshot };
         string styleOverride = _styleOverride;
-        IReadOnlyList<Ra2VoxelSemanticEffectiveAssignment>? semanticAssignments = _semanticEvidence is not null
-            ? ResolveSemanticAssignments()
-            : null;
-        Ra2VoxelSemanticMaskComposition? semanticComposition = _semanticEvidence is not null
-            ? ResolveSemanticComposition()
-            : null;
+        Ra2VoxelSemanticMaskComposition semanticComposition = ResolveColourComposition(activeSnapshot);
         DeepSeekRa2AiModel model = _modelAccessor();
         (long generation, CancellationToken token) = BeginOperation("正在编译结构化风格计划…");
-        Ra2VoxelStylePreviewResult result = await _coordinator.CompilePreviewAsync(
+        Ra2VoxelStylePreviewResult result = await _coordinator.CompilePreviewV2Async(
             source,
             projectRoot,
             styleOverride,
             model,
-            token,
-            _semanticEvidence,
-            semanticAssignments,
-            semanticComposition);
+            semanticComposition,
+            _unitClassEvidence,
+            _unitClassProposal,
+            _confirmedUnitClass,
+            _baseColourSelection,
+            _selectedTechnique.Policy,
+            token);
         if (!IsCurrent(generation))
             return;
 
@@ -1388,8 +1640,9 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         _isSliceFallback = false;
         ProjectStyleSources(result.SourcePack!);
         ProjectPreview(result);
+        ProjectColourQuality(result);
         SetPreviewMode(Ra2VoxelStylePreviewMode.Result);
-        string cacheNote = result.CompilerResult?.CacheHit == true ? "（使用已验证缓存）" : string.Empty;
+        string cacheNote = result.CompilerV2Result?.CacheHit == true ? "（使用已验证缓存）" : string.Empty;
         SetStatus($"风格预览已生成{cacheNote}；请审阅后决定是否接受到当前会话。", isError: false);
         RaiseStateProperties();
     }
@@ -1413,6 +1666,7 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         ClearSemanticState();
         ClearQualityState();
         ClearStylePreview();
+        ResetUnitClassState(clearBaseColour: true);
         _originalImage = null;
         _currentPreviewImage = null;
         _isSliceFallback = false;
@@ -1425,6 +1679,14 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
 
     internal void RefreshExternalModelContext()
     {
+        string currentModel = DeepSeekRa2AiModelCatalog.GetApiModelId(_modelAccessor());
+        if (_unitClassProviderModelIdentity is not null &&
+            !string.Equals(_unitClassProviderModelIdentity, currentModel, StringComparison.Ordinal))
+        {
+            ResetUnitClassState(clearBaseColour: false);
+            ClearStylePreview();
+            SetStatus("AI 模型已更改；旧单位判型与确认已失效，请重新判型。", isError: false);
+        }
         if (_structurePreview is not null && !IsStructureResultCurrent())
         {
             ClearStructureState();
@@ -1713,12 +1975,14 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         ClearAcceptedCandidate();
         _hasPendingStyleChanges = false;
         ClearReviewProjection();
+        ClearColourQualityProjection();
     }
 
     private void ClearSemanticState()
     {
         bool wasSemanticPreview = _previewMode == Ra2VoxelStylePreviewMode.Semantics;
         _semanticEvidence = null;
+        ResetUnitClassState(clearBaseColour: false);
         _semanticCompilerResult = null;
         _loadedSemanticSuggestions = [];
         _semanticSuggestionsAccepted = false;
@@ -1762,6 +2026,116 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             _semanticEvidence,
             ResolveSemanticAssignments(),
             _semanticManualMaskLayer!);
+    }
+
+    private Ra2VoxelSemanticMaskComposition ResolveColourComposition(Ra2VoxelSceneSnapshot snapshot)
+    {
+        if (ResolveSemanticComposition() is { } composition)
+            return composition;
+        Ra2VoxelSemanticEffectiveAssignment unknown = new(
+            "unclassified",
+            Ra2VoxelSemanticPartRole.Unknown,
+            Ra2VoxelSemanticMaterialRole.Unknown,
+            Ra2VoxelSemanticRemapIntent.None,
+            Ra2VoxelSemanticAssignmentSource.Unknown,
+            0d,
+            "尚未进行语义分划");
+        return new Ra2VoxelSemanticMaskComposition(
+            snapshot.CanonicalHash,
+            Enumerable.Repeat(unknown, snapshot.OccupancyCount),
+            snapshot.CanonicalHash);
+    }
+
+    private void PopulateBaseColourOptions(Ra2VoxelSceneSnapshot snapshot)
+    {
+        BaseColourOptions.Clear();
+        for (int index = 0; index < 256; index++)
+        {
+            byte paletteIndex = checked((byte)index);
+            if (snapshot.Palette.IsTransparent(paletteIndex) || snapshot.Palette.IsRemap(paletteIndex))
+                continue;
+            Ra2Rgba32 colour = snapshot.Palette[paletteIndex];
+            SolidColorBrush brush = new(Color.FromArgb(colour.Alpha, colour.Red, colour.Green, colour.Blue));
+            brush.Freeze();
+            string rgb = $"#{colour.Red:X2}{colour.Green:X2}{colour.Blue:X2}";
+            BaseColourOptions.Add(new(paletteIndex, $"#{paletteIndex} · {rgb}", brush, rgb));
+        }
+        _selectedBaseColour = null;
+        _baseColourSelection = null;
+        OnPropertyChanged(nameof(SelectedBaseColour));
+        RaiseColourInputProperties();
+    }
+
+    private void ResetUnitClassState(bool clearBaseColour)
+    {
+        _unitClassEvidence = null;
+        _unitClassProposal = null;
+        _confirmedUnitClass = null;
+        _colourSkillRoute = null;
+        _selectedUnitClass = null;
+        _unitClassStatus = "NotAnalyzed";
+        _unitClassProviderModelIdentity = null;
+        _manualUnitClassFallbackAllowed = false;
+        _qualityWarningsAccepted = false;
+        if (clearBaseColour)
+        {
+            _selectedBaseColour = null;
+            _baseColourSelection = null;
+            BaseColourOptions.Clear();
+        }
+        OnPropertyChanged(nameof(SelectedUnitClass));
+        OnPropertyChanged(nameof(SelectedBaseColour));
+        ClearColourQualityProjection();
+        RaiseColourInputProperties();
+    }
+
+    private void InvalidateColourCandidate(string? message)
+    {
+        _qualityWarningsAccepted = false;
+        ClearStylePreview();
+        ClearColourQualityProjection();
+        if (!string.IsNullOrWhiteSpace(message)) SetStatus(message, isError: false);
+        RaiseColourInputProperties();
+    }
+
+    private void ClearColourQualityProjection()
+    {
+        ColourQualityMetrics.Clear();
+        ColourQualityWarnings.Clear();
+        OnPropertyChanged(nameof(ColourQualityStatusText));
+        OnPropertyChanged(nameof(HasReviewableColourWarnings));
+        OnPropertyChanged(nameof(QualityWarningsAccepted));
+    }
+
+    private void ProjectColourQuality(Ra2VoxelStylePreviewResult result)
+    {
+        ClearColourQualityProjection();
+        if (result.Materialization?.Ordinary?.Quality is not { } quality)
+            return;
+        foreach (Ra2VoxelColourQualityMetric metric in quality.Metrics)
+            ColourQualityMetrics.Add($"{metric.Id} · {metric.Value}");
+        foreach (var warning in quality.Warnings)
+            ColourQualityWarnings.Add($"{warning.Code} · {warning.Message}");
+        OnPropertyChanged(nameof(ColourQualityStatusText));
+        OnPropertyChanged(nameof(HasReviewableColourWarnings));
+        OnPropertyChanged(nameof(CanAccept));
+    }
+
+    private void RaiseColourInputProperties()
+    {
+        OnPropertyChanged(nameof(UnitClassStatusText));
+        OnPropertyChanged(nameof(UnitClassEvidenceText));
+        OnPropertyChanged(nameof(UnitClassSkillText));
+        OnPropertyChanged(nameof(BaseColourStatusText));
+        OnPropertyChanged(nameof(BaseColourSwatch));
+        OnPropertyChanged(nameof(TechniqueDescription));
+        OnPropertyChanged(nameof(CanAnalyzeUnitClass));
+        OnPropertyChanged(nameof(CanSelectUnitClass));
+        OnPropertyChanged(nameof(CanConfirmUnitClass));
+        OnPropertyChanged(nameof(HasConfirmedUnitClass));
+        OnPropertyChanged(nameof(CanEditColourInputs));
+        OnPropertyChanged(nameof(CanCompile));
+        OnPropertyChanged(nameof(CanAccept));
     }
 
     private void EnsureSemanticManualMaskLayer(Ra2VoxelSceneSnapshot snapshot)
@@ -1890,6 +2264,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     {
         _semanticAuthoringRevision++;
         _semanticPersistenceStatus = "语义分划有未保存修改。";
+        ResetUnitClassState(clearBaseColour: false);
+        ClearStylePreview();
         RaiseSemanticPersistenceProperties();
     }
 
@@ -2049,6 +2425,9 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         OnPropertyChanged(nameof(ExportSuggestedFileName));
         OnPropertyChanged(nameof(PlanTitle));
         OnPropertyChanged(nameof(PlanSummary));
+        OnPropertyChanged(nameof(ColourQualityStatusText));
+        OnPropertyChanged(nameof(HasReviewableColourWarnings));
+        RaiseColourInputProperties();
         RaisePreviewProperties();
         RaiseGenerationProperties();
         RaiseSemanticProperties();
@@ -2097,6 +2476,20 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
 
     private static bool IsQualityCandidateMode(Ra2VoxelStylePreviewMode mode) =>
         mode is Ra2VoxelStylePreviewMode.Direct or Ra2VoxelStylePreviewMode.Refined or Ra2VoxelStylePreviewMode.Symmetry;
+
+    private bool CanAdmitColourCandidate(Ra2VoxelAcceptedCandidateKind kind)
+    {
+        var quality = kind switch
+        {
+            Ra2VoxelAcceptedCandidateKind.Styled => _preview?.Materialization?.Ordinary?.Quality,
+            Ra2VoxelAcceptedCandidateKind.ContrastStyled => _preview?.Materialization?.Contrast?.Quality,
+            _ => null
+        };
+        if (kind is not (Ra2VoxelAcceptedCandidateKind.Styled or Ra2VoxelAcceptedCandidateKind.ContrastStyled))
+            return true;
+        return quality?.State == Ra2VoxelColourAdmissionState.ReviewReady ||
+               (quality?.State == Ra2VoxelColourAdmissionState.NeedsReview && _qualityWarningsAccepted);
+    }
 
     private bool TryGetMaterializableCandidate(
         out Ra2VoxelSceneSnapshot? snapshot,
@@ -2185,6 +2578,15 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         Ra2VoxelStyleSourceScope.Directory => "目录",
         Ra2VoxelStyleSourceScope.RequestOverride => "本次要求",
         _ => "未知"
+    };
+
+    private static string UnitClassName(Ra2VoxelUnitClass value) => value switch
+    {
+        Ra2VoxelUnitClass.Ground => "地面载具",
+        Ra2VoxelUnitClass.Air => "空中载具",
+        Ra2VoxelUnitClass.LargeSurface => "大型水面单位",
+        Ra2VoxelUnitClass.Unknown => "未知 / 保守模式",
+        _ => value.ToString()
     };
 
     private static string RoleCategoryName(string value) => value switch

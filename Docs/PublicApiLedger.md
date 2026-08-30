@@ -523,3 +523,13 @@ plugin or persistence API. Promotion to a public façade or serialized workspace
 
 All new caches are discardable local derived data. Their JSON envelopes are not project persistence or public interchange
 formats. Public promotion or cross-version cache compatibility would require a separate ledger and compatibility review.
+
+## 43. ASSET-VOX-4E-3..4E-4 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Expected Next Use | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|---|
+| ASSET-VOX-4E-3..4E-4 | None | Application-internal palette family/materialization/quality and IDE-internal workspace projection | Complete the approved deterministic colour path and exact UI without widening external authority | 4E-5 physical acceptance and later separately contracted output work | Internal / experimental / automated-focused verified | 35/35 new materialization；77/77 affected Application；89/89 affected IDE；workspace UI/ViewModel 25/25 | No public type, 4D sidecar/project serialization, Provider/AssetHost protocol, project write, writer or Shell delta |
+
+The quality JSON is an internal review-package artifact bound to a candidate hash, not a public interchange or persistence
+format. The new AutomationIds are UI-test surface only. Promoting materialization, quality admission, class confirmation or
+base-colour selection to a public façade/persisted project model requires a separate compatibility review.

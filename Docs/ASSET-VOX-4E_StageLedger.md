@@ -1,7 +1,7 @@
 # ASSET-VOX-4E — Stage Result Ledger
 
 日期：2026-08-31
-状态：4E-1..4E-2 Completed / focused automated verified；4E-3..4E-5 NotStarted
+状态：4E-1..4E-4 Completed / automated verified；4E-5 InProgress / blocked by one full-suite WPF isolation failure and physical acceptance
 批准契约：`Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md` Rev.3
 
 ## 4E-1 — Internal contracts, policies and Skill packages
@@ -43,15 +43,46 @@
   requirement shape 和 binding schema；不含 BaseColour/Technique，也不执行 palette materialization。
 - 旧 v1 compiler 入口暂留作 4E-4 接线前兼容路径；v2 对 v1/corrupt envelope 安全 miss，不迁移、不删除。
 
+## 4E-3 — Deterministic base-centred materialization and quality
+
+- 在既有 compiler/colourizer/contrast 路径上增加共享 OKLab family selector；`BodyBase` 始终等于人工 exact palette
+  index，派生 BodyLight/Mid/Dark/Under/Edge 只从 active palette 的 opaque、non-remap entries 确定性选择。
+- `TechniquePolicy × UnitAdaptationPolicy` 决定相对层次和 thin-cell `DualSurfacePolicy`；Top+Under 先显式决出一个
+  primary surface，再应用 edge，避免依赖偶然规则顺序。
+- PaintedSurface 保留 geometry family，不使用晚期 BodyBase mask 压平；direct semantic material 后置，approved
+  remap 最后覆盖。
+- policy-aware contrast 保护 BodyBase、所有 exact role、semantic direct role 与 remap；无法形成合法 family 时
+  Warn/Block，不跨色带静默跳转。
+- 新增无总分的多维 `Blocked / NeedsReview / ReviewReady` 质量报告；`VisualAcceptance` 独立保持 Pending，review
+  package 绑定 candidate hash、指标、警告和分布事实。
+
+## 4E-4 — Approved workspace UI wiring
+
+- 既有 Voxel Style workspace 新增显式“AI 判断单位类型 → 人工确认/纠正 → 唯一 Skill”路径；未确认 class 禁止 style
+  compilation，Provider unavailable/timeout 才开放“未经过 AI 评估”的人工 fallback。
+- 新增 active RA2 palette 的 opaque/non-remap 基准色 selector、真实 swatch/status，以及五个规则/技法 selector；
+  base/technique 改变只在本地使候选失效，不触发新的分类调用。
+- `CompileAsync` 接入 v2 compiler/materializer/review package；质量区域显示状态、指标和警告，NeedsReview 必须对当前
+  generation 显式确认后才允许固化。
+- UI 严格使用批准的 AutomationIds；未修改 Shell，全局布局和现有语义编辑/持久化路径保持不变。
+
+### 4E-4 UnitClass real-provider compatibility fix
+
+- 修复真实判型提案的 tool arguments 被字符串/包装层编码，或精确五字段中的 enum 使用 `Ground/High` 大小写、
+  reason 含换行时被统一误报 malformed 的问题。
+- 只规范化 enum token 大小写、hash 大小写等价性和 reason 空白；未知 enum、额外字段、伪造/重复 FactId、越界
+  内容、stale evidence 仍 fail closed，不增加重试或调用次数。
+- 字段值仍非法时只报告 bounded field 名，不回显 Provider 原文。
+
 ## Stage Result Ledger
 
 | Stage | Goal | Files Touched | Verification | State After Stage | Next Entry Satisfied |
 |---|---|---|---|---|---|
 | 4E-1 | contracts/catalogs/Skills/requirements/binding | Application internal contracts、Skill/Technique content、focused tests、governance docs | 13/13 new contract tests；45/45 affected Application tests；18/18 Skill catalog tests；88/88 affected IDE tests；Debug build 1 existing warning / 0 error | Completed | Yes：4E-2 classifier/cache/router/compiler integration |
 | 4E-2 | classification/cache + exact Skill router + style compiler/cache v2 | IDE classifier/cache/router、existing compiler partial v2、focused IDE tests、governance docs | 26/26 classifier/router/compiler/cache focused；49/49 affected Application；107/107 affected IDE；final Debug build 0 warning / 0 error | Completed | Yes：4E-3 deterministic base-centred materialization/quality |
-| 4E-3 | deterministic materialization + contrast/quality | NotTouched | NotRun | NotStarted | No |
-| 4E-4 | approved UI contract | NotTouched | NotRun | NotStarted | No |
-| 4E-5 | full verification/package/physical acceptance | NotTouched | NotRun | NotStarted | No |
+| 4E-3 | deterministic materialization + contrast/quality | Application family/materializer/quality、existing colourizer/contrast/review package、35 tests | 35/35 new；77/77 affected Application；89/89 affected IDE；Debug build passed | Completed | Yes：4E-4 approved UI contract |
+| 4E-4 | approved UI contract | existing coordinator/ViewModel/workspace XAML/code-behind、UI/ViewModel tests | IDE project XAML build 0 warning/0 error；workspace UI/ViewModel 25/25 | Completed / physical visual Pending | Yes：4E-5 automated verification may run；physical acceptance remains explicit |
+| 4E-5 | full verification/package/physical acceptance | verification and documentation only | Restore/build passed；Application 350/350；AssetHost 50/50；IDE full 2913/2914 with one stable full-suite-only WPF resource failure；failed test alone 1/1 passed | InProgress / mandatory full-suite gate not satisfied | No：clean package and physical model acceptance not claimed |
 
 ## Verification Matrix
 
@@ -67,19 +98,26 @@
 | 4E-2 Affected Application Tests | Passed | VoxelColour/VoxelStyle/VoxelSemantic/VoxelUnitClass 49/49 |
 | 4E-2 Affected IDE Tests | Passed | VoxelStyle/VoxelSemantic/AgentSkillCatalog/UnitClass/ColourSkill 107/107 |
 | 4E-2 Final Debug Build | Passed | `dotnet build .\RA2IniEditor.IDE.sln -c Debug --no-restore`；0 warning / 0 error |
+| 4E-3 New Materialization Tests | Passed | 35/35；含 Technique×UnitClass 20 组、determinism、anchor、dual surface、precedence、contrast protection、sparse/extreme fallback、stale identity、三种质量状态 |
+| 4E-3 Affected Tests | Passed | Application 77/77；IDE 89/89 |
+| 4E-4 XAML / UI Contract | Passed (automated) | IDE project build 0 warning/0 error；workspace ViewModel/UI contract 25/25 |
+| 4E-4 UnitClass compatibility fix | Passed (Release isolated output) | classifier + workspace ViewModel 30/30；Debug 输出被用户当前运行的 IDE 进程锁定，未关闭用户程序；Release build/test exit 0 |
+| 4E-5 Restore / Final Build | Passed | restore exit 0；solution Debug build 0 warning/0 error |
+| Full Application suite | Passed | 350/350 |
+| Full AssetHost suite | Passed | 50/50 |
+| Full IDE suite | Failed | 两次均 2913/2914；仅 `IdeVisualSystemBoundaryTests.VisualTokens_ResolveWithFrozenTypesAndValuesThroughStaResourceLoad` 在全套运行的 WPF DeferredAppResource/Popup dispatcher 路径失败；该测试单独复跑 1/1 Passed；不在本次 diff |
 | Skill Creator helper | Failed (optional environment check) | `quick_validate.py` could not start because both available Python runtimes lack PyYAML；no dependency was installed；authoritative project bundled parser/tests passed |
-| Full Application/IDE/AssetHost suites | NotRun | 4E-1 gate requires focused contracts; full suites belong to 4E-5 |
-| Clean package | NotRun | deferred to 4E-5 |
-| Real DeepSeek / WPF / model visual | NotRun | 4E-1 contains no Provider/UI/materialization integration |
+| Clean package | NotRun | mandatory IDE full-suite gate仍失败，未生成交付包 |
+| Real DeepSeek / WPF / model visual | NotRun / Pending | 未获真实付费调用授权；WPF 截图和用户提供 ground/air/large-surface 样本的物理视觉验收待用户执行 |
 
 ## Boundary audit
 
 - public .NET API：0；全部新类型保持 internal。
 - persistence/schema：0；未修改 4D sidecar。
 - Provider/AssetHost protocol：0；未进行真实模型调用。
-- Shell/XAML/project Save/writer：0。
-- existing colourizer/semantic composer：0；4E-2 只把 existing style compiler 声明为 partial 并新增 v2 入口；v1 当前工作区路径、colourizer、semantic
-  composer 和 XAML 均未接线或改变。
+- Shell/project Save/writer：0；仅修改批准的 Voxel Style workspace XAML/ViewModel/coordinator。
+- existing colourizer/contrast/review package：按 Rev.3 增加 internal overload/quality projection；旧 v1 入口保留。
+- semantic composer/4D persistence：0；materializer 只消费当前 session composition，不改变保存格式。
 - legacy：未恢复。
 
 ## Deferred Governance Queue
@@ -89,6 +127,7 @@
 - 4E-1 zero-change confirmation 已写入 `Docs/PublicApiLedger.md`。
 - 4E-2 zero-change confirmation 已写入 `Docs/PublicApiLedger.md`；既有 Rev.3 exact-route 决策已更新实现证据，
   未新增或改变架构方向。
+- 4E-3..4E-4 zero-change confirmation 已写入 `Docs/PublicApiLedger.md`；Rev.3 决策实现证据已更新。
 
 ### Technical debt
 
@@ -96,7 +135,8 @@
 
 ### Remaining stages
 
-- 4E-2 已提供两个独立、可取消、可观察的 classification/style cache 结果与 exact single-Skill routing；4E-4 接线前
-  它们尚未由现有 ViewModel/UI 调用。
-- 4E-3 才可接入 base-centred palette family、materialization、contrast 和 quality admission；不得提前改 XAML。
-- 4E-4 需截图/人工验证；4E-5 需全量测试、clean package 与真实样本验收。
+- 修复或单独立约处理全套运行时的既有 WPF visual-resource 测试隔离问题；在它通过前不得把 4E-5 automated
+  verification 写成完成。
+- 运行真实 WPF 截图/布局检查和合同第 13 节用户样本验收；没有这些证据时 `VisualAcceptance` 必须保持 Pending。
+- 真实 DeepSeek classification/style 双调用需要用户明确付费授权；当前全部 Provider 验证只使用 fake clients。
+- mandatory gates 全部通过后再生成 IdeOnly clean package；4E 仍不包含 VXL/HVA、项目 Apply/Save 或 GameReady。

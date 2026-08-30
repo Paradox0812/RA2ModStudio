@@ -17,6 +17,7 @@ internal sealed record Ra2VoxelPaletteContrastResult(
 internal static class Ra2VoxelPaletteContrastOptimizer
 {
     internal const string Revision = "palette-contrast-v1";
+    internal const string PolicyAwareRevision = "palette-contrast-policy-aware-v1";
     private const double MinimumUsefulSeparation = 10d;
 
     internal static Ra2VoxelPaletteContrastResult Optimize(
@@ -78,6 +79,96 @@ internal static class Ra2VoxelPaletteContrastOptimizer
             assumptions);
         double after = MinimumBodySeparation(candidate.Roles, palette);
         return new(candidate, new(before, after, changed, ExactSelectionsMatch(originalRoles, candidate.Roles)));
+    }
+
+    internal static Ra2VoxelPaletteContrastResult Optimize(
+        Ra2CompiledVoxelStylePlan source,
+        Ra2VoxelPaletteProfile palette,
+        Ra2VoxelBaseColourSelection baseColour,
+        Ra2VoxelColourTechniquePolicy technique,
+        Ra2VoxelUnitAdaptationPolicy adaptation,
+        Ra2CompiledVoxelStylePlan rawPlan,
+        IEnumerable<string> protectedRoleIds)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(palette);
+        ArgumentNullException.ThrowIfNull(baseColour);
+        ArgumentNullException.ThrowIfNull(technique);
+        ArgumentNullException.ThrowIfNull(adaptation);
+        ArgumentNullException.ThrowIfNull(rawPlan);
+        HashSet<string> protectedIds = (protectedRoleIds ?? throw new ArgumentNullException(nameof(protectedRoleIds)))
+            .ToHashSet(StringComparer.Ordinal);
+        if (!string.Equals(source.PaletteHash, palette.ProfileHash, StringComparison.Ordinal) ||
+            !string.Equals(rawPlan.PaletteHash, palette.ProfileHash, StringComparison.Ordinal))
+            throw new ArgumentException("The style plans do not belong to the active palette.", nameof(palette));
+
+        Ra2VoxelColourFamilyResult family = Ra2VoxelColourFamilySelector.Select(
+            palette, baseColour, technique, adaptation, rawPlan, contrast: true);
+        if (!family.IsSuccess || family.Selection is null)
+            throw new InvalidOperationException(family.Message);
+
+        Ra2CompiledVoxelStyleRole[] originalRoles = source.Roles.ToArray();
+        double before = MinimumBodySeparation(originalRoles, palette);
+        List<Ra2CompiledVoxelStyleRole> roles = new(originalRoles.Length);
+        int changed = 0;
+        foreach (Ra2CompiledVoxelStyleRole role in originalRoles)
+        {
+            if (role.Category == Ra2VoxelStyleRoleCategory.BodyBase ||
+                role.RequestedExactPaletteIndex.HasValue ||
+                protectedIds.Contains(role.Id) ||
+                !TryMap(role, source, out Ra2VoxelBodyColourRole familyRole))
+            {
+                roles.Add(role);
+                continue;
+            }
+            byte selected = family.Selection[familyRole].PaletteIndex;
+            if (selected != role.PaletteIndex) changed++;
+            roles.Add(role with { PaletteIndex = selected, RequestedColour = palette[selected] });
+        }
+        if (changed == 0)
+            return new(source, new(before, before, 0, ExactSelectionsMatch(originalRoles, source.Roles)));
+
+        Ra2CompiledVoxelStylePlan candidate = new(
+            source.Title,
+            source.Summary,
+            source.SourcePackHash,
+            source.PaletteHash,
+            source.CompilerRevision + "+" + PolicyAwareRevision,
+            source.ModelIdentity,
+            source.RemapPolicy,
+            source.InteriorRoleId,
+            roles,
+            source.Rules,
+            source.UnresolvedAssumptions
+                .Append("Policy-aware contrast adjusted only non-exact, non-semantic derived body roles inside the human anchor family.")
+                .Concat(family.Selection.Warnings)
+                .Distinct(StringComparer.Ordinal));
+        double after = MinimumBodySeparation(candidate.Roles, palette);
+        return new(candidate, new(before, after, changed, ExactSelectionsMatch(originalRoles, candidate.Roles)));
+    }
+
+    private static bool TryMap(
+        Ra2CompiledVoxelStyleRole role,
+        Ra2CompiledVoxelStylePlan plan,
+        out Ra2VoxelBodyColourRole familyRole)
+    {
+        familyRole = role.Category switch
+        {
+            Ra2VoxelStyleRoleCategory.BodyLight =>
+                plan.Rules.Any(rule => rule.Region == Ra2VoxelStyleRegionKind.EdgeOrRidge &&
+                                       string.Equals(rule.RoleId, role.Id, StringComparison.Ordinal)) &&
+                plan.Rules.All(rule => rule.Region != Ra2VoxelStyleRegionKind.TopExposed ||
+                                      !string.Equals(rule.RoleId, role.Id, StringComparison.Ordinal))
+                    ? Ra2VoxelBodyColourRole.EdgeOrRidge
+                    : Ra2VoxelBodyColourRole.BodyLight,
+            Ra2VoxelStyleRoleCategory.BodyMid => Ra2VoxelBodyColourRole.BodyMid,
+            Ra2VoxelStyleRoleCategory.BodyDark => Ra2VoxelBodyColourRole.BodyDark,
+            Ra2VoxelStyleRoleCategory.Underside => Ra2VoxelBodyColourRole.Underside,
+            _ => Ra2VoxelBodyColourRole.BodyBase
+        };
+        return role.Category is Ra2VoxelStyleRoleCategory.BodyLight or
+            Ra2VoxelStyleRoleCategory.BodyMid or Ra2VoxelStyleRoleCategory.BodyDark or
+            Ra2VoxelStyleRoleCategory.Underside;
     }
 
     private static byte SelectPaletteIndex(

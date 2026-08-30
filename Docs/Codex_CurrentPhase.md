@@ -39,16 +39,18 @@ Upstream:   origin/codex/content-2d-baseline
 - 不保存几何、色板、RGB、相机、undo/redo 或临时笔划。
 - 不支持自动保存/发现、跨 canonical hash 迁移、强制载入或部分恢复。
 
-`ASSET-VOX-4E Mask-Driven Colour Materialization` Rev.3 已批准，`4E-1..4E-2` contracts/Skills 与
-classification/cache/exact router/style compiler cache v2 已实现并通过聚焦自动化验证。Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
+`ASSET-VOX-4E Mask-Driven Colour Materialization` Rev.3 已批准，`4E-1..4E-4` 已实现并通过聚焦自动化验证。
+Rev.3 要求 DeepSeek 先根据有界几何/语义证据提出
 Ground/Air/LargeSurface/Unknown，人工确认或纠正后，Host 只装载对应的一个专用 colouring Skill；模型提案不能
 直接取得路由权。人工仍须从 active palette 选择 opaque/non-remap 基准 index，主体明暗家族以该 index 为不可
 移动锚点，五个技法只决定层次。合同分离 classification/style 两阶段模型调用与 cache，并保留
 BodyGeometryFamily、薄面 DualSurfacePolicy、policy-aware contrast 和多维质量/人工视觉门。
 4E-1 已建立 evidence/proposal/confirmation、BaseColour、五个 technique、四个 class-derived adaptation、semantic
 requirements/binding 和四个专用 Skill；4E-2 已增加独立 classifier cache、仅接受 confirmation 的 Host exact
-single-Skill router、existing compiler 的 semantic binding/cache v2 入口和 normalization identity。现有 ViewModel/UI
-尚未接线；实际 materialization、quality、WPF/真实模型和游戏视觉仍为 NotStarted/NotRun。
+single-Skill router、existing compiler 的 semantic binding/cache v2 入口和 normalization identity；4E-3 已接入
+base-centred OKLab palette family、dual-surface/semantic/remap precedence、protected contrast 与多维质量门；4E-4 已在
+现有 workspace 接入显式判型/人工确认、基准色、技法和质量警告 gate。真实 DeepSeek、截图/DPI、真实模型和游戏
+视觉仍为 NotRun/Pending；4E-5 因一个 full-suite-only WPF resource isolation failure 未完成。
 
 `ASSET-VOX-4E-R1 Ground/Air Colour Technique Research` 已完成：只读分析用户提供的 8 个 ZIP，按用户说明并
 经 VXLSE III 源码复核采用 `RA2/unittem.pal`，结合公开教程和许可证明确的公开 VOX 模型提炼地面、空中及
@@ -121,8 +123,15 @@ Real DeepSeek/WPF/model: NotRun
 ```
 
 4E-2 最新证据（同一 Stage Ledger）：classifier/router/compiler/cache focused 26/26，affected Application 49/49，
-affected IDE 107/107，final Debug solution build 0 warning / 0 error。测试只使用 fake clients；真实 DeepSeek、WPF、materialization、
-full suites 和 package 均 NotRun。
+affected IDE 107/107。4E-3：new materialization 35/35、affected Application 77/77、affected IDE 89/89。4E-4：
+workspace UI/ViewModel 25/25，XAML/Debug build 0 warning/0 error。4E-5：Application 350/350、AssetHost 50/50；IDE
+full suite 两次均 2913/2914，唯一失败的 WPF visual-resource test 单独 1/1 通过。测试只使用 fake clients；真实
+DeepSeek、WPF screenshot/model visual 和 clean package 均未完成。
+
+4E-4 判型兼容修复：真实 Provider 的精确五字段提案允许 enum token 大小写差异与多行 reason 的等价空白归一化；
+未知 enum、额外字段、伪造 FactId、越界或 stale evidence 仍 fail closed；安全解包字符串化/arguments 包装后仍执行
+精确五字段验证。classifier + workspace ViewModel Release 隔离输出测试 30/30 通过；用户正在运行的 Debug IDE 锁定
+对应 DLL，因此需重启/重新构建后才能在当前程序中生效。
 
 ## 5. 当前关键边界
 
@@ -143,11 +152,13 @@ full suites 和 package 均 NotRun。
 
 ## 7. 下一安全入口
 
-`ASSET-VOX-4E-2` 已完成并验证。下一安全阶段是 `4E-3`：
+`ASSET-VOX-4E-1..4E-4` 已完成实现与聚焦自动化验证。下一安全入口是收口 `4E-5`：
 
-1. 只接入人工 BaseColour 为不可移动锚点的 body family selector 和本地 deterministic normalization/materialization。
-2. 在同一 colourizer/contrast path 上实现 policy-aware correctness/quality admission，不引入第二套 painter。
-3. 本阶段不得修改 XAML/ViewModel；classification/confirmation/base/technique UI 仍属于 4E-4。
+1. 先为 full-suite-only 的 `IdeVisualSystemBoundaryTests` WPF DeferredAppResource/Popup dispatcher 隔离失败单独立约
+   诊断或修复；不得把 focused 1/1 通过冒充 full-suite pass。
+2. 通过完整 IDE suite 后运行 IdeOnly clean package。
+3. 请求并记录真实 WPF 截图、100%/125% DPI 和 ground/air/large-surface 样本人工验收；真实 DeepSeek 调用需另行
+   明确付费授权。
 
 4D 的错模型拒绝、未保存确认和 100%/125% DPI 指针体验仍应补测，但不得把这些未确认项写成通过；
 4E 仍不得宣称 VXL/HVA 或 GameReady。

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring;
 using RA2IniEditor.IDE.AI;
 using RA2IniEditor.IDE.AssetAuthoring;
@@ -66,6 +67,57 @@ public sealed class Ra2VoxelUnitClassClassifierTests : IDisposable
         Assert.Equal(Ra2VoxelUnitClassAssessmentFailureKind.MalformedProposal, result.FailureKind);
         Assert.Equal(1, result.ProviderCallCount);
         Assert.True(!Directory.Exists(_root) || Directory.GetFiles(_root, "*.json", SearchOption.AllDirectories).Length == 0);
+    }
+
+    [Fact]
+    public async Task Classifier_NormalizesHarmlessEnumCaseHashCaseAndReasonWhitespace()
+    {
+        Ra2VoxelUnitClassEvidence evidence = CreateEvidence('A');
+        FakeClient client = new(ToolResponse(
+            $$"""
+            {"proposed_class":"Ground","confidence_band":"High","evidence_fact_ids":["geometry.dimensions","semantic.material-roles"],"reason":"Geometry evidence agrees.\nSemantic evidence agrees.","evidence_hash":"{{evidence.EvidenceHash.ToLowerInvariant()}}"}
+            """));
+
+        Ra2VoxelUnitClassAssessmentResult result = await CreateClassifier(client)
+            .AssessAsync(evidence, "deepseek-chat", CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.Equal(Ra2VoxelUnitClass.Ground, result.Proposal!.ProposedClass);
+        Assert.Equal(Ra2VoxelUnitClassConfidenceBand.High, result.Proposal.ConfidenceBand);
+        Assert.Equal("Geometry evidence agrees. Semantic evidence agrees.", result.Proposal.Reason);
+    }
+
+    [Fact]
+    public async Task Classifier_UnwrapsDoubleEncodedToolArgumentsBeforeStrictShapeValidation()
+    {
+        Ra2VoxelUnitClassEvidence evidence = CreateEvidence('A');
+        string proposal = $$"""
+            {"proposed_class":"ground","confidence_band":"high","evidence_fact_ids":["geometry.dimensions"],"reason":"Bounded evidence supports Ground.","evidence_hash":"{{evidence.EvidenceHash}}"}
+            """;
+        FakeClient client = new(ToolResponse(JsonSerializer.Serialize(proposal)));
+
+        Ra2VoxelUnitClassAssessmentResult result = await CreateClassifier(client)
+            .AssessAsync(evidence, "deepseek-chat", CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.Equal(Ra2VoxelUnitClass.Ground, result.Proposal!.ProposedClass);
+    }
+
+    [Fact]
+    public async Task Classifier_InvalidEnumReportsTheBoundedFieldWithoutEchoingModelContent()
+    {
+        Ra2VoxelUnitClassEvidence evidence = CreateEvidence('A');
+        FakeClient client = new(ToolResponse(
+            $$"""
+            {"proposed_class":"hovercraft_or_something_else","confidence_band":"high","evidence_fact_ids":["geometry.dimensions"],"reason":"Invalid class fixture.","evidence_hash":"{{evidence.EvidenceHash}}"}
+            """));
+
+        Ra2VoxelUnitClassAssessmentResult result = await CreateClassifier(client)
+            .AssessAsync(evidence, "deepseek-chat", CancellationToken.None);
+
+        Assert.Equal(Ra2VoxelUnitClassAssessmentFailureKind.MalformedProposal, result.FailureKind);
+        Assert.Contains("proposed_class", result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hovercraft_or_something_else", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]

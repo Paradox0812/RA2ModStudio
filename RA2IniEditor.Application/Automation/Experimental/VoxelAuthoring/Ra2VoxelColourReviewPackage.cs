@@ -67,7 +67,8 @@ internal static class Ra2VoxelColourReviewPackageBuilder
         Ra2VoxelSceneSnapshot source,
         Ra2CompiledVoxelStylePlan plan,
         Ra2VoxelColourizationResult colourization,
-        IEnumerable<Ra2VoxelExplicitMask>? explicitMasks = null)
+        IEnumerable<Ra2VoxelExplicitMask>? explicitMasks = null,
+        Ra2VoxelColourQualityReport? quality = null)
     {
         ArgumentNullException.ThrowIfNull(sourceFacts);
         ArgumentNullException.ThrowIfNull(source);
@@ -93,6 +94,12 @@ internal static class Ra2VoxelColourReviewPackageBuilder
             {
                 return Failure(Ra2VoxelColourReviewPackageFailureKind.HashMismatch,
                     "Review inputs do not belong to one colourization transaction.");
+            }
+            if (quality is not null &&
+                !string.Equals(quality.CandidateHash, result.CanonicalHash, StringComparison.Ordinal))
+            {
+                return Failure(Ra2VoxelColourReviewPackageFailureKind.HashMismatch,
+                    "The colour quality report belongs to another candidate.");
             }
             if (!facts.GeometryAndOccupancyUnchanged || geometry.CellCount != source.OccupancyCount ||
                 !string.Equals(geometry.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal))
@@ -126,7 +133,7 @@ internal static class Ra2VoxelColourReviewPackageBuilder
             [
                 JsonArtifact("style-source-pack.json", BuildSourcePackJson(sources, plan)),
                 JsonArtifact("compiled-style-plan.json", BuildPlanJson(plan)),
-                JsonArtifact("colour-review-report.json", BuildReportJson(source, result, plan, facts, masks)),
+                JsonArtifact("colour-review-report.json", BuildReportJson(source, result, plan, facts, masks, quality)),
                 new("palette-swatch.png", "image/png", BuildPaletteSwatch(source.Palette, plan)),
                 new("region-mask.png", "image/png", BuildRegionMask(source, geometry)),
                 new("body-coloured.vox", "application/octet-stream", Ra2MagicaVoxelCodec.Write(result)),
@@ -206,7 +213,8 @@ internal static class Ra2VoxelColourReviewPackageBuilder
         Ra2VoxelSceneSnapshot result,
         Ra2CompiledVoxelStylePlan plan,
         Ra2VoxelColourizationFacts facts,
-        Ra2VoxelExplicitMask[] masks) =>
+        Ra2VoxelExplicitMask[] masks,
+        Ra2VoxelColourQualityReport? quality) =>
         JsonSerializer.SerializeToUtf8Bytes(new
         {
             schema_version = 1,
@@ -232,6 +240,16 @@ internal static class Ra2VoxelColourReviewPackageBuilder
                 mask.CellCount,
                 selected_count = mask.Selected.Count(value => value != 0)
             }),
+            quality = quality is null ? null : new
+            {
+                report_hash = quality.ReportHash,
+                bundle_hash = quality.BundleHash,
+                state = quality.State.ToString(),
+                visual_acceptance = quality.VisualAcceptance.ToString(),
+                warnings = quality.Warnings,
+                metrics = quality.Metrics,
+                distribution = quality.Distribution
+            },
             claims = new
             {
                 project_adopted = false,

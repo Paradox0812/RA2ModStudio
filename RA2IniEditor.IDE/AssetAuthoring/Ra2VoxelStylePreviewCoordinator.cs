@@ -15,6 +15,7 @@ using Ra2Rgb24 = Ra2Application::RA2IniEditor.Application.Automation.Experimenta
 using Ra2Rgba32 = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2Rgba32;
 using Ra2VoxelAssemblyPartRole = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelAssemblyPartRole;
 using Ra2VoxelColourReviewPackageBuilder = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourReviewPackageBuilder;
+using Ra2VoxelColourReviewPackageResult = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourReviewPackageResult;
 using Ra2VoxelColourReviewFlags = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourReviewFlags;
 using Ra2VoxelColourizationFacts = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourizationFacts;
 using Ra2VoxelColourizer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourizer;
@@ -32,6 +33,18 @@ using Ra2VoxelRefinementProfile = Ra2Application::RA2IniEditor.Application.Autom
 using Ra2VoxelRefinementReviewPackage = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelRefinementReviewPackage;
 using Ra2VoxelSceneSnapshot = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot;
 using Ra2VoxelExplicitMask = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelExplicitMask;
+using Ra2VoxelBaseColourSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBaseColourSelection;
+using Ra2VoxelColourMaterializationContext = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourMaterializationContext;
+using Ra2VoxelColourMaterializationResult = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourMaterializationResult;
+using Ra2VoxelColourTechniquePolicy = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniquePolicy;
+using Ra2VoxelConfirmedUnitClass = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelConfirmedUnitClass;
+using Ra2VoxelSemanticColourMaterializer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticColourMaterializer;
+using Ra2VoxelSemanticColourRequirements = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticColourRequirements;
+using Ra2VoxelSemanticColourRequirementsProjector = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticColourRequirementsProjector;
+using Ra2VoxelSkillIdentity = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSkillIdentity;
+using Ra2VoxelUnitClassEvidence = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassEvidence;
+using Ra2VoxelUnitClassEvidenceBuilder = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassEvidenceBuilder;
+using Ra2VoxelUnitClassProposal = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassProposal;
 using Ra2VoxelSemanticEvidenceBuilder = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticEvidenceBuilder;
 using Ra2VoxelSemanticEvidencePackage = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticEvidencePackage;
 using Ra2VoxelSemanticEffectiveAssignment = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticEffectiveAssignment;
@@ -107,7 +120,9 @@ internal sealed record Ra2VoxelStylePreviewResult(
     Ra2CompiledVoxelStylePlan? ContrastPlan,
     Ra2VoxelPaletteContrastFacts? ContrastFacts,
     Ra2VoxelSceneSnapshot? ContrastResultSnapshot,
-    byte[]? ContrastSliceStackPng)
+    byte[]? ContrastSliceStackPng,
+    Ra2VoxelStyleCompilerV2Result? CompilerV2Result = null,
+    Ra2VoxelColourMaterializationResult? Materialization = null)
 {
     internal bool IsSuccess => FailureKind == Ra2VoxelStylePreviewFailureKind.None &&
         Plan is not null && Facts is not null && ResultSnapshot is not null && GeometryMask is not null && Artifacts.Count > 0;
@@ -118,6 +133,16 @@ internal sealed record Ra2VoxelStylePreviewResult(
             string.Equals(candidate.FileName, fileName, StringComparison.Ordinal));
         return artifact?.Content.ToArray();
     }
+}
+
+internal sealed record Ra2VoxelUnitClassPreviewResult(
+    Ra2VoxelUnitClassAssessmentFailureKind FailureKind,
+    string Message,
+    Ra2VoxelUnitClassEvidence? Evidence,
+    Ra2VoxelUnitClassAssessmentResult? Assessment)
+{
+    internal bool IsSuccess => FailureKind == Ra2VoxelUnitClassAssessmentFailureKind.None &&
+                               Evidence is not null && Assessment?.IsSuccess == true;
 }
 
 internal enum Ra2VoxelQualitySourceProvenance
@@ -209,13 +234,17 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
     private readonly string _bundledStylePath;
     private readonly string _compilerInstructionsPath;
     private readonly Func<DeepSeekRa2AiModel, bool> _configurationReady;
+    private readonly Ra2VoxelUnitClassProposalCache _unitClassCache;
+    private readonly Ra2AgentSkillCatalog _skillCatalog;
 
     internal Ra2VoxelStylePreviewCoordinator(
         Func<DeepSeekRa2AiModel, IRa2AiClient> clientFactory,
         Ra2VoxelStylePlanCache cache,
         string bundledStylePath,
         string compilerInstructionsPath,
-        Func<DeepSeekRa2AiModel, bool>? configurationReady = null)
+        Func<DeepSeekRa2AiModel, bool>? configurationReady = null,
+        Ra2VoxelUnitClassProposalCache? unitClassCache = null,
+        Ra2AgentSkillCatalog? skillCatalog = null)
     {
         _clientFactory = clientFactory ?? throw new ArgumentNullException(nameof(clientFactory));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -223,6 +252,8 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         _compilerInstructionsPath = RequireFullyQualifiedPath(compilerInstructionsPath, nameof(compilerInstructionsPath));
         _configurationReady = configurationReady ?? (model =>
             DeepSeekRa2AiClientFactory.CreateConfigurationSnapshot(model).State == DeepSeekRa2AiConfigurationState.Ready);
+        _unitClassCache = unitClassCache ?? new Ra2VoxelUnitClassProposalCache(Ra2VoxelUnitClassProposalCache.DefaultRoot);
+        _skillCatalog = skillCatalog ?? Ra2AgentSkillCatalog.LoadBundled();
     }
 
     internal static Ra2VoxelStylePreviewCoordinator CreateDefault() => new(
@@ -230,6 +261,49 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         new Ra2VoxelStylePlanCache(Ra2VoxelStylePlanCache.DefaultRoot),
         Path.Combine(AppContext.BaseDirectory, "VoxelStyles", "default", Ra2VoxelStyleSourceResolver.FileName),
         Path.Combine(AppContext.BaseDirectory, "VoxelStyles", "compiler", "COMPILER.md"));
+
+    internal async Task<Ra2VoxelUnitClassPreviewResult> AnalyzeUnitClassAsync(
+        Ra2VoxelStyleSourceLoadResult source,
+        Ra2VoxelSemanticMaskComposition composition,
+        DeepSeekRa2AiModel model,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(composition);
+        if (!source.IsSuccess || source.Snapshot is null ||
+            !string.Equals(source.Snapshot.CanonicalHash, composition.SourceSnapshotHash, StringComparison.Ordinal) ||
+            source.Snapshot.OccupancyCount != composition.CellCount)
+        {
+            return new(Ra2VoxelUnitClassAssessmentFailureKind.MalformedProposal,
+                "当前几何与语义证据不一致，无法安全判型。", null, null);
+        }
+        try
+        {
+            Ra2VoxelUnitClassEvidence evidence = Ra2VoxelUnitClassEvidenceBuilder.Build(source.Snapshot, composition);
+            string modelIdentity = DeepSeekRa2AiModelCatalog.GetApiModelId(model);
+            Ra2VoxelUnitClassClassifier classifier = new(
+                _clientFactory(model),
+                _unitClassCache,
+                _skillCatalog);
+            Ra2VoxelUnitClassAssessmentResult assessment = await classifier.AssessAsync(
+                evidence, modelIdentity, cancellationToken).ConfigureAwait(false);
+            return new(assessment.FailureKind, assessment.Message, evidence, assessment);
+        }
+        catch (OperationCanceledException)
+        {
+            return new(Ra2VoxelUnitClassAssessmentFailureKind.Cancelled, "单位类型判定已取消。", null, null);
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return new(Ra2VoxelUnitClassAssessmentFailureKind.MalformedProposal,
+                "单位类型证据无法安全构建。", null, null);
+        }
+    }
+
+    internal Ra2VoxelColourSkillRouteResult ResolveColourSkill(
+        Ra2VoxelUnitClassEvidence evidence,
+        Ra2VoxelConfirmedUnitClass confirmation) =>
+        Ra2VoxelColourSkillRouter.Resolve(evidence, confirmation, _skillCatalog);
 
     internal Ra2VoxelStyleSourceLoadResult LoadSource(
         string? projectRoot,
@@ -470,6 +544,156 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
             DecoderFallbackException or ArgumentException or InvalidOperationException or NotSupportedException)
         {
             return PreviewFailure(Ra2VoxelStylePreviewFailureKind.AnalysisFailed, "风格预览事务未能安全完成。");
+        }
+    }
+
+    internal async Task<Ra2VoxelStylePreviewResult> CompilePreviewV2Async(
+        Ra2VoxelStyleSourceLoadResult source,
+        string projectRoot,
+        string? requestOverride,
+        DeepSeekRa2AiModel model,
+        Ra2VoxelSemanticMaskComposition composition,
+        Ra2VoxelUnitClassEvidence evidence,
+        Ra2VoxelUnitClassProposal? proposal,
+        Ra2VoxelConfirmedUnitClass confirmation,
+        Ra2VoxelBaseColourSelection baseColour,
+        Ra2VoxelColourTechniquePolicy technique,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(evidence);
+        ArgumentNullException.ThrowIfNull(confirmation);
+        ArgumentNullException.ThrowIfNull(baseColour);
+        ArgumentNullException.ThrowIfNull(technique);
+        if (!source.IsSuccess || source.Snapshot is null)
+            return PreviewFailure(Ra2VoxelStylePreviewFailureKind.InvalidSource, "请先载入一个有效的体素模型。");
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!string.Equals(source.Snapshot.CanonicalHash, composition.SourceSnapshotHash, StringComparison.Ordinal) ||
+                source.Snapshot.OccupancyCount != composition.CellCount ||
+                !string.Equals(evidence.EvidenceHash, confirmation.EvidenceHash, StringComparison.Ordinal))
+            {
+                return PreviewFailure(Ra2VoxelStylePreviewFailureKind.InvalidSource,
+                    "单位判型或语义证据已过期，请重新判型并确认。");
+            }
+            Ra2VoxelStyleSourceResolutionResult resolution = ResolveSourcePack(source, projectRoot, requestOverride);
+            if (!resolution.IsSuccess || resolution.SourcePack is null)
+                return PreviewFailure(Ra2VoxelStylePreviewFailureKind.StyleSourceFailure, LocalizeSourceFailure(resolution));
+
+            Ra2VoxelSemanticColourRequirements requirements =
+                Ra2VoxelSemanticColourRequirementsProjector.Project(composition);
+            string instructions = ReadBoundedUtf8(_compilerInstructionsPath);
+            string modelIdentity = DeepSeekRa2AiModelCatalog.GetApiModelId(model);
+            Ra2VoxelStyleCompiler compiler = new(
+                _clientFactory(model),
+                _cache,
+                instructions,
+                _skillCatalog);
+            Ra2VoxelStyleCompilerV2Result compilation = await compiler.CompileV2Async(
+                resolution.SourcePack,
+                source.Snapshot.Palette,
+                new Ra2VoxelStyleCompilationV2Context(
+                    source.Snapshot.Part.Role.ToString(),
+                    evidence.GeometryFactsHash,
+                    modelIdentity,
+                    evidence,
+                    confirmation,
+                    requirements),
+                cancellationToken).ConfigureAwait(false);
+            if (!compilation.IsSuccess || compilation.Plan is null || compilation.BindingPlan is null ||
+                compilation.SkillRoute is null)
+            {
+                Ra2VoxelStylePreviewFailureKind failure = compilation.FailureKind == Ra2VoxelStyleCompilerV2FailureKind.Cancelled
+                    ? Ra2VoxelStylePreviewFailureKind.Cancelled
+                    : Ra2VoxelStylePreviewFailureKind.CompilerFailure;
+                return new(failure,
+                    string.IsNullOrWhiteSpace(compilation.Message) ? "结构化上色计划编译失败。" : compilation.Message,
+                    null, resolution.SourcePack, null, null, null, null, [], null, null, null, null,
+                    compilation, null);
+            }
+
+            Ra2VoxelColourSkillRoute route = compilation.SkillRoute;
+            Ra2VoxelColourMaterializationResult materialization = Ra2VoxelSemanticColourMaterializer.Materialize(
+                new Ra2VoxelColourMaterializationContext(
+                    source.Snapshot,
+                    compilation.Plan,
+                    composition,
+                    requirements,
+                    compilation.BindingPlan,
+                    evidence,
+                    confirmation,
+                    new Ra2VoxelSkillIdentity(route.ClassifierSkill.Name, route.ClassifierSkill.Version, route.ClassifierSkill.ContentHash),
+                    new Ra2VoxelSkillIdentity(route.ColourSkill.Name, route.ColourSkill.Version, route.ColourSkill.ContentHash),
+                    baseColour,
+                    technique,
+                    route.Adaptation,
+                    Proposal: proposal),
+                cancellationToken);
+            if (!materialization.IsSuccess || materialization.Ordinary is null ||
+                materialization.SemanticIntegration is null)
+            {
+                return new(Ra2VoxelStylePreviewFailureKind.ColourizationFailure,
+                    string.IsNullOrWhiteSpace(materialization.Message) ? "本地确定性上色未通过质量硬门。" : materialization.Message,
+                    null, resolution.SourcePack, null, null, null, null, [], null, null, null, null,
+                    compilation, materialization);
+            }
+
+            Ra2VoxelStyleSourceFact[] sourceFacts = resolution.SourcePack.Sources
+                .Select(item => new Ra2VoxelStyleSourceFact(item.ScopeId, item.ContentHash, item.Text.Length))
+                .ToArray();
+            Ra2VoxelColourReviewPackageResult review = Ra2VoxelColourReviewPackageBuilder.Build(
+                sourceFacts,
+                source.Snapshot,
+                materialization.Ordinary.Plan,
+                materialization.Ordinary.Colourization,
+                materialization.SemanticIntegration.Masks,
+                materialization.Ordinary.Quality);
+            if (!review.IsSuccess)
+            {
+                return new(Ra2VoxelStylePreviewFailureKind.ReviewPackageFailure,
+                    string.IsNullOrWhiteSpace(review.Message) ? "无法生成体素审阅包。" : review.Message,
+                    null, resolution.SourcePack, null, null, null, null, [], null, null, null, null,
+                    compilation, materialization);
+            }
+            string[] required = ["palette-swatch.png", "region-mask.png", "body-coloured-slicestack.png"];
+            if (required.Any(name => review.Artifacts.All(item => !string.Equals(item.FileName, name, StringComparison.Ordinal))))
+            {
+                return new(Ra2VoxelStylePreviewFailureKind.MissingReviewArtifact,
+                    "体素审阅包缺少必要的可视化产物。", null, resolution.SourcePack, null, null, null, null, [],
+                    null, null, null, null, compilation, materialization);
+            }
+
+            byte[]? contrastPreview = materialization.Contrast?.Colourization.Snapshot is { } contrastSnapshot
+                ? Ra2VoxelSliceStackCodec.ExportPng(contrastSnapshot, Ra2VxlseSliceDirection.Downward)
+                : null;
+            return new(
+                Ra2VoxelStylePreviewFailureKind.None,
+                string.Empty,
+                null,
+                resolution.SourcePack,
+                materialization.Ordinary.Plan,
+                materialization.Ordinary.Colourization.Facts,
+                materialization.Ordinary.Colourization.Snapshot,
+                materialization.Ordinary.Colourization.GeometryMask,
+                review.Artifacts,
+                materialization.Contrast?.Plan,
+                materialization.Contrast?.ContrastFacts,
+                materialization.Contrast?.Colourization.Snapshot,
+                contrastPreview,
+                compilation,
+                materialization);
+        }
+        catch (OperationCanceledException)
+        {
+            return PreviewFailure(Ra2VoxelStylePreviewFailureKind.Cancelled, "风格编译已取消。");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
+            DecoderFallbackException or ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            return PreviewFailure(Ra2VoxelStylePreviewFailureKind.AnalysisFailed, "4E 上色预览事务未能安全完成。");
         }
     }
 

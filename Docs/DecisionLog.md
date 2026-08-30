@@ -1805,7 +1805,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## 2026-08-30 — DeepSeek proposes unit class before one class-specific colouring Skill is routed
 
-- Status: Accepted 2026-08-31 / 4E-1..4E-2 implemented and focused-verified
+- Status: Accepted 2026-08-31 / 4E-1..4E-4 implemented and automated-focused verified / 4E-5 incomplete
 - Task: ASSET-VOX-4E FinalContract Rev.3
 - Context:
   - Ground, air and large-surface units need materially different shading and readability techniques, while the model
@@ -1839,6 +1839,11 @@ CurrentPhase 和对应 Stage Ledger 负责。
     style cache v2 on the existing compiler. Proposal cannot route by API shape; only confirmation is accepted.
   - The v2 raw plan may be reused when evidence changes but confirmed class/Skill/requirement shape stays equal; the local
     normalization identity still changes with evidence/confirmation and carries adaptation identity for 4E-3.
+  - 4E-3 implements the shared base-centred OKLab family selector, adaptation-owned dual-surface precedence, semantic/remap
+    precedence, protected contrast and multidimensional quality states on the existing compiler/colourizer path.
+  - 4E-4 exposes explicit classify/confirm, exact Skill, active-palette base colour, technique and quality-warning gates in
+    the existing workspace. It does not add persistence, project write, Provider protocol or Shell authority.
 - Follow-up:
-  - Continue only with 4E-3 deterministic base-centred materialization, contrast and quality admission; XAML remains
-    deferred to 4E-4.
+  - 4E-5 remains incomplete until the full IDE suite passes, a clean package is produced, and WPF/real sample physical
+    acceptance is recorded. Current full-suite evidence is 2913/2914 with one out-of-diff WPF deferred-resource isolation
+    failure; that test passes 1/1 alone. Real DeepSeek still requires explicit paid-call authorization.

@@ -291,6 +291,92 @@ internal sealed record Ra2VoxelSemanticStyleIntegrationResult(
 internal static class Ra2VoxelSemanticStyleIntegrator
 {
     internal static Ra2VoxelSemanticStyleIntegrationResult Integrate(
+        Ra2CompiledVoxelStylePlan normalizedPlan,
+        Ra2VoxelSemanticMaskComposition composition,
+        Ra2VoxelSemanticColourRequirements requirements,
+        Ra2VoxelSemanticColourBindingPlan bindingPlan,
+        string rawCompiledPlanHash)
+    {
+        ArgumentNullException.ThrowIfNull(normalizedPlan);
+        ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(requirements);
+        ArgumentNullException.ThrowIfNull(bindingPlan);
+        if (!string.Equals(composition.SourceSnapshotHash, requirements.SourceSnapshotHash, StringComparison.Ordinal) ||
+            !string.Equals(composition.CompositionHash, requirements.CompositionHash, StringComparison.Ordinal) ||
+            composition.CellCount != requirements.CellCount ||
+            !string.Equals(bindingPlan.RequirementShapeHash, requirements.RequirementShapeHash, StringComparison.Ordinal) ||
+            !string.Equals(bindingPlan.CompiledPlanHash, rawCompiledPlanHash, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Semantic colour integration identities do not match.");
+        }
+
+        Dictionary<string, Ra2CompiledVoxelStyleRole> roles = normalizedPlan.Roles
+            .ToDictionary(role => role.Id, StringComparer.Ordinal);
+        List<Ra2CompiledVoxelStyleRule> rules = normalizedPlan.Rules
+            .Where(rule => rule.Region != Ra2VoxelStyleRegionKind.ExplicitMask)
+            .ToList();
+        List<Ra2VoxelExplicitMask> masks = [];
+        List<string> unresolved = [];
+        foreach (Ra2VoxelSemanticColourBinding binding in bindingPlan.Bindings
+                     .Where(value => value.Requirement != Ra2VoxelSemanticColourRequirementKind.PaintedSurface &&
+                                     value.Requirement != Ra2VoxelSemanticColourRequirementKind.ApprovedRemap)
+                     .OrderBy(value => value.Requirement))
+        {
+            if (!roles.TryGetValue(binding.RoleId, out Ra2CompiledVoxelStyleRole? role))
+                throw new ArgumentException("A semantic binding role is missing from the normalized style plan.");
+            byte[] selected = new byte[composition.CellCount];
+            for (int index = 0; index < composition.CellCount; index++)
+            {
+                if (Matches(binding.Requirement, composition[index].MaterialRole))
+                    selected[index] = 1;
+            }
+            string maskId = $"semantic.binding.{Format(binding.Requirement)}";
+            masks.Add(new(maskId, composition.SourceSnapshotHash, selected));
+            rules.Add(new(
+                Ra2VoxelStyleRegionKind.ExplicitMask,
+                role.Id,
+                Ra2VoxelStyleEvidenceKind.ExplicitUserMask,
+                maskId,
+                IsPaintable: true,
+                role.SourceScopeIds));
+        }
+
+        Ra2VoxelSemanticColourBinding? remapBinding = bindingPlan.Bindings.SingleOrDefault(value =>
+            value.Requirement == Ra2VoxelSemanticColourRequirementKind.ApprovedRemap);
+        if (remapBinding is not null)
+        {
+            if (!roles.TryGetValue(remapBinding.RoleId, out Ra2CompiledVoxelStyleRole? remapRole))
+                throw new ArgumentException("The approved remap binding role is missing from the normalized style plan.");
+            byte[] selected = composition.Assignments
+                .Select(value => value.RemapIntent == Ra2VoxelSemanticRemapIntent.ExplicitlyApproved ? (byte)1 : (byte)0)
+                .ToArray();
+            const string maskId = "semantic.binding.approved-remap";
+            masks.Add(new(maskId, composition.SourceSnapshotHash, selected));
+            rules.Add(new(
+                Ra2VoxelStyleRegionKind.ExplicitMask,
+                remapRole.Id,
+                Ra2VoxelStyleEvidenceKind.ExplicitUserMask,
+                maskId,
+                IsPaintable: true,
+                remapRole.SourceScopeIds));
+        }
+
+        Ra2CompiledVoxelStylePlan plan = new(
+            normalizedPlan.Title,
+            normalizedPlan.Summary,
+            normalizedPlan.SourcePackHash,
+            normalizedPlan.PaletteHash,
+            normalizedPlan.CompilerRevision + "+semantic-binding/1",
+            normalizedPlan.ModelIdentity,
+            remapBinding is null ? Ra2VoxelStyleRemapPolicy.None : Ra2VoxelStyleRemapPolicy.ExplicitMask,
+            normalizedPlan.InteriorRoleId,
+            normalizedPlan.Roles,
+            rules,
+            normalizedPlan.UnresolvedAssumptions.Concat(unresolved));
+        return new(plan, Array.AsReadOnly(masks.ToArray()), Array.AsReadOnly(unresolved.ToArray()));
+    }
+
+    internal static Ra2VoxelSemanticStyleIntegrationResult Integrate(
         Ra2CompiledVoxelStylePlan basePlan,
         Ra2VoxelSemanticEvidencePackage evidence,
         IEnumerable<Ra2VoxelSemanticEffectiveAssignment> assignments)
@@ -429,4 +515,20 @@ internal static class Ra2VoxelSemanticStyleIntegrator
         Ra2VoxelSemanticMaterialRole.Accent => Ra2VoxelStyleRoleCategory.Accent,
         _ => throw new ArgumentOutOfRangeException(nameof(value))
     };
+
+    private static bool Matches(
+        Ra2VoxelSemanticColourRequirementKind requirement,
+        Ra2VoxelSemanticMaterialRole material) => requirement switch
+    {
+        Ra2VoxelSemanticColourRequirementKind.Glass => material == Ra2VoxelSemanticMaterialRole.Glass,
+        Ra2VoxelSemanticColourRequirementKind.Rubber => material == Ra2VoxelSemanticMaterialRole.Rubber,
+        Ra2VoxelSemanticColourRequirementKind.BareMetal => material == Ra2VoxelSemanticMaterialRole.BareMetal,
+        Ra2VoxelSemanticColourRequirementKind.Light => material == Ra2VoxelSemanticMaterialRole.Light,
+        Ra2VoxelSemanticColourRequirementKind.DarkOpening => material == Ra2VoxelSemanticMaterialRole.DarkOpening,
+        Ra2VoxelSemanticColourRequirementKind.Accent => material == Ra2VoxelSemanticMaterialRole.Accent,
+        _ => false
+    };
+
+    private static string Format(Ra2VoxelSemanticColourRequirementKind requirement)
+        => requirement.ToString().ToLowerInvariant();
 }

@@ -1,7 +1,7 @@
 # ASSET-VOX-4E — Mask-Driven Colour Materialization Final Contract Rev.3
 
 日期：2026-08-30
-状态：Approved / 4E-1..4E-2 implemented and focused-verified / 4E-3..4E-5 not started
+状态：Approved / 4E-1..4E-4 implemented and automated-verified / 4E-5 incomplete
 实现风险：R4
 治理模式：StopForReview
 前置审计：`Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationCodeFactAudit.md`
@@ -860,8 +860,9 @@ Provider unavailable/timeout/malformed 继续沿用现有 compiler failure。失
 
 自审范围：从 UI/session input → Provider cache → local normalization → semantic materialization → quality admission →
 freeze/export/invalidation 做正向和反向走查，并与现有 style contracts、colourizer rule order、contrast optimizer、
-4E-R1 ground/air evidence 和 4D authority boundary 对照。4E-1..4E-2 仅代表 contracts/Skills 与
-classifier/router/compiler/cache v2 已验证；不代表 4E-3..4E-5 materialization、UI 或物理视觉已经实现或验证。
+4E-R1 ground/air evidence 和 4D authority boundary 对照。4E-1..4E-4 已提供 contracts/Skills、
+classifier/router/compiler/cache v2、deterministic materialization/quality 与批准 UI 的自动化证据；4E-5 的完整
+测试门、clean package、真实 Provider 和物理视觉仍未完成。
 
 | 审查项 | 结论 | Rev.3 证据/裁决 |
 |---|---|---|
@@ -875,11 +876,11 @@ classifier/router/compiler/cache v2 已验证；不代表 4E-3..4E-5 materializa
 | Light/Accent 歧义 | Pass | 同时出现必须是不同 roleId；binding compatibility table 已冻结 |
 | Provider 成本与 cache | Pass | classification/style 是两个独立 cache/状态；双 miss 最多两次调用；base/technique 切换为零模型调用 |
 | Skill/compiler 漂移 | Pass | 判型与 colouring Skill 职责分离；style prompt 恰好一个 class Skill；typed catalog 唯一保存 runtime 数值硬门 |
-| Contrast 可靠性 | Contract pass / runtime NotImplemented | allowlist 已加入现有 optimizer；必须复用 policy/family selector且不能移动 BodyBase |
+| Contrast 可靠性 | Runtime automated pass | existing optimizer 新 overload 复用 policy/family selector并保护 BodyBase、exact/semantic/remap roles；聚焦测试通过 |
 | 质量状态诚实性 | Pass | 无 opaque 总分；ReviewReady 仅技术可固化；VisualAcceptance 单独 Pending/人工确认 |
-| UI 可执行性 | Contract pass / physical NotRun | 显式判型、证据、人工确认/纠正、selected Skill、三个 selector 和 AutomationIds 已精确定义 |
+| UI 可执行性 | Automated pass / physical NotRun | 显式判型、证据、人工确认/纠正、selected Skill、三个 selector 和 AutomationIds 已接线；XAML build/UI tests 通过，截图/DPI 待验 |
 | Persistence/Shell/writer | Pass | session-only；不写 4D sidecar；不改 Shell、项目 Save、VOX/VXL/HVA writer |
-| 自动/人工验证 | 4E-1..2 focused Pass / 4E-3..5 Pending | contract/catalog/Skill、classifier/router/compiler/cache tests 已通过；真实 ground/air/large-surface 验收仍未运行 |
+| 自动/人工验证 | 4E-1..4 automated Pass / 4E-5 incomplete | Application 350/350、AssetHost 50/50；IDE full 2913/2914，唯一 WPF deferred-resource 测试单独 1/1 通过但全套仍失败；真实样本验收未运行 |
 
 Rev.3 保留了 Rev.2 对固定 air underside 方向、contrast allowlist/全局阈值冲突、template-only 无颜色来源、
 Provider cache 与本地候选 identity 混用及 PaintedSurface/Top+Under 覆盖缺陷的修正，并进一步消除了四类风险：
@@ -888,7 +889,7 @@ Provider cache 与本地候选 identity 混用及 PaintedSurface/Top+Under 覆�
 
 ### 15.1 已知剩余风险
 
-- `oklab-anchor-v1` 的初始 family 阈值已冻结但尚未在所有 PAL/VOX palette 上实测；4E-3 若样本证明失真，
+- `oklab-anchor-v1` 的初始 family 阈值已冻结并通过合成/边界自动化测试，但尚未在所有 PAL/VOX palette 上实测；若样本证明失真，
   必须回到 Contract amendment，不得在代码中静默调参。
 - v1 DirectRole 材质/remap 仍是单 index；跨多个 primary regions 会明确 NeedsReview，但多级材质/remap family
   仍需后续合同。
@@ -898,23 +899,23 @@ Provider cache 与本地候选 identity 混用及 PaintedSurface/Top+Under 覆�
 - 三个专用 colouring Skill 和 classifier Skill 已创建并通过 bundled catalog/内容契约测试，但尚未经过真实 DeepSeek
   与真实 ground/air/large-surface 模型的行为回归。
 - v1 只有一个全模型基准色；多部件独立涂装、VXL/HVA、normal、游戏光照和 GameReady 均未解决。
-- 4E-1 contracts/Skills 与 4E-2 classification/style cache/router/compiler v2 已有聚焦证据；实际 materialization、
-  WPF 接线/截图、真实 DeepSeek 和游戏实测仍无证据，必须在 4E-3 至 4E-5 分阶段产生。
+- 4E-3 materialization/quality 与 4E-4 WPF 接线已有自动化证据；截图、100%/125% DPI、真实 DeepSeek、真实模型
+  视觉和游戏实测仍无证据。IDE full suite 仍有一个范围外 WPF resource isolation failure，详见 Stage Ledger。
 
 ### 15.2 自审结论
 
 ```text
 Contract architecture: Approved
-Runtime implementation: Partial (4E-1 contracts/catalogs/Skills + 4E-2 classifier/router/compiler/cache v2；UI 尚未接线)
-Automated verification: FocusedPassed (see ASSET-VOX-4E_StageLedger.md)
+Runtime implementation: Partial (4E-1..4E-4 implemented；4E-5 physical/package incomplete)
+Automated verification: FocusedPassed / FullSuiteBlocked (see ASSET-VOX-4E_StageLedger.md)
 Physical visual acceptance: NotRun
 GameReady: OutOfScope
 ```
 
 ## 16. 批准门
 
-本 Rev.3 已批准，4E-1..4E-2 已完成。后续门禁：
+本 Rev.3 已批准，4E-1..4E-4 已完成自动化实现门。后续门禁：
 
-- 4E-3 只能在 4E-2 验证通过后接入本地 materialization/quality；
-- 4E-4 必须严格按第 9 节 UI 契约实现，并请求截图/人工验收；
-- 4E-5 才执行全量验证、clean package 和真实模型物理验收。
+- 修复或独立处理 IDE full suite 的 WPF resource isolation failure 后才能通过 4E-5 自动化门；
+- 按第 13 节完成截图/人工验收，真实 DeepSeek 调用仍须用户另行明确付费授权；
+- 全部 mandatory gates 通过后才能生成 clean package 并将 4E-5 标记完成。

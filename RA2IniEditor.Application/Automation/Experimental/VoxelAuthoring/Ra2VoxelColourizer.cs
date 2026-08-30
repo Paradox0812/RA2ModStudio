@@ -122,6 +122,7 @@ internal sealed class Ra2VoxelColourizationFacts
         IEnumerable<Ra2VoxelColourCount> roleCounts,
         IEnumerable<Ra2VoxelColourCount> regionCounts,
         IEnumerable<string> unresolvedRules,
+        IEnumerable<string> appliedRoleIds,
         Ra2VoxelColourReviewFlags reviewFlags)
     {
         SourceSnapshotHash = sourceSnapshotHash;
@@ -135,6 +136,9 @@ internal sealed class Ra2VoxelColourizationFacts
         RoleCounts = Array.AsReadOnly(roleCounts.OrderBy(value => value.Id, StringComparer.Ordinal).ToArray());
         RegionCounts = Array.AsReadOnly(regionCounts.OrderBy(value => value.Id, StringComparer.Ordinal).ToArray());
         UnresolvedRules = Array.AsReadOnly(unresolvedRules.OrderBy(value => value, StringComparer.Ordinal).ToArray());
+        AppliedRoleIds = Array.AsReadOnly(appliedRoleIds.ToArray());
+        if (AppliedRoleIds.Count != occupancyCount)
+            throw new ArgumentException("Applied role count must match occupancy.", nameof(appliedRoleIds));
         ReviewFlags = reviewFlags;
     }
 
@@ -149,6 +153,7 @@ internal sealed class Ra2VoxelColourizationFacts
     internal IReadOnlyList<Ra2VoxelColourCount> RoleCounts { get; }
     internal IReadOnlyList<Ra2VoxelColourCount> RegionCounts { get; }
     internal IReadOnlyList<string> UnresolvedRules { get; }
+    internal IReadOnlyList<string> AppliedRoleIds { get; }
     internal Ra2VoxelColourReviewFlags ReviewFlags { get; }
 }
 
@@ -200,6 +205,22 @@ internal static class Ra2VoxelColourizer
         Ra2CompiledVoxelStylePlan plan,
         IEnumerable<Ra2VoxelExplicitMask>? explicitMasks = null,
         CancellationToken cancellationToken = default)
+        => ColourizeCore(source, plan, explicitMasks, null, cancellationToken);
+
+    internal static Ra2VoxelColourizationResult Colourize(
+        Ra2VoxelSceneSnapshot source,
+        Ra2CompiledVoxelStylePlan plan,
+        IEnumerable<Ra2VoxelExplicitMask>? explicitMasks,
+        Ra2VoxelDualSurfacePolicy dualSurfacePolicy,
+        CancellationToken cancellationToken = default)
+        => ColourizeCore(source, plan, explicitMasks, dualSurfacePolicy, cancellationToken);
+
+    private static Ra2VoxelColourizationResult ColourizeCore(
+        Ra2VoxelSceneSnapshot source,
+        Ra2CompiledVoxelStylePlan plan,
+        IEnumerable<Ra2VoxelExplicitMask>? explicitMasks,
+        Ra2VoxelDualSurfacePolicy? dualSurfacePolicy,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(plan);
@@ -231,9 +252,16 @@ internal static class Ra2VoxelColourizer
             byte[] indices = Enumerable.Repeat(baseRole.PaletteIndex, source.OccupancyCount).ToArray();
             string[] appliedRoles = Enumerable.Repeat(baseRole.Id, source.OccupancyCount).ToArray();
             ApplyGeometryRegion(Ra2VoxelStyleRegionKind.Interior, Ra2VoxelGeometryRegionBits.Interior, interiorRole);
-            ApplyRule(Ra2VoxelStyleRegionKind.SideExposed, Ra2VoxelGeometryRegionBits.SideExposed);
-            ApplyRule(Ra2VoxelStyleRegionKind.TopExposed, Ra2VoxelGeometryRegionBits.TopExposed);
-            ApplyRule(Ra2VoxelStyleRegionKind.UnderExposed, Ra2VoxelGeometryRegionBits.UnderExposed);
+            if (dualSurfacePolicy is null)
+            {
+                ApplyRule(Ra2VoxelStyleRegionKind.SideExposed, Ra2VoxelGeometryRegionBits.SideExposed);
+                ApplyRule(Ra2VoxelStyleRegionKind.TopExposed, Ra2VoxelGeometryRegionBits.TopExposed);
+                ApplyRule(Ra2VoxelStyleRegionKind.UnderExposed, Ra2VoxelGeometryRegionBits.UnderExposed);
+            }
+            else
+            {
+                ApplyExclusivePrimarySurfaces(dualSurfacePolicy.Value);
+            }
             ApplyRule(Ra2VoxelStyleRegionKind.EdgeOrRidge, Ra2VoxelGeometryRegionBits.EdgeOrRidge);
 
             List<string> unresolved = [];
@@ -302,6 +330,7 @@ internal static class Ra2VoxelColourizer
                 appliedRoles.GroupBy(value => value, StringComparer.Ordinal).Select(group => new Ra2VoxelColourCount(group.Key, group.Count())),
                 RegionCounts(geometry),
                 unresolved,
+                appliedRoles,
                 flags);
             if (!facts.GeometryAndOccupancyUnchanged)
                 return Failure(Ra2VoxelColourizationFailureKind.AnalysisFailed, "Voxel colourization changed geometry or occupancy.");
@@ -312,6 +341,54 @@ internal static class Ra2VoxelColourizer
                 Ra2CompiledVoxelStyleRule? rule = plan.Rules.SingleOrDefault(candidate => candidate.IsPaintable && candidate.Region == region);
                 if (rule is not null)
                     ApplyGeometryRegion(region, bit, roles[rule.RoleId]);
+            }
+
+            void ApplyExclusivePrimarySurfaces(Ra2VoxelDualSurfacePolicy policy)
+            {
+                Ra2CompiledVoxelStyleRole? sideRole = FindRole(Ra2VoxelStyleRegionKind.SideExposed);
+                Ra2CompiledVoxelStyleRole? topRole = FindRole(Ra2VoxelStyleRegionKind.TopExposed);
+                Ra2CompiledVoxelStyleRole? underRole = FindRole(Ra2VoxelStyleRegionKind.UnderExposed);
+                for (int index = 0; index < indices.Length; index++)
+                {
+                    Ra2VoxelGeometryRegionBits bits = geometry[index];
+                    bool top = (bits & Ra2VoxelGeometryRegionBits.TopExposed) != 0;
+                    bool under = (bits & Ra2VoxelGeometryRegionBits.UnderExposed) != 0;
+                    Ra2CompiledVoxelStyleRole? selected = null;
+                    if (top && under)
+                    {
+                        selected = policy switch
+                        {
+                            Ra2VoxelDualSurfacePolicy.UnderPreferred => underRole,
+                            Ra2VoxelDualSurfacePolicy.TopPreferred => topRole,
+                            Ra2VoxelDualSurfacePolicy.BodyBase => baseRole,
+                            _ => throw new InvalidOperationException("Unknown dual-surface policy.")
+                        };
+                    }
+                    else if (top)
+                    {
+                        selected = topRole;
+                    }
+                    else if (under)
+                    {
+                        selected = underRole;
+                    }
+                    else if ((bits & Ra2VoxelGeometryRegionBits.SideExposed) != 0)
+                    {
+                        selected = sideRole;
+                    }
+                    if (selected is not null)
+                    {
+                        indices[index] = selected.PaletteIndex;
+                        appliedRoles[index] = selected.Id;
+                    }
+                }
+
+                Ra2CompiledVoxelStyleRole? FindRole(Ra2VoxelStyleRegionKind region)
+                {
+                    Ra2CompiledVoxelStyleRule? rule = plan.Rules.SingleOrDefault(candidate =>
+                        candidate.IsPaintable && candidate.Region == region);
+                    return rule is null ? null : roles[rule.RoleId];
+                }
             }
 
             void ApplyGeometryRegion(Ra2VoxelStyleRegionKind _, Ra2VoxelGeometryRegionBits bit, Ra2CompiledVoxelStyleRole role)

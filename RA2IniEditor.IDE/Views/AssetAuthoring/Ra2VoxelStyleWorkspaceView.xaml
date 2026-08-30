@@ -298,6 +298,83 @@
                                     </Border>
                                     <Border Style="{StaticResource VoxelInspectorSectionStyle}">
                                         <StackPanel>
+                                            <TextBlock Text="上色规则与技法" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" />
+                                            <TextBlock Text="先由 DeepSeek 根据有界证据提出地面、空中或大型水面单位类型，再由人工确认。确认后只路由到对应的内置上色 Skill；实际色板映射由 Host 确定性完成。"
+                                                       TextWrapping="Wrap" Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,4,0,8" />
+                                            <WrapPanel>
+                                                <Button AutomationProperties.AutomationId="VoxelStyle.UnitClass.Analyze"
+                                                        Content="AI 判断单位类型" IsEnabled="{Binding CanAnalyzeUnitClass}"
+                                                        Style="{StaticResource IdeWorkspaceCommandButtonStyle}" Margin="0,0,6,4"
+                                                        Click="AnalyzeUnitClass_OnClick" />
+                                                <Button AutomationProperties.AutomationId="VoxelStyle.UnitClass.Confirm"
+                                                        Content="确认单位类型" IsEnabled="{Binding CanConfirmUnitClass}"
+                                                        Style="{StaticResource IdeBlueCompactButtonStyle}" Margin="0,0,6,4"
+                                                        Click="ConfirmUnitClass_OnClick" />
+                                            </WrapPanel>
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.UnitClass.Status"
+                                                       Text="{Binding UnitClassStatusText, StringFormat=状态：{0}}"
+                                                       TextWrapping="Wrap" Margin="0,2,0,2" />
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.UnitClass.Evidence"
+                                                       Text="{Binding UnitClassEvidenceText}" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,0,0,6" />
+                                            <TextBlock Text="人工确认的单位类型" Margin="0,2,0,3" />
+                                            <ComboBox AutomationProperties.AutomationId="VoxelStyle.UnitClass.Selector"
+                                                      ItemsSource="{Binding UnitClassOptions}"
+                                                      DisplayMemberPath="Display"
+                                                      SelectedItem="{Binding SelectedUnitClass, Mode=TwoWay}"
+                                                      IsEnabled="{Binding CanSelectUnitClass}"
+                                                      MinWidth="220" HorizontalAlignment="Stretch" />
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.UnitClass.Skill"
+                                                       Text="{Binding UnitClassSkillText}" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,5,0,10" />
+
+                                            <TextBlock Text="主体基准色（当前 RA2 色板）" Margin="0,2,0,3" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ComboBox Grid.Column="0"
+                                                          AutomationProperties.AutomationId="VoxelStyle.BaseColour.Selector"
+                                                          ItemsSource="{Binding BaseColourOptions}"
+                                                          SelectedItem="{Binding SelectedBaseColour, Mode=TwoWay}"
+                                                          IsEnabled="{Binding CanEditColourInputs}"
+                                                          MinWidth="220" HorizontalAlignment="Stretch">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Border Width="14" Height="14" Margin="0,0,6,0"
+                                                                        BorderBrush="{DynamicResource UiDividerBrush}" BorderThickness="1"
+                                                                        Background="{Binding Swatch}" />
+                                                                <TextBlock Text="{Binding Display}" />
+                                                            </StackPanel>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <Border Grid.Column="1"
+                                                        AutomationProperties.AutomationId="VoxelStyle.BaseColour.Swatch"
+                                                        Width="30" Height="24" Margin="8,0,0,0"
+                                                        Background="{Binding BaseColourSwatch}"
+                                                        BorderBrush="{DynamicResource UiDividerBrush}" BorderThickness="1" />
+                                            </Grid>
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.BaseColour.Status"
+                                                       Text="{Binding BaseColourStatusText}" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,5,0,10" />
+
+                                            <TextBlock Text="上色技法模板" Margin="0,2,0,3" />
+                                            <ComboBox AutomationProperties.AutomationId="VoxelStyle.Template.Selector"
+                                                      ItemsSource="{Binding TechniqueOptions}"
+                                                      DisplayMemberPath="DisplayName"
+                                                      SelectedItem="{Binding SelectedTechnique, Mode=TwoWay}"
+                                                      IsEnabled="{Binding CanEditColourInputs}"
+                                                      MinWidth="220" HorizontalAlignment="Stretch" />
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.Template.Description"
+                                                       Text="{Binding TechniqueDescription}" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,5,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource VoxelInspectorSectionStyle}">
+                                        <StackPanel>
                                             <TextBlock Text="风格继承" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" />
                                             <ItemsControl AutomationProperties.AutomationId="VoxelStyle.StyleSources"
                                                           ItemsSource="{Binding StyleSources}" Margin="0,6,0,0">
@@ -609,6 +686,32 @@
                                             <TextBlock AutomationProperties.AutomationId="VoxelStyle.Quality.PaletteContrast"
                                                        Text="{Binding PaletteContrastText}" TextWrapping="Wrap" Margin="8,8,8,0"
                                                        Foreground="{DynamicResource UiTextSecondaryBrush}" />
+                                            <TextBlock Text="4E 质量门" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" Margin="8,14,8,4" />
+                                            <TextBlock AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Status"
+                                                       Text="{Binding ColourQualityStatusText}" TextWrapping="Wrap" Margin="8,0,8,6" />
+                                            <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Metrics"
+                                                          ItemsSource="{Binding ColourQualityMetrics}" Margin="8,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1"
+                                                                   Foreground="{DynamicResource UiTextSecondaryBrush}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Warnings"
+                                                          ItemsSource="{Binding ColourQualityWarnings}" Margin="8,6,8,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <CheckBox AutomationProperties.AutomationId="VoxelStyle.ColourQuality.AcceptWarnings"
+                                                      Content="我已审阅本次 generation 的质量警告"
+                                                      IsChecked="{Binding QualityWarningsAccepted, Mode=TwoWay}"
+                                                      IsEnabled="{Binding HasReviewableColourWarnings}"
+                                                      Visibility="{Binding HasReviewableColourWarnings, Converter={StaticResource BoolToVisibility}}"
+                                                      Margin="8,8,8,0" />
                                         </StackPanel>
                                     </Border>
                                 </Grid>
