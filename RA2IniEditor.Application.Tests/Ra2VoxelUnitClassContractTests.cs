@@ -116,6 +116,16 @@ public sealed class Ra2VoxelUnitClassContractTests
             Ra2VoxelUnitClass.Unknown,
             Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment,
             null);
+        Ra2VoxelUnitClassConfirmationResult manualSelection = Ra2VoxelConfirmedUnitClass.Create(
+            evidence,
+            Ra2VoxelUnitClass.Air,
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection,
+            null);
+        Ra2VoxelUnitClassConfirmationResult manualSelectionWithProposal = Ra2VoxelConfirmedUnitClass.Create(
+            evidence,
+            Ra2VoxelUnitClass.Air,
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection,
+            proposal);
         Ra2VoxelUnitClassConfirmationResult falseConfirmation = Ra2VoxelConfirmedUnitClass.Create(
             evidence,
             Ra2VoxelUnitClass.Air,
@@ -130,6 +140,9 @@ public sealed class Ra2VoxelUnitClassContractTests
         Assert.True(confirmed.IsSuccess, confirmed.Message);
         Assert.True(corrected.IsSuccess, corrected.Message);
         Assert.True(manual.IsSuccess, manual.Message);
+        Assert.True(manualSelection.IsSuccess, manualSelection.Message);
+        Assert.Null(manualSelection.Confirmation!.ProposalHash);
+        Assert.Equal(Ra2VoxelUnitClassConfirmationFailureKind.ProposalNotAllowed, manualSelectionWithProposal.FailureKind);
         Assert.NotEqual(confirmed.Confirmation!.ConfirmationHash, corrected.Confirmation!.ConfirmationHash);
         Assert.Null(manual.Confirmation!.ProposalHash);
         Assert.Equal(Ra2VoxelUnitClassConfirmationFailureKind.ClassDoesNotMatchSource, falseConfirmation.FailureKind);

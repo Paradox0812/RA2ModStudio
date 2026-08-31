@@ -22,13 +22,11 @@ internal sealed record Ra2VoxelColourMaterializationContext(
     Ra2VoxelSemanticColourBindingPlan BindingPlan,
     Ra2VoxelUnitClassEvidence Evidence,
     Ra2VoxelConfirmedUnitClass Confirmation,
-    Ra2VoxelSkillIdentity ClassifierSkill,
     Ra2VoxelSkillIdentity ColourSkill,
     Ra2VoxelBaseColourSelection BaseColour,
     Ra2VoxelColourTechniquePolicy Technique,
     Ra2VoxelUnitAdaptationPolicy Adaptation,
-    string BindingSchemaRevision = "ra2-voxel-semantic-colour-binding/1",
-    Ra2VoxelUnitClassProposal? Proposal = null);
+    string BindingSchemaRevision = "ra2-voxel-semantic-colour-binding/1");
 
 internal enum Ra2VoxelColourMaterializationFailureKind
 {
@@ -124,8 +122,6 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 familyResult.Selection,
                 context.Evidence,
                 context.Confirmation,
-                context.Proposal,
-                context.ClassifierSkill,
                 context.ColourSkill,
                 ordinaryBundleHash);
             Ra2VoxelColourMaterializationCandidate ordinary = new(
@@ -188,8 +184,6 @@ internal static class Ra2VoxelSemanticColourMaterializer
                                 contrastFamily.Selection,
                                 context.Evidence,
                                 context.Confirmation,
-                                context.Proposal,
-                                context.ClassifierSkill,
                                 context.ColourSkill,
                                 contrastBundleHash);
                             contrastCandidate = new(
@@ -243,23 +237,10 @@ internal static class Ra2VoxelSemanticColourMaterializer
         if (!string.Equals(context.Evidence.EvidenceHash, context.Confirmation.EvidenceHash, StringComparison.Ordinal) ||
             context.Adaptation.UnitClass != context.Confirmation.UnitClass ||
             !string.Equals(context.Adaptation.ColouringSkillId, context.ColourSkill.SkillId, StringComparison.Ordinal) ||
-            !string.Equals(context.ClassifierSkill.SkillId, Ra2VoxelUnitClassProposal.RequiredClassifierSkillId, StringComparison.Ordinal))
+            context.Confirmation.Source != Ra2VoxelUnitClassConfirmationSource.HumanManualSelection)
         {
             return "Unit-class confirmation, adaptation, or exact Skill route identity is stale.";
         }
-        if (context.Confirmation.Source != Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment &&
-            (context.Proposal is null ||
-             !string.Equals(context.Proposal.ProposalHash, context.Confirmation.ProposalHash, StringComparison.Ordinal) ||
-             !string.Equals(context.Proposal.EvidenceHash, context.Evidence.EvidenceHash, StringComparison.Ordinal) ||
-             !string.Equals(context.Proposal.ClassifierSkillId, context.ClassifierSkill.SkillId, StringComparison.Ordinal) ||
-             !string.Equals(context.Proposal.ClassifierSkillRevision, context.ClassifierSkill.Revision, StringComparison.Ordinal) ||
-             !string.Equals(context.Proposal.ClassifierSkillContentHash, context.ClassifierSkill.ContentHash, StringComparison.Ordinal)))
-        {
-            return "The confirmed unit class is missing its exact validated proposal identity.";
-        }
-        if (context.Confirmation.Source == Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment &&
-            context.Proposal is not null)
-            return "Manual fallback cannot claim a DeepSeek unit-class proposal.";
         if (!string.Equals(context.BaseColour.PaletteProfileHash, context.Source.Palette.ProfileHash, StringComparison.OrdinalIgnoreCase) ||
             context.Source.Palette.IsTransparent(context.BaseColour.PaletteIndex) ||
             context.Source.Palette.IsRemap(context.BaseColour.PaletteIndex) ||
@@ -400,14 +381,13 @@ internal static class Ra2VoxelSemanticColourMaterializer
         string materializedPlanHash,
         bool contrast) => Ra2VoxelColourContractIdentity.ComputeHash(writer =>
     {
-        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-materialization-bundle/1");
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-materialization-bundle/2");
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.RawPlan.PlanHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.BindingPlan.BindingPlanHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Source.Palette.ProfileHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.BaseColour.SelectionHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Evidence.EvidenceHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Confirmation.ConfirmationHash);
-        WriteSkill(writer, context.ClassifierSkill);
         WriteSkill(writer, context.ColourSkill);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Technique.TechniqueId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Technique.Revision);

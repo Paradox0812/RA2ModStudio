@@ -3,6 +3,11 @@
 更新时间：2026-08-31
 用途：为新任务恢复最小充分工程上下文；阶段历史不在此重复。
 
+当前工作树状态（2026-08-31）：ASSET-VOX-4E Rev.4 UI-R1 已实现并通过聚焦自动验证，正在等待用户手动 UI
+验收。活动上色链不再调用 DeepSeek 判型；用户人工选择单位类型，Host 确定性路由唯一 colouring Skill。Voxel
+Style workspace 已改为五阶段任务流。不得在人工验收前声称 4E-5 或 clean package 完成。详见
+`Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md`。
+
 ## 1. 产品与仓库身份
 
 RA2IniEditor.IDE 是面向 RA2 / YR / Ares / Phobos 的 source-first INI IDE，技术栈为

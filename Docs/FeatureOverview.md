@@ -102,6 +102,11 @@ The legacy table-style editor is intentionally not included in this package. The
 
 The IDE now exposes the Stage 1E natural-language voxel colour pipeline through `Tools -> Voxel Style Preview`.
 
+The current workspace is organized as five task stages: Model, Geometry, Partition & Label, Colour, and Review & Export.
+Unit class is selected and confirmed by the user; the active colouring workflow does not call DeepSeek for classification.
+The Host binds that current human selection to exactly one Ground/Air/LargeSurface/Unknown colouring Skill. Base colour
+remains an exact human-selected index from the active RA2 palette.
+
 - Select a bounded single-model `.vox`, or a single-Section `.vxl` with its explicitly selected Westwood `.pal`, inside
   the active project. Both become the same immutable canonical voxel snapshot.
 - Review the original SliceStack locally before any network request.

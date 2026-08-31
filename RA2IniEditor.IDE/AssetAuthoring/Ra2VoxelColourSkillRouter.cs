@@ -5,7 +5,7 @@ using Ra2VoxelConfirmedUnitClass = Ra2Application::RA2IniEditor.Application.Auto
 using Ra2VoxelUnitAdaptationCatalog = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitAdaptationCatalog;
 using Ra2VoxelUnitAdaptationPolicy = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitAdaptationPolicy;
 using Ra2VoxelUnitClassEvidence = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassEvidence;
-using Ra2VoxelUnitClassProposal = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassProposal;
+using Ra2VoxelUnitClassConfirmationSource = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassConfirmationSource;
 
 namespace RA2IniEditor.IDE.AssetAuthoring;
 
@@ -13,7 +13,6 @@ internal enum Ra2VoxelColourSkillRouteFailureKind
 {
     None = 0,
     UnitClassConfirmationStale,
-    ClassifierSkillUnavailable,
     ColourSkillUnavailable,
     ColourSkillMismatch,
     InstructionLimitExceeded
@@ -22,16 +21,13 @@ internal enum Ra2VoxelColourSkillRouteFailureKind
 internal sealed class Ra2VoxelColourSkillRoute
 {
     internal Ra2VoxelColourSkillRoute(
-        Ra2AgentSkillDescriptor classifierSkill,
         Ra2AgentSkillDescriptor colourSkill,
         Ra2VoxelUnitAdaptationPolicy adaptation)
     {
-        ClassifierSkill = classifierSkill;
         ColourSkill = colourSkill;
         Adaptation = adaptation;
     }
 
-    internal Ra2AgentSkillDescriptor ClassifierSkill { get; }
     internal Ra2AgentSkillDescriptor ColourSkill { get; }
     internal Ra2VoxelUnitAdaptationPolicy Adaptation { get; }
 }
@@ -58,12 +54,11 @@ internal static class Ra2VoxelColourSkillRouter
         if (!string.Equals(evidence.EvidenceHash, confirmation.EvidenceHash, StringComparison.Ordinal))
             return Failure(Ra2VoxelColourSkillRouteFailureKind.UnitClassConfirmationStale,
                 "The confirmed unit class targets stale evidence.");
+        if (confirmation.Source != Ra2VoxelUnitClassConfirmationSource.HumanManualSelection)
+            return Failure(Ra2VoxelColourSkillRouteFailureKind.UnitClassConfirmationStale,
+                "The active colouring route requires a current human unit-class selection.");
 
         Ra2VoxelUnitAdaptationPolicy adaptation = Ra2VoxelUnitAdaptationCatalog.For(confirmation.UnitClass);
-        Ra2AgentSkillDescriptor? classifier = FindExact(catalog, Ra2VoxelUnitClassProposal.RequiredClassifierSkillId);
-        if (classifier is null || !HasValidIdentity(classifier))
-            return Failure(Ra2VoxelColourSkillRouteFailureKind.ClassifierSkillUnavailable,
-                "The required unit-classification Skill is unavailable.");
         Ra2AgentSkillDescriptor? colour = FindExact(catalog, adaptation.ColouringSkillId);
         if (colour is null || !HasValidIdentity(colour))
             return Failure(Ra2VoxelColourSkillRouteFailureKind.ColourSkillUnavailable,
@@ -86,7 +81,7 @@ internal static class Ra2VoxelColourSkillRouter
                 "The compiler and class-specific Skill exceed the instruction limit.");
 
         return new(Ra2VoxelColourSkillRouteFailureKind.None, string.Empty,
-            new Ra2VoxelColourSkillRoute(classifier, colour, adaptation));
+            new Ra2VoxelColourSkillRoute(colour, adaptation));
     }
 
     private static Ra2AgentSkillDescriptor? FindExact(Ra2AgentSkillCatalog catalog, string id)

@@ -533,3 +533,12 @@ formats. Public promotion or cross-version cache compatibility would require a s
 The quality JSON is an internal review-package artifact bound to a candidate hash, not a public interchange or persistence
 format. The new AutomationIds are UI-test surface only. Promoting materialization, quality admission, class confirmation or
 base-colour selection to a public façade/persisted project model requires a separate compatibility review.
+
+## 44. ASSET-VOX-4E Rev.4 UI-R1 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|
+| ASSET-VOX-4E Rev.4 UI-R1 | None | Application/IDE-internal confirmation source, routing identity and session-only workspace stage | Replace active Provider classification with explicit human class selection and reorganize existing UI | Internal / focused-verified / physical pending | Application 39/39；IDE 39/39；Release XAML build passed | No public type, serializer, sidecar, Provider protocol, project write, writer, dependency or Shell delta |
+
+`HumanManualSelection` and `SelectedWorkflowStage` remain internal session state. Promotion to persisted project state,
+plugin/public API or cross-version interchange requires a separate compatibility review.

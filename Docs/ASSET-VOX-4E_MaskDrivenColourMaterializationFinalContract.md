@@ -1,5 +1,9 @@
 # ASSET-VOX-4E — Mask-Driven Colour Materialization Final Contract Rev.3
 
+> 历史合同说明：Rev.3 的 DeepSeek 自动判型与原 workspace UI 条款已被
+> `Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md` 取代。Rev.3 其余基准色、技法、
+> semantic materialization、quality 和 freeze/export 条款继续有效。
+
 日期：2026-08-30
 状态：Approved / 4E-1..4E-4 implemented and automated-verified / 4E-5 incomplete
 实现风险：R4

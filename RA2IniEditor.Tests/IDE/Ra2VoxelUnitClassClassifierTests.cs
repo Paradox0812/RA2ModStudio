@@ -192,6 +192,18 @@ public sealed class Ra2VoxelUnitClassClassifierTests : IDisposable
         return Assert.IsType<Ra2VoxelConfirmedUnitClass>(result.Confirmation);
     }
 
+    internal static Ra2VoxelConfirmedUnitClass ConfirmManual(
+        Ra2VoxelUnitClassEvidence evidence,
+        Ra2VoxelUnitClass unitClass)
+    {
+        Ra2VoxelUnitClassConfirmationResult result = Ra2VoxelConfirmedUnitClass.Create(
+            evidence,
+            unitClass,
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection,
+            null);
+        return Assert.IsType<Ra2VoxelConfirmedUnitClass>(result.Confirmation);
+    }
+
     private Ra2VoxelUnitClassClassifier CreateClassifier(FakeClient client) => new(
         client,
         new Ra2VoxelUnitClassProposalCache(Path.Combine(_root, "cache")),

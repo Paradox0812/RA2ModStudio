@@ -1805,7 +1805,7 @@ CurrentPhase 和对应 Stage Ledger 负责。
 
 ## 2026-08-30 — DeepSeek proposes unit class before one class-specific colouring Skill is routed
 
-- Status: Accepted 2026-08-31 / 4E-1..4E-4 implemented and automated-focused verified / 4E-5 incomplete
+- Status: Superseded in the active workflow by ASSET-VOX-4E Rev.4 on 2026-08-31
 - Task: ASSET-VOX-4E FinalContract Rev.3
 - Context:
   - Ground, air and large-surface units need materially different shading and readability techniques, while the model
@@ -1847,3 +1847,24 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - 4E-5 remains incomplete until the full IDE suite passes, a clean package is produced, and WPF/real sample physical
     acceptance is recorded. Current full-suite evidence is 2913/2914 with one out-of-diff WPF deferred-resource isolation
     failure; that test passes 1/1 alone. Real DeepSeek still requires explicit paid-call authorization.
+
+## 2026-08-31 — Human unit-class selection owns deterministic colouring Skill routing
+
+- Status: Accepted / implemented / focused automated verified / physical UI acceptance pending
+- Task: ASSET-VOX-4E Rev.4 UI-R1
+- Context:
+  - Real-provider structured classification added compatibility cost without removing the mandatory human decision.
+  - The workspace mixed model, geometry, semantic authoring, colouring and export actions across unrelated panels.
+- Decision:
+  - Remove automatic DeepSeek classification from the active workspace/compiler/materialization route.
+  - Require a proposal-less `HumanManualSelection` bound to current evidence; route it to exactly one class colouring Skill.
+  - Preserve class adaptation, base-colour authority, semantic materialization and quality gates.
+  - Organize the workspace into five mutually exclusive task stages and keep detail tabs read-only.
+- Rejected alternatives:
+  - Continue repairing Provider classification JSON, hide automatic classification behind a fallback, or allow proposal
+    confirmation to remain an active router source.
+  - Add a second workspace, change Shell docking, or alter semantic sidecar persistence to support the layout.
+- Consequences:
+  - One Provider call and its cache/Skill dependency disappear from the normal colouring workflow.
+  - Unit classification accuracy becomes an explicit user responsibility; Unknown remains the conservative review path.
+  - UI physical acceptance is still mandatory and is owned by the user; no computer-use automation is permitted.

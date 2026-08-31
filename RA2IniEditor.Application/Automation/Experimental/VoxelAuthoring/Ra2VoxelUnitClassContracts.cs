@@ -28,7 +28,8 @@ internal enum Ra2VoxelUnitClassConfirmationSource
 {
     HumanConfirmedProposal = 0,
     HumanOverride,
-    ManualWithoutAiAssessment
+    ManualWithoutAiAssessment,
+    HumanManualSelection
 }
 
 internal sealed record Ra2VoxelUnitClassFact(
@@ -391,9 +392,11 @@ internal sealed class Ra2VoxelConfirmedUnitClass
             return Failure(Ra2VoxelUnitClassConfirmationFailureKind.InvalidSource, "The confirmation source is invalid.");
         if (proposal is not null && !string.Equals(proposal.EvidenceHash, evidence.EvidenceHash, StringComparison.Ordinal))
             return Failure(Ra2VoxelUnitClassConfirmationFailureKind.EvidenceMismatch, "The unit-class proposal is stale.");
-        if (source == Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment && proposal is not null)
-            return Failure(Ra2VoxelUnitClassConfirmationFailureKind.ProposalNotAllowed, "Manual fallback cannot claim an AI proposal.");
-        if (source != Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment && proposal is null)
+        bool isManualSelection = source is Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment or
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection;
+        if (isManualSelection && proposal is not null)
+            return Failure(Ra2VoxelUnitClassConfirmationFailureKind.ProposalNotAllowed, "Manual unit-class selection cannot claim an AI proposal.");
+        if (!isManualSelection && proposal is null)
             return Failure(Ra2VoxelUnitClassConfirmationFailureKind.ProposalRequired, "This confirmation source requires a validated proposal.");
         if (source == Ra2VoxelUnitClassConfirmationSource.HumanConfirmedProposal && selectedClass != proposal!.ProposedClass)
             return Failure(Ra2VoxelUnitClassConfirmationFailureKind.ClassDoesNotMatchSource, "A confirmed proposal must keep the proposed class.");
@@ -403,7 +406,7 @@ internal sealed class Ra2VoxelConfirmedUnitClass
         string? proposalHash = proposal?.ProposalHash;
         string confirmationHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
         {
-            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-unit-class-confirmation/1");
+            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-unit-class-confirmation/2");
             writer.Write((int)selectedClass);
             writer.Write((int)source);
             Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, proposalHash ?? string.Empty);

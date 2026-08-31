@@ -85,14 +85,23 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
             await viewModel.CompileAsync();
     }
 
-    private async void AnalyzeUnitClass_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel is { } viewModel)
-            await viewModel.AnalyzeUnitClassAsync();
-    }
-
     private void ConfirmUnitClass_OnClick(object sender, RoutedEventArgs e) =>
         ViewModel?.ConfirmUnitClass();
+
+    private void SelectModelStage_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.SelectWorkflowStage(Ra2VoxelWorkspaceStage.Model);
+
+    private void SelectGeometryStage_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.SelectWorkflowStage(Ra2VoxelWorkspaceStage.Geometry);
+
+    private void SelectSemanticsStage_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.SelectWorkflowStage(Ra2VoxelWorkspaceStage.Semantics);
+
+    private void SelectColourStage_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.SelectWorkflowStage(Ra2VoxelWorkspaceStage.Colour);
+
+    private void SelectReviewStage_OnClick(object sender, RoutedEventArgs e) =>
+        ViewModel?.SelectWorkflowStage(Ra2VoxelWorkspaceStage.Review);
 
     private void ChooseGenerationReference_OnClick(object sender, RoutedEventArgs e)
     {
@@ -455,7 +464,7 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
     private void OnSemanticCellSelected(object? sender, Ra2VoxelSemanticCellHit hit)
     {
         if (ViewModel?.HandleSemanticCellClick(hit.RegionId, hit.Coordinate) == true)
-            DetailsTabs.SelectedIndex = 3;
+            DetailsTabs.SelectedIndex = 1;
     }
 
     private void OnSemanticCellHitFailed(object? sender, Ra2VoxelSemanticHitFailure failure) =>
@@ -467,7 +476,7 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
     {
         e.IsAccepted = ViewModel?.BeginSemanticStroke(e.Hit.RegionId, e.Hit.Coordinate) == true;
         if (e.IsAccepted)
-            DetailsTabs.SelectedIndex = 3;
+            DetailsTabs.SelectedIndex = 1;
     }
 
     private void OnSemanticStrokeProgress(object? sender, Ra2VoxelSemanticStrokeProgressEventArgs e) =>

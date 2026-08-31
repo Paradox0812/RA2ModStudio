@@ -49,7 +49,7 @@ public sealed class Ra2VoxelStyleCompilerV2Tests : IDisposable
         Ra2VoxelStyleCompilationV2Context changedContext = first.Context with
         {
             Evidence = changedEvidence,
-            Confirmation = Ra2VoxelUnitClassClassifierTests.Confirm(changedEvidence, Ra2VoxelUnitClass.Ground)
+            Confirmation = Ra2VoxelUnitClassClassifierTests.ConfirmManual(changedEvidence, Ra2VoxelUnitClass.Ground)
         };
         FakeClient client = new(ProposalResponse(fullBindings: true));
         Ra2VoxelStyleCompiler compiler = CreateCompiler(client, first.Cache);
@@ -74,7 +74,7 @@ public sealed class Ra2VoxelStyleCompilerV2Tests : IDisposable
         TestContext ground = CreateContext("class-change", Ra2VoxelUnitClass.Ground, CreateRequirements(full: true));
         Ra2VoxelStyleCompilationV2Context air = ground.Context with
         {
-            Confirmation = Ra2VoxelUnitClassClassifierTests.Confirm(ground.Context.Evidence, Ra2VoxelUnitClass.Air)
+            Confirmation = Ra2VoxelUnitClassClassifierTests.ConfirmManual(ground.Context.Evidence, Ra2VoxelUnitClass.Air)
         };
         FakeClient client = new(ProposalResponse(fullBindings: true), ProposalResponse(fullBindings: true));
         Ra2VoxelStyleCompiler compiler = CreateCompiler(client, ground.Cache);
@@ -214,7 +214,7 @@ public sealed class Ra2VoxelStyleCompilerV2Tests : IDisposable
                 new string('F', 64),
                 "deepseek-chat",
                 evidence,
-                Ra2VoxelUnitClassClassifierTests.Confirm(evidence, unitClass),
+                Ra2VoxelUnitClassClassifierTests.ConfirmManual(evidence, unitClass),
                 requirements),
             new Ra2VoxelStylePlanCache(cacheRoot),
             cacheRoot);

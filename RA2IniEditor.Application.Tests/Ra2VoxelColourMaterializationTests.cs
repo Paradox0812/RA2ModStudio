@@ -171,8 +171,6 @@ public sealed class Ra2VoxelColourMaterializationTests
             result.FamilySelection!,
             fixture.Context.Evidence,
             fixture.Context.Confirmation,
-            fixture.Context.Proposal,
-            fixture.Context.ClassifierSkill,
             fixture.Context.ColourSkill,
             result.Ordinary.BundleHash);
 
@@ -269,26 +267,25 @@ public sealed class Ra2VoxelColourMaterializationTests
     }
 
     [Fact]
-    public void Materializer_ManualWithoutAiAssessmentForcesNeedsReview()
+    public void Materializer_HumanManualSelectionDoesNotInventClassifierWarning()
     {
         Fixture fixture = CreateFixture(Ra2VoxelUnitClass.Ground);
         Ra2VoxelUnitClassConfirmationResult manual = Ra2VoxelConfirmedUnitClass.Create(
             fixture.Context.Evidence,
             Ra2VoxelUnitClass.Ground,
-            Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment,
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection,
             null);
         Assert.True(manual.IsSuccess, manual.Message);
         Ra2VoxelColourMaterializationContext context = fixture.Context with
         {
-            Confirmation = manual.Confirmation!,
-            Proposal = null
+            Confirmation = manual.Confirmation!
         };
 
         Ra2VoxelColourMaterializationResult result = Ra2VoxelSemanticColourMaterializer.Materialize(context);
 
         Assert.True(result.IsSuccess, result.Message);
-        Assert.Equal(Ra2VoxelColourAdmissionState.NeedsReview, result.Ordinary!.Quality.State);
-        Assert.Contains(result.Ordinary.Quality.Warnings, value => value.Code == "UnitClassReviewRequired");
+        Assert.NotEqual(Ra2VoxelColourAdmissionState.Blocked, result.Ordinary!.Quality.State);
+        Assert.DoesNotContain(result.Ordinary.Quality.Warnings, value => value.Code == "UnitClassReviewRequired");
     }
 
     private static Fixture CreateFixture(
@@ -308,23 +305,11 @@ public sealed class Ra2VoxelColourMaterializationTests
         Ra2CompiledVoxelStylePlan rawPlan = CompileRawPlan(palette, requirements.ApprovedRemapCellCount > 0);
         Ra2VoxelSemanticColourBindingPlan bindingPlan = CreateBindingPlan(requirements, rawPlan);
         Ra2VoxelUnitClassEvidence evidence = Ra2VoxelUnitClassEvidenceBuilder.Build(source, composition);
-        Ra2VoxelUnitClassProposalResult proposalResult = Ra2VoxelUnitClassProposal.Validate(
-            evidence,
-            new(
-                unitClass,
-                Ra2VoxelUnitClassConfidenceBand.High,
-                evidence.Facts.Take(3).Select(value => value.FactId).ToArray(),
-                "The bounded geometry and semantic evidence supports this test classification.",
-                Ra2VoxelUnitClassProposal.RequiredClassifierSkillId,
-                "1",
-                new string('A', 64),
-                evidence.EvidenceHash));
-        Assert.True(proposalResult.IsSuccess, proposalResult.Message);
         Ra2VoxelUnitClassConfirmationResult confirmationResult = Ra2VoxelConfirmedUnitClass.Create(
             evidence,
             unitClass,
-            Ra2VoxelUnitClassConfirmationSource.HumanConfirmedProposal,
-            proposalResult.Proposal);
+            Ra2VoxelUnitClassConfirmationSource.HumanManualSelection,
+            null);
         Assert.True(confirmationResult.IsSuccess, confirmationResult.Message);
         Ra2VoxelBaseColourSelectionResult baseResult = Ra2VoxelBaseColourSelection.Create(
             palette, palette.ProfileHash, baseIndex);
@@ -340,12 +325,10 @@ public sealed class Ra2VoxelColourMaterializationTests
             bindingPlan,
             evidence,
             confirmationResult.Confirmation!,
-            new(Ra2VoxelUnitClassProposal.RequiredClassifierSkillId, "1", new string('A', 64)),
             new(adaptation.ColouringSkillId, "1", new string('B', 64)),
             baseResult.Selection!,
             technique,
-            adaptation,
-            Proposal: proposalResult.Proposal);
+            adaptation);
         return new(context);
     }
 

@@ -210,33 +210,34 @@ proposal or accepted conversation state.
 
 1. Open the folder that contains the voxel candidate and any optional project/directory `VOXEL_STYLE.md` files.
 2. Choose `Tools -> Voxel Style Preview`.
-3. Use the left workflow tabs: `生成` owns reference-image generation, `几何` owns model/GLB review, `风格` owns the
-   natural-language style request, and `输出` owns candidate freezing and VOX export. The left divider can resize this
-   inspector without resizing the whole page.
-4. On `几何`, click `Choose Model` and select either a single-model MagicaVoxel `.vox`, or a single-Section Westwood `.vxl`, inside
+3. Follow the five-stage navigator: `模型 / 几何 / 分划与标注 / 上色 / 审阅与导出`. The left panel contains only the
+   current stage's actions; the lower tabs are read-only review facts.
+4. On `模型`, click `载入模型…` and select either a single-model MagicaVoxel `.vox`, or a single-Section Westwood `.vxl`, inside
    the opened project. VXL input prompts for its corresponding project-contained 768-byte Westwood `.pal`; the IDE never
    guesses a palette or trusts the VXL reserved palette block.
 5. Inspect the original model in the interactive 3D viewport. Left-drag rotates, middle-drag or Shift+left-drag pans,
    the wheel zooms, and `Reset View` fits the whole model. Switching review modes or temporarily switching documents keeps
    the current camera; choosing a genuinely different source fits that model once. This step is local and does not call DeepSeek.
-6. Optional geometry review: click `Choose GLB`, select a project-contained source mesh, then click `Generate Candidates`.
+6. Optional geometry review: on `几何`, click `载入 GLB…`, select a project-contained source mesh, then click `生成候选`.
    This local step makes no model/provider call. Compare Current, Direct, Refined and optional Symmetry; check the shown
    source provenance and quality facts, then click `Use for This Session` only on the candidate you want to colour.
-7. Optional semantic review: on `风格`, click `仅准备人工区域` for a provider-free manual workflow, or enter a short
+7. On `分划与标注`, click `创建人工区域` for a provider-free manual workflow, or enter a short
    semantic hint and click `AI 建议`. DeepSeek receives only bounded
    text geometry facts. Review the two-pass result (a third pass appears only on disagreement), then click `接受建议` or
-   `丢弃建议`. Open the `语义` 3D view and click a visible region to locate its row. Part/material changes are manual
-   overrides and default to mirror-linked editing. `批准阵营色` is never enabled by AI; check it only for intended regions.
-8. Enter a natural-language style override, or leave it empty to use only inherited style sources.
-9. Click `Compile Preview`. This explicit action can call the selected DeepSeek model and consume provider quota; the IDE
+   `丢弃建议`. Use the same stage to load/save `.semantic.json`, choose browse/paint/erase, brush part/material/remap target,
+   size and mirror behavior. AI never approves remap; enable it only for intended regions.
+8. On `上色`, manually choose `地面载具 / 空中载具 / 大型水面单位 / 未知` and click `确认单位类型`. The IDE does not
+   ask DeepSeek to classify the unit. The Host deterministically displays and loads exactly one matching colouring Skill.
+9. Select one legal opaque/non-remap base colour from the active RA2 palette and one rule/technique template. Enter a style
+   override or leave it empty, then click `编译上色预览`. This explicit compile may call the selected DeepSeek model and consume quota; the IDE
    does not retry automatically.
-10. Switch between Original, candidates, Semantics, Styled, optional Contrast, Region and Palette. Geometry and colour results are 3D;
+10. Use the single preview selector to switch between Original, candidates, Semantics, Styled, optional Contrast, Region and Palette. Geometry and colour results are 3D;
    Palette stays 2D. Use
    `Diagnostic Slices` when checking voxel axes/import layout or if the bounded 3D renderer reports a fallback. Review
-   the lower `质量 / 结构 / 着色 / 审阅` evidence tabs; its divider can be dragged without changing the 3D camera.
+   the lower `几何摘要 / 区域清单 / 上色计划 / 审阅问题` tabs; its divider can be dragged without changing the 3D camera.
 11. Select a materializable view (`Original`, `Direct`, an available `Refined`/`Agent Geometry`, `Styled`, or `Contrast`) and
    click `固化最终候选`. Difference, Structure Regions, Region Mask and Palette are review-only and cannot be frozen.
-12. On `输出`, click `导出 VOX…` and choose a new `.vox` path. The IDE writes a same-directory temporary file, reads it back through
+12. On `审阅与导出`, click `导出 VOX…` and choose a new `.vox` path. The IDE writes a same-directory temporary file, reads it back through
     the canonical codec, verifies deterministic bytes and only then publishes it. The currently loaded source VOX cannot be
     overwritten. This action exports a copy only; it does not create VXL/HVA, apply/save the project or register an asset.
 
@@ -302,7 +303,7 @@ same recognition case; a running old executable will continue to use its previou
 
 ## 人工修正体素材质区域
 
-1. 可以先在“风格”页点击 `AI 建议` 并接受建议，也可以完全跳过模型调用；直接进入下方“语义”页并点击
+1. 可以在“分划与标注”阶段点击 `获取 AI 建议` 并接受，也可以完全跳过模型调用；点击
    `浏览`、`画笔` 或 `擦除` 时，IDE 会自动准备本地人工区域。
 2. 区域下拉框用于大块赋值；画笔部件/材质是独立目标，不需要预先选择区域列表行。短点击会自动采用命中的
    3D 区域，并在列表中同步选中它。
@@ -310,7 +311,7 @@ same recognition case; a running old executable will continue to use its previou
    整条笔划一次提交、一次撤销即可完全恢复。左键不控制相机；在模型或主视图空白处按住右键拖动可旋转，
    Shift+右键或中键拖动可平移，滚轮可缩放。
 4. 切换为 `擦除` 可移除局部人工覆盖，恢复区域/AI 底稿；`撤销/重做` 只作用于体素画笔，不删除 AI 建议。
-5. 完成后回到“风格”页编译着色预览。只有明确的材质角色会进入色板安全映射；阵营色仍必须人工批准。
+5. 完成后进入“上色”阶段，人工确认单位类型、基准色与技法，再编译着色预览。只有明确的材质角色会进入色板安全映射；阵营色仍必须人工批准。
 
 画笔只处理当前可见的外露表面；每个可见面会精确映射回所属体素，不再用屏幕附近的体素猜测。空白处左键
 会显示“未命中模型表面”且不修改蒙版。旋转模型即可接触另一侧。它不修改几何、不会自动保存，也不会写 VXL/HVA。
@@ -330,7 +331,7 @@ same recognition case; a running old executable will continue to use its previou
 验证仍需等待后续独立功能。
 ## 保存和恢复体素语义分划
 
-1. 在体素风格工作区的“语义”页完成 AI 建议接受、区域人工覆盖或 3D 画笔标注。
+1. 在体素风格工作区的“分划与标注”阶段完成 AI 建议接受、区域人工覆盖或 3D 画笔标注。
 2. 点击“保存分划”，在当前项目目录内保存推荐的 `<模型文件名>.semantic.json`。
 3. 以后先载入完全相同的 VOX/VXL 工作几何，再点击“载入分划”选择该文件。
 4. 如果模型、确定性区域证据或人工层哈希不一致，IDE 会拒绝载入且保留当前会话不变。

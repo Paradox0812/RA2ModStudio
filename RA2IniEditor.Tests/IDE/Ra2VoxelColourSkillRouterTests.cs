@@ -21,7 +21,7 @@ public sealed class Ra2VoxelColourSkillRouterTests
         Ra2VoxelUnitClassEvidence evidence = Ra2VoxelUnitClassClassifierTests.CreateEvidence('A');
         Ra2VoxelColourSkillRouteResult result = Ra2VoxelColourSkillRouter.Resolve(
             evidence,
-            Ra2VoxelUnitClassClassifierTests.Confirm(evidence, unitClass),
+            Ra2VoxelUnitClassClassifierTests.ConfirmManual(evidence, unitClass),
             Ra2AgentSkillCatalog.LoadBundled());
 
         Assert.True(result.IsSuccess, result.Message);
@@ -43,7 +43,7 @@ public sealed class Ra2VoxelColourSkillRouterTests
         Ra2VoxelUnitClassEvidence currentEvidence = Ra2VoxelUnitClassClassifierTests.CreateEvidence('B');
         Ra2VoxelColourSkillRouteResult result = Ra2VoxelColourSkillRouter.Resolve(
             currentEvidence,
-            Ra2VoxelUnitClassClassifierTests.Confirm(oldEvidence, Ra2VoxelUnitClass.Ground),
+            Ra2VoxelUnitClassClassifierTests.ConfirmManual(oldEvidence, Ra2VoxelUnitClass.Ground),
             Ra2AgentSkillCatalog.LoadBundled());
         Assert.Equal(Ra2VoxelColourSkillRouteFailureKind.UnitClassConfirmationStale, result.FailureKind);
     }
@@ -52,7 +52,7 @@ public sealed class Ra2VoxelColourSkillRouterTests
     public void Router_MissingOrOversizedSkillFailsClosed()
     {
         Ra2VoxelUnitClassEvidence evidence = Ra2VoxelUnitClassClassifierTests.CreateEvidence('A');
-        Ra2VoxelConfirmedUnitClass confirmation = Ra2VoxelUnitClassClassifierTests.Confirm(evidence, Ra2VoxelUnitClass.Ground);
+        Ra2VoxelConfirmedUnitClass confirmation = Ra2VoxelUnitClassClassifierTests.ConfirmManual(evidence, Ra2VoxelUnitClass.Ground);
         Ra2AgentSkillCatalog bundled = Ra2AgentSkillCatalog.LoadBundled();
 
         Ra2AgentSkillCatalog missing = new(bundled.Skills.Where(skill => skill.Name != "ra2-ground-voxel-colour-techniques"));

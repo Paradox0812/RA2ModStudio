@@ -46,9 +46,7 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Semantics.Accept",
             "VoxelStyle.Semantics.Discard",
             "VoxelStyle.Semantics.Status",
-            "VoxelStyle.UnitClass.Analyze",
             "VoxelStyle.UnitClass.Status",
-            "VoxelStyle.UnitClass.Evidence",
             "VoxelStyle.UnitClass.Selector",
             "VoxelStyle.UnitClass.Confirm",
             "VoxelStyle.UnitClass.Skill",
@@ -69,6 +67,9 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Semantics.LoadSidecar",
             "VoxelStyle.Semantics.PersistenceStatus",
             "VoxelStyle.Semantics.EditStatus",
+            "VoxelStyle.Semantics.BrushPart",
+            "VoxelStyle.Semantics.BrushMaterial",
+            "VoxelStyle.Semantics.BrushRemap",
             "VoxelStyle.Semantics.ReviewDimension",
             "VoxelStyle.Semantics.ReviewPart",
             "VoxelStyle.Semantics.ReviewMaterial",
@@ -98,14 +99,18 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Layout.InspectorSplitter",
             "VoxelStyle.Layout.DetailsSplitter",
             "VoxelStyle.Workflow.Tabs",
-            "VoxelStyle.Workflow.Generation",
+            "VoxelStyle.Workflow.StageNavigator",
+            "VoxelStyle.Workflow.Model",
             "VoxelStyle.Workflow.Geometry",
-            "VoxelStyle.Workflow.Style",
+            "VoxelStyle.Workflow.Semantics",
+            "VoxelStyle.Workflow.Colour",
+            "VoxelStyle.Workflow.Review",
+            "VoxelStyle.Workflow.NextAction",
             "VoxelStyle.Workflow.Output",
             "VoxelStyle.Preview.Toolbar",
+            "VoxelStyle.Preview.ModeSelector",
             "VoxelStyle.Details.Tabs",
             "VoxelStyle.Details.Quality",
-            "VoxelStyle.Details.Structure",
             "VoxelStyle.Details.Colour",
             "VoxelStyle.Details.Semantics",
             "VoxelStyle.Details.Review",
@@ -172,14 +177,26 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
         Assert.Contains("<local:Ra2VoxelViewport3D", xaml, StringComparison.Ordinal);
         Assert.Contains("Style=\"{StaticResource UiGridSplitterStyle}\"", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("Style=\"{StaticResource IdeDockSplitterStyle}\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("Content=\"选择模型…\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Content=\"载入模型…\"", xaml, StringComparison.Ordinal);
         Assert.DoesNotContain("Content=\"选择 VOX…\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("Click=\"AnalyzeUnitClass_OnClick\"", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("Click=\"AnalyzeUnitClass_OnClick\"", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("VoxelStyle.UnitClass.Analyze", xaml, StringComparison.Ordinal);
+        Assert.DoesNotContain("VoxelStyle.UnitClass.Evidence", xaml, StringComparison.Ordinal);
+        Assert.Contains("不再调用 DeepSeek 判型", xaml, StringComparison.Ordinal);
         Assert.Contains("Click=\"ConfirmUnitClass_OnClick\"", xaml, StringComparison.Ordinal);
+        Assert.Matches(
+            "VoxelStyle\\.UnitClass\\.Selector[^>]+DisplayMemberPath=\\\"Display\\\"",
+            xaml);
         Assert.Contains("SelectedItem=\"{Binding SelectedBaseColour, Mode=TwoWay}\"", xaml, StringComparison.Ordinal);
+        Assert.Matches(
+            "VoxelStyle\\.BaseColour\\.Selector[^>]+DisplayMemberPath=\\\"Display\\\"",
+            xaml);
         Assert.Contains("SelectedItem=\"{Binding SelectedTechnique, Mode=TwoWay}\"", xaml, StringComparison.Ordinal);
+        Assert.Matches(
+            "VoxelStyle\\.Template\\.Selector[^>]+DisplayMemberPath=\\\"DisplayName\\\"",
+            xaml);
         Assert.Contains("IsEnabled=\"{Binding HasReviewableColourWarnings}\"", xaml, StringComparison.Ordinal);
-        int classAnalyze = xaml.IndexOf("VoxelStyle.UnitClass.Analyze", StringComparison.Ordinal);
+        int classAnalyze = xaml.IndexOf("VoxelStyle.UnitClass.Selector", StringComparison.Ordinal);
         int styleSources = xaml.IndexOf("VoxelStyle.StyleSources", StringComparison.Ordinal);
         Assert.True(classAnalyze >= 0 && styleSources > classAnalyze);
 
@@ -225,12 +242,12 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
         Assert.Contains("Content=\"固化最终候选\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Content=\"导出 VOX…\"", xaml, StringComparison.Ordinal);
         Assert.Contains("<WrapPanel", xaml, StringComparison.Ordinal);
-        Assert.Contains("AutomationProperties.AutomationId=\"VoxelStyle.Preview.Refined\" Content=\"平滑\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("AutomationProperties.AutomationId=\"VoxelStyle.Preview.Direct\" Content=\"基线\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("AutomationProperties.AutomationId=\"VoxelStyle.Preview.Refined\" Content=\"平滑候选\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("AutomationProperties.AutomationId=\"VoxelStyle.Preview.Direct\" Content=\"基线候选\"", xaml, StringComparison.Ordinal);
         Assert.Contains("IsEnabled=\"{Binding HasRefinedCandidate}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("IsEnabled=\"{Binding HasQualityDifference}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Text=\"{Binding QualityCandidatesText}\"", xaml, StringComparison.Ordinal);
-        Assert.Contains("执行两次 DeepSeek 请求，可能消耗配额；只生成会话内审阅结果，绝不写入文件。", xaml, StringComparison.Ordinal);
+        Assert.Contains("AI 结构识别是独立的可选步骤", xaml, StringComparison.Ordinal);
         int difference = xaml.IndexOf("VoxelStyle.Preview.Difference", StringComparison.Ordinal);
         int structure = xaml.IndexOf("VoxelStyle.Preview.StructureRegions", StringComparison.Ordinal);
         int symmetry = xaml.IndexOf("VoxelStyle.Preview.Symmetry", StringComparison.Ordinal);

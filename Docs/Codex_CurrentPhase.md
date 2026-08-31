@@ -13,6 +13,24 @@ INI、Cameo/Icon、VOX/VXL 与 SHP 内容生产。
 
 ## 2. 最新可信状态
 
+### 当前未提交实现：ASSET-VOX-4E Rev.4 UI-R1
+
+Rev.4 已按用户批准实现，但等待用户手动 UI 验收，尚未生成 clean package：
+
+- 活动上色链已移除 DeepSeek 自动单位判型；用户直接选择 Ground/Air/LargeSurface/Unknown，Host 以
+  `HumanManualSelection` 和当前 evidence identity 确定性路由一个 colouring Skill。
+- workspace 已重构为 `模型 / 几何 / 分划与标注 / 上色 / 审阅与导出` 五阶段；分划载入/保存、画笔和标注集中在
+  第三阶段，上色输入集中在第四阶段，质量/固化/导出集中在第五阶段。
+- Release solution build 在启动验收程序前为 0 warning/0 error；最终隔离 build 为 0 error/1 个范围外既有 warning；
+  Application focused 39/39、IDE focused 39/39 通过。
+- 用户明确要求不使用电脑操控，截图、100%/125% DPI 和真实模型流程由用户手动验收。收到通过结论前不运行
+  4E-5 最终 package 门。
+- UI-R1-FIX1 已修复首次截图发现的单位类型/基准色下拉空白：两个 `DisplayMemberPath` 已从错误的
+  `DisplayName` 改为真实 `Display`；隔离 Release XAML build 通过，workspace UI/ViewModel 26/26 通过，等待用户
+  重启后的截图复验。
+
+权威修订：`Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md`。
+
 ### 最新已提交 Git 基线
 
 ```text

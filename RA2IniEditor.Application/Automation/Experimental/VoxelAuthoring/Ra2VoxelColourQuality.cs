@@ -121,8 +121,6 @@ internal static class Ra2VoxelColourQualityEvaluator
         Ra2VoxelColourFamilySelection family,
         Ra2VoxelUnitClassEvidence evidence,
         Ra2VoxelConfirmedUnitClass confirmation,
-        Ra2VoxelUnitClassProposal? proposal,
-        Ra2VoxelSkillIdentity classifierSkill,
         Ra2VoxelSkillIdentity colourSkill,
         string bundleHash)
     {
@@ -138,7 +136,6 @@ internal static class Ra2VoxelColourQualityEvaluator
         ArgumentNullException.ThrowIfNull(family);
         ArgumentNullException.ThrowIfNull(evidence);
         ArgumentNullException.ThrowIfNull(confirmation);
-        ArgumentNullException.ThrowIfNull(classifierSkill);
         ArgumentNullException.ThrowIfNull(colourSkill);
 
         List<Ra2VoxelColourQualityWarning> warnings = [];
@@ -239,7 +236,7 @@ internal static class Ra2VoxelColourQualityEvaluator
             warnings.Add(new("PaletteFamilyFallback", warning));
         if (requirements.UnknownCellCount > 0)
             warnings.Add(new("UnknownSemanticCells", "Unknown cells keep base geometry shading and require human review."));
-        if (adaptation.ForceNeedsReview || confirmation.Source == Ra2VoxelUnitClassConfirmationSource.ManualWithoutAiAssessment)
+        if (adaptation.ForceNeedsReview)
             warnings.Add(new("UnitClassReviewRequired", "The confirmed unit class requires explicit human review."));
         if (facts?.IsUniformColour == true && plan.Roles.Select(value => value.PaletteIndex).Distinct().Count() > 1)
             warnings.Add(new("UniformColour", "Multiple roles were expected but the result is uniformly coloured."));
@@ -299,9 +296,6 @@ internal static class Ra2VoxelColourQualityEvaluator
         metrics.Add(new("unit_class", confirmation.UnitClass.ToString()));
         metrics.Add(new("unit_class_confirmation_source", confirmation.Source.ToString()));
         metrics.Add(new("unit_class_evidence_hash", evidence.EvidenceHash));
-        metrics.Add(new("unit_class_proposal", proposal?.ProposedClass.ToString() ?? "NotAvailable"));
-        metrics.Add(new("unit_class_confidence", proposal?.ConfidenceBand.ToString() ?? "NotAvailable"));
-        metrics.Add(new("classifier_skill", $"{classifierSkill.SkillId}@{classifierSkill.Revision}:{classifierSkill.ContentHash}"));
         metrics.Add(new("colour_skill", $"{colourSkill.SkillId}@{colourSkill.Revision}:{colourSkill.ContentHash}"));
         metrics.Add(new("unit_adaptation", adaptation.AdaptationId));
         metrics.Add(new("technique", technique.TechniqueId));

@@ -305,6 +305,17 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         Ra2VoxelConfirmedUnitClass confirmation) =>
         Ra2VoxelColourSkillRouter.Resolve(evidence, confirmation, _skillCatalog);
 
+    internal Ra2VoxelUnitClassEvidence BuildUnitClassEvidence(
+        Ra2VoxelStyleSourceLoadResult source,
+        Ra2VoxelSemanticMaskComposition composition)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(composition);
+        if (!source.IsSuccess || source.Snapshot is null)
+            throw new ArgumentException("A valid working voxel source is required.", nameof(source));
+        return Ra2VoxelUnitClassEvidenceBuilder.Build(source.Snapshot, composition);
+    }
+
     internal Ra2VoxelStyleSourceLoadResult LoadSource(
         string? projectRoot,
         string? filePath,
@@ -554,7 +565,6 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         DeepSeekRa2AiModel model,
         Ra2VoxelSemanticMaskComposition composition,
         Ra2VoxelUnitClassEvidence evidence,
-        Ra2VoxelUnitClassProposal? proposal,
         Ra2VoxelConfirmedUnitClass confirmation,
         Ra2VoxelBaseColourSelection baseColour,
         Ra2VoxelColourTechniquePolicy technique,
@@ -577,7 +587,7 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
                 !string.Equals(evidence.EvidenceHash, confirmation.EvidenceHash, StringComparison.Ordinal))
             {
                 return PreviewFailure(Ra2VoxelStylePreviewFailureKind.InvalidSource,
-                    "单位判型或语义证据已过期，请重新判型并确认。");
+                    "人工单位类型确认或语义证据已过期，请重新选择并确认。");
             }
             Ra2VoxelStyleSourceResolutionResult resolution = ResolveSourcePack(source, projectRoot, requestOverride);
             if (!resolution.IsSuccess || resolution.SourcePack is null)
@@ -625,12 +635,10 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
                     compilation.BindingPlan,
                     evidence,
                     confirmation,
-                    new Ra2VoxelSkillIdentity(route.ClassifierSkill.Name, route.ClassifierSkill.Version, route.ClassifierSkill.ContentHash),
                     new Ra2VoxelSkillIdentity(route.ColourSkill.Name, route.ColourSkill.Version, route.ColourSkill.ContentHash),
                     baseColour,
                     technique,
-                    route.Adaptation,
-                    Proposal: proposal),
+                    route.Adaptation),
                 cancellationToken);
             if (!materialization.IsSuccess || materialization.Ordinary is null ||
                 materialization.SemanticIntegration is null)

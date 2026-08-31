@@ -32,7 +32,6 @@ internal enum Ra2VoxelStyleCompilerV2FailureKind
     None = 0,
     UnitClassConfirmationRequired,
     UnitClassConfirmationStale,
-    ClassifierSkillUnavailable,
     ColourSkillUnavailable,
     ColourSkillMismatch,
     MultipleClassSkillsSelected,
@@ -68,9 +67,6 @@ internal sealed class Ra2VoxelStyleNormalizationIdentity
         string bindingPlanHash,
         string evidenceHash,
         string confirmationHash,
-        string classifierSkillId,
-        string classifierSkillRevision,
-        string classifierSkillContentHash,
         string colourSkillId,
         string colourSkillRevision,
         string colourSkillContentHash,
@@ -85,9 +81,6 @@ internal sealed class Ra2VoxelStyleNormalizationIdentity
         BindingPlanHash = bindingPlanHash;
         EvidenceHash = evidenceHash;
         ConfirmationHash = confirmationHash;
-        ClassifierSkillId = classifierSkillId;
-        ClassifierSkillRevision = classifierSkillRevision;
-        ClassifierSkillContentHash = classifierSkillContentHash;
         ColourSkillId = colourSkillId;
         ColourSkillRevision = colourSkillRevision;
         ColourSkillContentHash = colourSkillContentHash;
@@ -103,9 +96,6 @@ internal sealed class Ra2VoxelStyleNormalizationIdentity
     internal string BindingPlanHash { get; }
     internal string EvidenceHash { get; }
     internal string ConfirmationHash { get; }
-    internal string ClassifierSkillId { get; }
-    internal string ClassifierSkillRevision { get; }
-    internal string ClassifierSkillContentHash { get; }
     internal string ColourSkillId { get; }
     internal string ColourSkillRevision { get; }
     internal string ColourSkillContentHash { get; }
@@ -125,14 +115,11 @@ internal sealed class Ra2VoxelStyleNormalizationIdentity
         string hash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
         {
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(
-                writer, "ra2-voxel-style-normalization-input/1");
+                writer, "ra2-voxel-style-normalization-input/2");
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, plan.PlanHash);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, bindings.BindingPlanHash);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Evidence.EvidenceHash);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Confirmation.ConfirmationHash);
-            Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ClassifierSkill.Name);
-            Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ClassifierSkill.Version);
-            Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ClassifierSkill.ContentHash);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ColourSkill.Name);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ColourSkill.Version);
             Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, route.ColourSkill.ContentHash);
@@ -147,9 +134,6 @@ internal sealed class Ra2VoxelStyleNormalizationIdentity
             bindings.BindingPlanHash,
             context.Evidence.EvidenceHash,
             context.Confirmation.ConfirmationHash,
-            route.ClassifierSkill.Name,
-            route.ClassifierSkill.Version,
-            route.ClassifierSkill.ContentHash,
             route.ColourSkill.Name,
             route.ColourSkill.Version,
             route.ColourSkill.ContentHash,
@@ -578,7 +562,6 @@ internal sealed partial class Ra2VoxelStyleCompiler
         Ra2VoxelStyleCompilerV2FailureKind kind = result.FailureKind switch
         {
             Ra2VoxelColourSkillRouteFailureKind.UnitClassConfirmationStale => Ra2VoxelStyleCompilerV2FailureKind.UnitClassConfirmationStale,
-            Ra2VoxelColourSkillRouteFailureKind.ClassifierSkillUnavailable => Ra2VoxelStyleCompilerV2FailureKind.ClassifierSkillUnavailable,
             Ra2VoxelColourSkillRouteFailureKind.ColourSkillUnavailable => Ra2VoxelStyleCompilerV2FailureKind.ColourSkillUnavailable,
             Ra2VoxelColourSkillRouteFailureKind.ColourSkillMismatch => Ra2VoxelStyleCompilerV2FailureKind.ColourSkillMismatch,
             Ra2VoxelColourSkillRouteFailureKind.InstructionLimitExceeded => Ra2VoxelStyleCompilerV2FailureKind.InstructionLimitExceeded,

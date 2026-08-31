@@ -58,6 +58,10 @@
 
 ## 4E-4 — Approved workspace UI wiring
 
+> Rev.4 amendment: the automatic classification UI and active classifier dependency below are historical Rev.3 behavior.
+> Current behavior is manual unit-class selection plus the five-stage task workspace defined in
+> `Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md`.
+
 - 既有 Voxel Style workspace 新增显式“AI 判断单位类型 → 人工确认/纠正 → 唯一 Skill”路径；未确认 class 禁止 style
   compilation，Provider unavailable/timeout 才开放“未经过 AI 评估”的人工 fallback。
 - 新增 active RA2 palette 的 opaque/non-remap 基准色 selector、真实 swatch/status，以及五个规则/技法 selector；
@@ -83,6 +87,8 @@
 | 4E-3 | deterministic materialization + contrast/quality | Application family/materializer/quality、existing colourizer/contrast/review package、35 tests | 35/35 new；77/77 affected Application；89/89 affected IDE；Debug build passed | Completed | Yes：4E-4 approved UI contract |
 | 4E-4 | approved UI contract | existing coordinator/ViewModel/workspace XAML/code-behind、UI/ViewModel tests | IDE project XAML build 0 warning/0 error；workspace UI/ViewModel 25/25 | Completed / physical visual Pending | Yes：4E-5 automated verification may run；physical acceptance remains explicit |
 | 4E-5 | full verification/package/physical acceptance | verification and documentation only | Restore/build passed；Application 350/350；AssetHost 50/50；IDE full 2913/2914 with one stable full-suite-only WPF resource failure；failed test alone 1/1 passed | InProgress / mandatory full-suite gate not satisfied | No：clean package and physical model acceptance not claimed |
+| 4E-UI-R1 Rev.4 | manual unit class + five-stage workspace | Application internal identity、IDE router/compiler/coordinator/ViewModel/XAML、focused tests/docs | Release build passed；Application 39/39；IDE 39/39；physical UI pending | Implemented / focused verified / physical pending | No：wait for user screenshot/manual result before final package |
+| 4E-UI-R1-FIX1 | unit-class/base-colour selector visible labels | workspace XAML、UI/ViewModel regression tests、status docs | Isolated Release XAML build 0 warning/0 error；UI/ViewModel 26/26 | Completed / screenshot recheck pending | No：user must rebuild/restart and confirm labels visibly render |
 
 ## Verification Matrix
 

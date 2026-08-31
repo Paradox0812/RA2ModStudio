@@ -23,6 +23,19 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "ra2-voxel-style-vm-tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public async Task ColourSelectorOptions_ExposeNonEmptyDisplayText()
+    {
+        TestContext test = CreateContext();
+        using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient());
+
+        await viewModel.LoadSourceAsync(test.VoxPath);
+
+        Assert.All(viewModel.UnitClassOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.Display)));
+        Assert.All(viewModel.BaseColourOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.Display)));
+        Assert.All(viewModel.TechniqueOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.DisplayName)));
+    }
+
+    [Fact]
     public void WorkingGeometryState_AdvancesLinearlyAndIgnoresNoOpAdoption()
     {
         Ra2VoxelSceneSnapshot root = CreateSnapshot();
@@ -288,7 +301,7 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         Assert.Contains("调整了", viewModel.PaletteContrastText, StringComparison.Ordinal);
         Assert.Equal(working.CanonicalHash, viewModel.ActiveGeometrySnapshot!.CanonicalHash);
         Assert.Equal(working.OccupancyCount, viewModel.CurrentPreviewSnapshot!.OccupancyCount);
-        Assert.Equal(2, client.CallCount);
+        Assert.Equal(1, client.CallCount);
 
         viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.Contrast);
 
@@ -709,16 +722,18 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         }
     }
 
-    private static async Task PrepareColourInputsAsync(Ra2VoxelStyleWorkspaceViewModel viewModel)
+    private static Task PrepareColourInputsAsync(Ra2VoxelStyleWorkspaceViewModel viewModel)
     {
-        await viewModel.AnalyzeUnitClassAsync();
-        Assert.NotNull(viewModel.SelectedUnitClass);
+        viewModel.SelectedUnitClass = Assert.Single(
+            viewModel.UnitClassOptions,
+            value => value.Value == Ra2VoxelUnitClass.Ground);
         viewModel.ConfirmUnitClass();
         Assert.True(viewModel.HasConfirmedUnitClass);
         viewModel.SelectedBaseColour = Assert.Single(
             viewModel.BaseColourOptions,
             value => value.PaletteIndex == 100);
         Assert.True(viewModel.CanCompile);
+        return Task.CompletedTask;
     }
 
     private static Ra2AiResponse ContrastProposalResponse() => Ra2AiResponse.CreateToolCalls(
