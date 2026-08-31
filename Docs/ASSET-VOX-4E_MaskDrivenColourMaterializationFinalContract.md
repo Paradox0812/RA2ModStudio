@@ -923,3 +923,17 @@ GameReady: OutOfScope
 - 修复或独立处理 IDE full suite 的 WPF resource isolation failure 后才能通过 4E-5 自动化门；
 - 按第 13 节完成截图/人工验收，真实 DeepSeek 调用仍须用户另行明确付费授权；
 - 全部 mandatory gates 通过后才能生成 clean package 并将 4E-5 标记完成。
+
+## 17. Rev.5 修订路由（2026-08-31）
+
+真实 RA2 indexed palette 与用户样本证明本合同的 `oklab-anchor-v1`、Side→BodyMid、统一 edge mask 和全体素
+Unknown 警告不足以保证视觉质量。已批准并实现的替代规则见
+`Docs/ASSET-VOX-4E_ColourQualityAndSurfaceCoverageAmendmentRev5.md`。发生冲突时以 Rev.5 为准；Rev.3 其余人工
+BaseColour、人工 UnitClass、专用 Skill、语义/remap precedence、session-only 和显式审阅边界保持有效。
+
+## 18. Rev.6 修订路由（2026-08-31）
+
+真实地面模型进一步证明 Side/Under 重叠、X/Y 方向面合并、RegionId 与有效语义边界混淆，以及仅靠 Skill 文案
+不能保证五种技法产生不同最终结果。已批准并实现的替代规则见
+`Docs/ASSET-VOX-4E_DirectionalSurfaceSemanticBoundaryTechniqueDifferentiationRev6.md`。发生冲突时以 Rev.6 为准；
+Rev.5 的 indexed ramp、BodyBase 长侧面锚点、可见表面覆盖与 3D invalidation fallback 继续有效。

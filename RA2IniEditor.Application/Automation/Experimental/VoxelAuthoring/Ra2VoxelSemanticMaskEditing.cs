@@ -286,6 +286,199 @@ internal sealed class Ra2VoxelSemanticMaskComposition
     }
 }
 
+/// <summary>
+/// Runtime-only semantic coverage projected over visible voxel surfaces. Enclosed interior cells are
+/// intentionally excluded because they neither affect the rendered result nor require manual labelling.
+/// </summary>
+internal sealed record Ra2VoxelSemanticSurfaceCoverage(
+    int VisibleSurfaceCellCount,
+    int KnownVisibleSurfaceCellCount,
+    int UnknownVisibleSurfaceCellCount,
+    double KnownVisibleSurfaceRatio);
+
+internal static class Ra2VoxelSemanticSurfaceCoverageProjector
+{
+    internal static Ra2VoxelSemanticSurfaceCoverage Project(
+        Ra2VoxelSceneSnapshot snapshot,
+        Ra2VoxelSemanticMaskComposition composition,
+        CancellationToken cancellationToken = default)
+        => Project(snapshot, composition, Ra2VoxelColourizer.BuildGeometryMask(snapshot, cancellationToken));
+
+    internal static Ra2VoxelSemanticSurfaceCoverage Project(
+        Ra2VoxelSceneSnapshot snapshot,
+        Ra2VoxelSemanticMaskComposition composition,
+        Ra2VoxelGeometryRegionMask geometry)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(geometry);
+        if (!string.Equals(snapshot.CanonicalHash, composition.SourceSnapshotHash, StringComparison.Ordinal) ||
+            !string.Equals(snapshot.CanonicalHash, geometry.SourceSnapshotHash, StringComparison.Ordinal) ||
+            snapshot.OccupancyCount != composition.CellCount || snapshot.OccupancyCount != geometry.CellCount)
+        {
+            throw new ArgumentException("Surface coverage inputs do not match the current snapshot.");
+        }
+
+        int visible = 0;
+        int known = 0;
+        for (int index = 0; index < snapshot.OccupancyCount; index++)
+        {
+            if ((geometry[index] & Ra2VoxelGeometryRegionBits.Interior) != 0)
+                continue;
+            visible++;
+            Ra2VoxelSemanticEffectiveAssignment assignment = composition[index];
+            if (assignment.MaterialRole != Ra2VoxelSemanticMaterialRole.Unknown ||
+                assignment.RemapIntent == Ra2VoxelSemanticRemapIntent.ExplicitlyApproved)
+            {
+                known++;
+            }
+        }
+        int unknown = visible - known;
+        double ratio = visible == 0 ? 0d : (double)known / visible;
+        return new(visible, known, unknown, ratio);
+    }
+}
+
+/// <summary>
+/// Runtime-only, one-cell semantic boundary projected onto the painted side of a visible interface.
+/// Spatial partition ids are deliberately ignored: only effective part/material changes are meaningful.
+/// </summary>
+internal sealed record Ra2VoxelSemanticBoundaryProjection(
+    Ra2VoxelExplicitMask Mask,
+    int OpportunityCellCount,
+    int SelectedCellCount,
+    int ProtectedDirectMaterialCellCount);
+
+internal static class Ra2VoxelSemanticBoundaryProjector
+{
+    internal const string MaskId = "semantic.boundary.accent";
+
+    internal static Ra2VoxelSemanticBoundaryProjection Project(
+        Ra2VoxelSceneSnapshot snapshot,
+        Ra2VoxelSemanticMaskComposition composition,
+        Ra2VoxelGeometryRegionMask geometry,
+        Ra2VoxelColourTechniquePolicy technique)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        ArgumentNullException.ThrowIfNull(composition);
+        ArgumentNullException.ThrowIfNull(geometry);
+        ArgumentNullException.ThrowIfNull(technique);
+        if (!string.Equals(snapshot.CanonicalHash, composition.SourceSnapshotHash, StringComparison.Ordinal) ||
+            !string.Equals(snapshot.CanonicalHash, geometry.SourceSnapshotHash, StringComparison.Ordinal) ||
+            snapshot.OccupancyCount != composition.CellCount || snapshot.OccupancyCount != geometry.CellCount)
+        {
+            throw new ArgumentException("Semantic boundary inputs do not match the current snapshot.");
+        }
+
+        Dictionary<Ra2VoxelCoordinate, int> indexByCoordinate = snapshot.Cells
+            .Select((cell, index) => (cell.Coordinate, index))
+            .ToDictionary(value => value.Coordinate, value => value.index);
+        byte[] selected = new byte[snapshot.OccupancyCount];
+        int opportunities = 0;
+        int protectedDirect = 0;
+        for (int index = 0; index < snapshot.OccupancyCount; index++)
+        {
+            if ((geometry[index] & Ra2VoxelGeometryRegionBits.Interior) != 0)
+                continue;
+            Ra2VoxelSemanticEffectiveAssignment current = composition[index];
+            bool currentPainted = IsPainted(current);
+            bool hasOwnedBoundary = false;
+            foreach (Ra2VoxelFaceDirection direction in Ra2VoxelNeighbourhood.OrderedDirections)
+            {
+                (int dx, int dy, int dz) = Ra2VoxelNeighbourhood.Offset(direction);
+                Ra2VoxelCoordinate coordinate = snapshot.Cells[index].Coordinate;
+                if (!indexByCoordinate.TryGetValue(new(coordinate.X + dx, coordinate.Y + dy, coordinate.Z + dz),
+                        out int neighbourIndex) ||
+                    (geometry[neighbourIndex] & Ra2VoxelGeometryRegionBits.Interior) != 0)
+                {
+                    continue;
+                }
+
+                Ra2VoxelSemanticEffectiveAssignment neighbour = composition[neighbourIndex];
+                bool partBoundary = current.PartRole != Ra2VoxelSemanticPartRole.Unknown &&
+                    neighbour.PartRole != Ra2VoxelSemanticPartRole.Unknown &&
+                    current.PartRole != neighbour.PartRole;
+                bool materialBoundary = current.MaterialRole != Ra2VoxelSemanticMaterialRole.Unknown &&
+                    neighbour.MaterialRole != Ra2VoxelSemanticMaterialRole.Unknown &&
+                    current.MaterialRole != neighbour.MaterialRole &&
+                    AllowsMaterialBoundary(technique, current, neighbour);
+                if (!partBoundary && !materialBoundary)
+                    continue;
+
+                opportunities++;
+                if (!currentPainted)
+                {
+                    protectedDirect++;
+                    continue;
+                }
+                if (OwnsBoundary(current, neighbour, technique.AccentPolicy))
+                    hasOwnedBoundary = true;
+            }
+            if (hasOwnedBoundary)
+                selected[index] = 1;
+        }
+
+        int selectedCount = selected.Count(value => value != 0);
+        return new(
+            new Ra2VoxelExplicitMask(MaskId, snapshot.CanonicalHash, selected),
+            opportunities,
+            selectedCount,
+            protectedDirect);
+    }
+
+    private static bool AllowsMaterialBoundary(
+        Ra2VoxelColourTechniquePolicy technique,
+        Ra2VoxelSemanticEffectiveAssignment current,
+        Ra2VoxelSemanticEffectiveAssignment neighbour)
+        => technique.MaterialSeparationPolicy switch
+        {
+            Ra2VoxelMaterialSeparationPolicy.Conservative => false,
+            Ra2VoxelMaterialSeparationPolicy.Balanced =>
+                IsDirectMaterial(current.MaterialRole) || IsDirectMaterial(neighbour.MaterialRole),
+            Ra2VoxelMaterialSeparationPolicy.Strong => true,
+            _ => false
+        };
+
+    private static bool OwnsBoundary(
+        Ra2VoxelSemanticEffectiveAssignment current,
+        Ra2VoxelSemanticEffectiveAssignment neighbour,
+        Ra2VoxelAccentPolicy accentPolicy)
+    {
+        if (!IsPainted(neighbour))
+            return true;
+        int currentPriority = PartPriority(current.PartRole, accentPolicy);
+        int neighbourPriority = PartPriority(neighbour.PartRole, accentPolicy);
+        return currentPriority > neighbourPriority ||
+            (currentPriority == neighbourPriority && current.PartRole > neighbour.PartRole);
+    }
+
+    private static int PartPriority(Ra2VoxelSemanticPartRole role, Ra2VoxelAccentPolicy accentPolicy)
+    {
+        int priority = role switch
+        {
+            Ra2VoxelSemanticPartRole.BodyShell => 0,
+            Ra2VoxelSemanticPartRole.Turret => 20,
+            Ra2VoxelSemanticPartRole.Attachment => 30,
+            Ra2VoxelSemanticPartRole.Wheel or Ra2VoxelSemanticPartRole.Track => 40,
+            Ra2VoxelSemanticPartRole.Barrel => 50,
+            Ra2VoxelSemanticPartRole.Antenna => 60,
+            _ => -1
+        };
+        return accentPolicy == Ra2VoxelAccentPolicy.EmphasizeSmallMask &&
+               role is Ra2VoxelSemanticPartRole.Barrel or Ra2VoxelSemanticPartRole.Antenna or
+                   Ra2VoxelSemanticPartRole.Attachment
+            ? priority + 100
+            : priority;
+    }
+
+    private static bool IsPainted(Ra2VoxelSemanticEffectiveAssignment assignment) =>
+        assignment.MaterialRole == Ra2VoxelSemanticMaterialRole.PaintedSurface &&
+        assignment.RemapIntent != Ra2VoxelSemanticRemapIntent.ExplicitlyApproved;
+
+    private static bool IsDirectMaterial(Ra2VoxelSemanticMaterialRole role) =>
+        role is not (Ra2VoxelSemanticMaterialRole.Unknown or Ra2VoxelSemanticMaterialRole.PaintedSurface);
+}
+
 internal static class Ra2VoxelSemanticMaskComposer
 {
     internal static Ra2VoxelSemanticMaskComposition Compose(

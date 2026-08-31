@@ -222,3 +222,15 @@ Use this checklist before publishing or handing off an IDE-only source package.
 - [x] Application 302/302, IDE 2885/2885 and AssetHost 50/50 pass; Debug build has 0 errors.
 - [ ] Manually verify click, slow/fast drag, background gap, size 3, mirror, erase and one-step undo in a fresh process.
 - [ ] Manually verify right-button cancellation/orbit and Part/Material legend consistency at 100% and 125% DPI.
+
+## ASSET-VOX-4E Rev.6 colouring and classification preview
+
+- [x] Direction masks distinguish longitudinal ends from lateral sides and keep side-plus-under cells out of Underside.
+- [x] Effective semantic boundaries ignore RegionId-only seams and never overwrite direct materials/remap.
+- [x] Five revision-2 techniques have distinct typed policies and produce five distinct RA2 indexed-ramp fixture candidate hashes.
+- [x] The global preview toolbar preserves Part/Material review AutomationIds and switches either entry to Semantics 3D
+  without changing workflow stage or semantic composition.
+- [x] Debug build and focused VoxelColour 55/55 plus VoxelStyle workspace 28/28 pass.
+- [ ] On a real ground vehicle, confirm long side black strips are gone and front/rear direction remains recognizable.
+- [ ] Compare at least three techniques on the same base colour and confirm visibly different, coherent results.
+- [ ] Verify the global Part/Material classification preview, legend, 3D return and 100%/125% DPI layout manually.

@@ -20,15 +20,33 @@ public sealed class Ra2VoxelColourTemplateContractTests
             Assert.InRange(policy.DarkOpeningMinimumDelta, 12, 64);
             Assert.Equal(policy, Ra2VoxelColourTechniqueCatalog.Find(policy.TechniqueId));
             Assert.Equal(Ra2VoxelColourTechniquePolicy.LuminanceMetricId, "rec709-srgb-byte-luma-v1");
-            Assert.Equal(Ra2VoxelColourTechniquePolicy.ColourFamilyMetricId, "oklab-anchor-v1");
+            Assert.Equal(Ra2VoxelColourTechniquePolicy.ColourFamilyMetricId, "indexed-ramp-oklab-v2");
         });
 
         Ra2VoxelColourTechniquePolicy copy = new(
-            "balanced-rts-volume", "1", "不同显示名", "不同说明不属于运行时数值身份。",
+            "balanced-rts-volume", "2", "不同显示名", "不同说明不属于运行时数值身份。",
             18, -8, -28, -38, Ra2VoxelColourEdgePolicy.Subtle, 24,
             Ra2VoxelMaterialSeparationPolicy.Balanced, 8, 18,
             Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent);
         Assert.Equal(Ra2VoxelColourTechniqueCatalog.Default.PolicyHash, copy.PolicyHash);
+    }
+
+    [Fact]
+    public void TechniqueCatalog_FiveTechniquesHaveDistinctRuntimePolicies()
+    {
+        string[] signatures = Ra2VoxelColourTechniqueCatalog.All.Select(value => string.Join('|',
+            value.TopLuminanceOffset,
+            value.SideLuminanceOffset,
+            value.DarkLuminanceOffset,
+            value.PreferredUndersideLuminanceOffset,
+            value.EdgePolicy,
+            value.EdgeLuminanceOffset,
+            value.MaterialSeparationPolicy,
+            value.AccentPolicy)).ToArray();
+
+        Assert.Equal(5, signatures.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(Ra2VoxelColourTechniqueCatalog.All, value => Assert.Equal("2", value.Revision));
+        Assert.All(Ra2VoxelUnitAdaptationCatalog.All, value => Assert.Equal("2", value.Revision));
     }
 
     [Fact]

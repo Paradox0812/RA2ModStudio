@@ -286,7 +286,8 @@ internal static class Ra2VoxelSemanticLayerResolver
 internal sealed record Ra2VoxelSemanticStyleIntegrationResult(
     Ra2CompiledVoxelStylePlan Plan,
     IReadOnlyList<Ra2VoxelExplicitMask> Masks,
-    IReadOnlyList<string> UnresolvedRegions);
+    IReadOnlyList<string> UnresolvedRegions,
+    Ra2VoxelSemanticBoundaryProjection? BoundaryProjection = null);
 
 internal static class Ra2VoxelSemanticStyleIntegrator
 {
@@ -295,12 +296,16 @@ internal static class Ra2VoxelSemanticStyleIntegrator
         Ra2VoxelSemanticMaskComposition composition,
         Ra2VoxelSemanticColourRequirements requirements,
         Ra2VoxelSemanticColourBindingPlan bindingPlan,
-        string rawCompiledPlanHash)
+        string rawCompiledPlanHash,
+        Ra2VoxelSceneSnapshot source,
+        Ra2VoxelColourTechniquePolicy technique)
     {
         ArgumentNullException.ThrowIfNull(normalizedPlan);
         ArgumentNullException.ThrowIfNull(composition);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(bindingPlan);
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(technique);
         if (!string.Equals(composition.SourceSnapshotHash, requirements.SourceSnapshotHash, StringComparison.Ordinal) ||
             !string.Equals(composition.CompositionHash, requirements.CompositionHash, StringComparison.Ordinal) ||
             composition.CellCount != requirements.CellCount ||
@@ -317,6 +322,24 @@ internal static class Ra2VoxelSemanticStyleIntegrator
             .ToList();
         List<Ra2VoxelExplicitMask> masks = [];
         List<string> unresolved = [];
+        Ra2VoxelGeometryRegionMask geometry = Ra2VoxelColourizer.BuildGeometryMask(source, technique.EdgePolicy);
+        Ra2VoxelSemanticBoundaryProjection boundary = Ra2VoxelSemanticBoundaryProjector.Project(
+            source, composition, geometry, technique);
+        if (boundary.SelectedCellCount > 0)
+        {
+            Ra2CompiledVoxelStyleRule? edgeRule = rules.SingleOrDefault(value =>
+                value.IsPaintable && value.Region == Ra2VoxelStyleRegionKind.EdgeOrRidge);
+            if (edgeRule is null)
+                throw new ArgumentException("The normalized style plan has no boundary accent role.");
+            masks.Add(boundary.Mask);
+            rules.Add(new(
+                Ra2VoxelStyleRegionKind.ExplicitMask,
+                edgeRule.RoleId,
+                Ra2VoxelStyleEvidenceKind.DeterministicGeometry,
+                boundary.Mask.MaskId,
+                IsPaintable: true,
+                edgeRule.SourceScopeIds));
+        }
         foreach (Ra2VoxelSemanticColourBinding binding in bindingPlan.Bindings
                      .Where(value => value.Requirement != Ra2VoxelSemanticColourRequirementKind.PaintedSurface &&
                                      value.Requirement != Ra2VoxelSemanticColourRequirementKind.ApprovedRemap)
@@ -366,14 +389,14 @@ internal static class Ra2VoxelSemanticStyleIntegrator
             normalizedPlan.Summary,
             normalizedPlan.SourcePackHash,
             normalizedPlan.PaletteHash,
-            normalizedPlan.CompilerRevision + "+semantic-binding/1",
+            normalizedPlan.CompilerRevision + "+semantic-binding/2",
             normalizedPlan.ModelIdentity,
             remapBinding is null ? Ra2VoxelStyleRemapPolicy.None : Ra2VoxelStyleRemapPolicy.ExplicitMask,
             normalizedPlan.InteriorRoleId,
             normalizedPlan.Roles,
             rules,
             normalizedPlan.UnresolvedAssumptions.Concat(unresolved));
-        return new(plan, Array.AsReadOnly(masks.ToArray()), Array.AsReadOnly(unresolved.ToArray()));
+        return new(plan, Array.AsReadOnly(masks.ToArray()), Array.AsReadOnly(unresolved.ToArray()), boundary);
     }
 
     internal static Ra2VoxelSemanticStyleIntegrationResult Integrate(

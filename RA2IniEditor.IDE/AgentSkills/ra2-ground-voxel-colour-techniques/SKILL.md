@@ -2,7 +2,7 @@
 name: ra2-ground-voxel-colour-techniques
 description: Propose evidence-bound colour roles and semantic bindings for a human-confirmed RA2/YR ground vehicle without writing voxel cells or overriding the selected base colour.
 metadata:
-  version: "1"
+  version: "2"
   ra2-domains: voxel-colour-ground
   ra2-modes: chat
 ---
@@ -11,8 +11,9 @@ metadata:
 
 ## Preconditions and authority
 
-- Use only after the Host supplies a human-confirmed Ground class, active palette facts, semantic requirements, and one
-  manually selected opaque non-remap BodyBase.
+- Use only after the Host supplies a human-confirmed Ground class, active palette facts and semantic requirements. The manual opaque
+  non-remap BodyBase and selected technique remain Host-local; they are applied after the model proposal and may not appear
+  in the provider request.
 - Propose bounded colour roles and bindings only. Local validators own palette legality, numeric technique policy, mask
   membership, rule ordering, quality admission, and actual palette-index writes.
 - Never replace BodyBase, expand a semantic mask, approve remap, move geometry, or emit cell coordinates.
@@ -27,6 +28,10 @@ metadata:
   Use value separation to reveal turret rings, mantlets, barrels, launchers, radar dishes and attachments.
 - Large armour planes should stay quiet. Reserve ridge light for silhouette breaks and major plane changes; avoid one-voxel
   glitter, random wear, checkerboard shading and uniform edge outlining.
+- Distinguish the longitudinal front/rear ends from broad lateral sides. Keep long lateral painted planes near BodyBase and
+  use a bounded BodyMid end cue so the vehicle's facing remains recognizable from front-quarter views.
+- Never darken a visible lateral hull cell merely because its bottom face is exposed. True undercarriage may use Underside;
+  side-plus-under cells remain body-family surfaces.
 
 ## Material and remap discipline
 
@@ -34,6 +39,9 @@ metadata:
 - Bind glass, rubber, bare metal, lights, dark openings and accents only when the corresponding semantic requirement exists.
 - Keep Light and Accent as different role IDs when both are required.
 - Remap is an explicit-mask-only identification material. Do not use it for body shadow, tracks, underside fill or whole-body paint.
+- Let the Host derive one-cell emphasis along effective hull/turret/barrel/attachment and eligible material interfaces.
+  RegionId-only partition seams are not boundaries. Paint the emphasis on the PaintedSurface owner only; never overwrite
+  rubber, glass, metal, lights, openings, accents or remap.
 
 ## Review priorities
 
@@ -41,4 +49,3 @@ metadata:
   sparse accent survival and unexplained left/right asymmetry.
 - Prefer a bounded contrast candidate when palette quantization collapses important ground-contact or silhouette steps.
 - Report blockers and warnings; do not claim VXL/HVA correctness or GameReady quality.
-

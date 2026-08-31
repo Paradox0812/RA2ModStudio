@@ -9,6 +9,54 @@ namespace RA2IniEditor.Application.Tests;
 public sealed class Ra2VoxelColourizerTests
 {
     [Fact]
+    public void GeometryMask_UsesTechniqueSpecificEdgeCoverage()
+    {
+        Ra2VoxelSceneSnapshot source = CreateSolidCube();
+
+        Ra2VoxelGeometryRegionMask subtle = Ra2VoxelColourizer.BuildGeometryMask(
+            source, Ra2VoxelColourEdgePolicy.Subtle);
+        Ra2VoxelGeometryRegionMask strong = Ra2VoxelColourizer.BuildGeometryMask(
+            source, Ra2VoxelColourEdgePolicy.Strong);
+        Ra2VoxelGeometryRegionMask none = Ra2VoxelColourizer.BuildGeometryMask(
+            source, Ra2VoxelColourEdgePolicy.None);
+
+        int subtleCount = Enumerable.Range(0, source.OccupancyCount)
+            .Count(index => (subtle[index] & Ra2VoxelGeometryRegionBits.EdgeOrRidge) != 0);
+        int strongCount = Enumerable.Range(0, source.OccupancyCount)
+            .Count(index => (strong[index] & Ra2VoxelGeometryRegionBits.EdgeOrRidge) != 0);
+        int noneCount = Enumerable.Range(0, source.OccupancyCount)
+            .Count(index => (none[index] & Ra2VoxelGeometryRegionBits.EdgeOrRidge) != 0);
+
+        Assert.Equal(8, subtleCount);
+        Assert.Equal(12, strongCount);
+        Assert.Equal(0, noneCount);
+    }
+
+    [Fact]
+    public void GeometryMask_DistinguishesLongitudinalEndsFromLateralSides()
+    {
+        Ra2VoxelSceneSnapshot source = CreateSolidCuboid(3, 5, 3);
+
+        Ra2VoxelGeometryRegionMask geometry = Ra2VoxelColourizer.BuildGeometryMask(source);
+
+        AssertBits(new(1, 0, 1), Ra2VoxelGeometryRegionBits.LongitudinalEndExposed,
+            Ra2VoxelGeometryRegionBits.LateralSideExposed);
+        AssertBits(new(0, 2, 1), Ra2VoxelGeometryRegionBits.LateralSideExposed,
+            Ra2VoxelGeometryRegionBits.LongitudinalEndExposed);
+
+        void AssertBits(
+            Ra2VoxelCoordinate coordinate,
+            Ra2VoxelGeometryRegionBits included,
+            Ra2VoxelGeometryRegionBits excluded)
+        {
+            int index = source.Cells.ToList().FindIndex(value => value.Coordinate == coordinate);
+            Assert.True(index >= 0);
+            Assert.True(geometry[index].HasFlag(included));
+            Assert.False(geometry[index].HasFlag(excluded));
+        }
+    }
+
+    [Fact]
     public void Colourizer_AppliesFixedGeometryOrderWithoutMutatingSource()
     {
         Ra2VoxelSceneSnapshot source = CreateSolidCube();
@@ -301,13 +349,16 @@ public sealed class Ra2VoxelColourizerTests
         => new(region, role, Ra2VoxelStyleEvidenceKind.DeterministicGeometry, null, ["built-in"]);
 
     private static Ra2VoxelSceneSnapshot CreateSolidCube()
+        => CreateSolidCuboid(3, 3, 3);
+
+    private static Ra2VoxelSceneSnapshot CreateSolidCuboid(int xSize, int ySize, int zSize)
     {
         Ra2VoxelPaletteProfile palette = CreatePalette();
-        Ra2VoxelPartDescriptor part = new("body", Ra2VoxelAssemblyPartRole.Body, "Body", "colour", 3, 3, 3);
+        Ra2VoxelPartDescriptor part = new("body", Ra2VoxelAssemblyPartRole.Body, "Body", "colour", xSize, ySize, zSize);
         List<Ra2VoxelCell> cells = [];
-        for (int z = 0; z < 3; z++)
-        for (int y = 0; y < 3; y++)
-        for (int x = 0; x < 3; x++)
+        for (int z = 0; z < zSize; z++)
+        for (int y = 0; y < ySize; y++)
+        for (int x = 0; x < xSize; x++)
             cells.Add(new(new Ra2VoxelCoordinate(x, y, z), 60));
         return new("COLOUR_SOURCE", part, palette, cells, [new("mesh.glb", new string('B', 64))]);
     }

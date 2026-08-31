@@ -2,7 +2,7 @@
 name: ra2-voxel-colour-techniques
 description: Explain, review, or plan evidence-bound RA2/YR VXL and MagicaVoxel VOX colouring techniques for ground, air, and large surface units. Use for voxel colouring, shading, palette ramps, remap placement, material separation, or colour-quality review.
 metadata:
-  version: "1"
+  version: "2"
   ra2-domains: voxel-colour
   ra2-modes: chat
 ---
@@ -15,6 +15,9 @@ metadata:
   human-confirmed `Unknown` class.
 - A confirmed Ground, Air, or LargeSurface class must use exactly its matching specialist Skill; do not combine class
   packages or let a model-selected Skill override the Host route.
+- In the compiled 4E path, the Host keeps the manually selected BodyBase and technique policy outside the model request.
+  The model proposes semantic-compatible roles; the Host injects the exact base colour and applies the selected technique
+  deterministically afterward. Do not claim that the model selected, saw, or changed either value.
 
 ## Authority and evidence
 
@@ -49,6 +52,20 @@ metadata:
 - Prefer a few coherent bands over many unrelated indices. Add local variation only where it explains form or material; never use random palette noise as “detail.”
 - Keep remap sparse and silhouette-readable on deliberate panels, stripes, insignia, turret plates, wing/tail markings, or other human-approved masks. Never use remap as body shadow, underside fill, tyre colour, or whole-body paint.
 - Keep Body/Turret/Barrel palette families compatible unless explicit evidence asks for a deliberate material difference. A barrel may use a neutral metal ramp without changing the turret's painted-body hierarchy.
+
+## Directional surfaces and semantic boundaries
+
+- Treat the longest horizontal extent as the longitudinal axis when the Host supplies no stronger orientation fact. Keep
+  lateral sides distinct from front/rear end planes: broad lateral painted surfaces stay close to BodyBase, while readable
+  end planes may use BodyMid to expose facing direction.
+- A cell that is both lateral-side and underside must not become an underside-black strip. Underside treatment is reserved
+  for genuinely downward structure that is not also a visible side plane; top-facing treatment remains dominant.
+- Emphasize a one-cell boundary only where adjacent visible cells change effective PartRole or eligible MaterialRole.
+  Ignore boundaries caused solely by spatial RegionId/partition changes, or large planes will become tiled.
+- The Host owns boundary extraction, ownership and mask order. Boundary accents are applied only on the PaintedSurface side;
+  glass, rubber, bare metal, lights, dark openings, accents and approved remap remain exact and must never be overwritten.
+- Part boundaries are eligible for all techniques. Material boundaries follow the selected technique's local separation
+  policy. Boundary emphasis uses the existing edge/ridge colour family, not an invented semantic material or remap role.
 
 ## Ground-unit adaptation
 
@@ -85,6 +102,11 @@ metadata:
 
 These policies define technique, not hue, faction, theatre, RGB, palette index, or material membership. Select one explicitly; do not infer a template from a unit name or colour word.
 
+In compiled 4E, technique differentiation is a Host guarantee: each policy has a distinct numeric value hierarchy, edge
+coverage/material-boundary policy, or accent policy. A model may return the same structurally valid raw role proposal for
+different techniques; the final voxel result must still differ through the typed local policy. Do not invent extra response
+fields to carry technique parameters.
+
 ## Quality admission
 
 - Block when geometry/occupancy/part identity changes, palette identity mismatches, transparent indices are painted, remap is unapproved/unavailable, a required semantic role has no legal palette choice, or a mask/hash is stale.
@@ -97,12 +119,12 @@ These policies define technique, not hue, faction, theatre, RGB, palette index, 
 
 Return a concise plan containing:
 
-1. unit class and orientation confidence;
+1. the Host-supplied unit class and any remaining orientation uncertainty;
 2. palette/remap facts and uncertainties;
-3. selected technique policy and why it fits the geometry;
-4. material roles and relative value hierarchy;
-5. ground/air/large-surface region rules;
-6. remap discipline;
-7. hard blockers, soft warnings, and required review views.
+3. material roles and their relative hierarchy;
+4. class-specific structural and material guidance;
+5. remap discipline;
+6. hard blockers, soft warnings, and required review views.
 
-Do not emit voxel coordinates, invent masks, claim a binary write, claim VXL/HVA/GameReady completion, or conceal missing palette/semantic evidence.
+Do not emit voxel coordinates, invent masks, emit technique/base-colour control fields, claim a binary write, claim
+VXL/HVA/GameReady completion, or conceal missing palette/semantic evidence.

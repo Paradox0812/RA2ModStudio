@@ -51,7 +51,7 @@ internal sealed class Ra2VoxelColourQualityReport
         VisualAcceptance = Ra2VoxelColourVisualAcceptance.Pending;
         ReportHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
         {
-            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-quality-report/1");
+            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-quality-report/3");
             writer.Write((int)State);
             writer.Write((int)VisualAcceptance);
             Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, CandidateHash);
@@ -96,7 +96,7 @@ internal sealed class Ra2VoxelColourQualityReport
 
 internal static class Ra2VoxelColourQualityEvaluator
 {
-    internal const string QualityPolicyRevision = "ra2-voxel-colour-quality/1";
+    internal const string QualityPolicyRevision = "ra2-voxel-colour-quality/3";
     internal static readonly string QualityPolicyHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
     {
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, QualityPolicyRevision);
@@ -104,6 +104,10 @@ internal static class Ra2VoxelColourQualityEvaluator
         writer.Write(8d);
         writer.Write(1600L);
         writer.Write(12d);
+        writer.Write(0.98d);
+        writer.Write(0.90d);
+        writer.Write(0.15d);
+        writer.Write(0.25d);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.LuminanceMetricId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.ColourFamilyMetricId);
     });
@@ -122,6 +126,7 @@ internal static class Ra2VoxelColourQualityEvaluator
         Ra2VoxelUnitClassEvidence evidence,
         Ra2VoxelConfirmedUnitClass confirmation,
         Ra2VoxelSkillIdentity colourSkill,
+        Ra2VoxelSemanticBoundaryProjection? boundaryProjection,
         string bundleHash)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -234,8 +239,19 @@ internal static class Ra2VoxelColourQualityEvaluator
             warnings.Add(new("BodyReadability", "The body family does not fully meet the selected technique and unit adaptation hierarchy."));
         foreach (string warning in family.Warnings)
             warnings.Add(new("PaletteFamilyFallback", warning));
-        if (requirements.UnknownCellCount > 0)
-            warnings.Add(new("UnknownSemanticCells", "Unknown cells keep base geometry shading and require human review."));
+        Ra2VoxelSemanticSurfaceCoverage? surfaceCoverage = colourization.GeometryMask is { } coverageGeometry
+            ? Ra2VoxelSemanticSurfaceCoverageProjector.Project(source, composition, coverageGeometry)
+            : null;
+        if (surfaceCoverage is { KnownVisibleSurfaceRatio: < 0.90d })
+        {
+            warnings.Add(new("LowVisibleSurfaceCoverage",
+                "Less than 90% of the visible surface has a known material; colouring remains available but requires review."));
+        }
+        else if (surfaceCoverage is { KnownVisibleSurfaceRatio: < 0.98d })
+        {
+            warnings.Add(new("PartialVisibleSurfaceCoverage",
+                "Some visible surface cells remain unclassified; colouring remains available but requires review."));
+        }
         if (adaptation.ForceNeedsReview)
             warnings.Add(new("UnitClassReviewRequired", "The confirmed unit class requires explicit human review."));
         if (facts?.IsUniformColour == true && plan.Roles.Select(value => value.PaletteIndex).Distinct().Count() > 1)
@@ -245,6 +261,129 @@ internal static class Ra2VoxelColourQualityEvaluator
 
         if (facts is not null && colourization.GeometryMask is { } geometry)
         {
+            int visibleSurfaceCells = 0;
+            int bodyBaseVisibleCells = 0;
+            int bodyBaseOpportunityCells = 0;
+            int edgeVisibleCells = 0;
+            int undersideSideLeakCells = 0;
+            int longitudinalEndOpportunityCells = 0;
+            int longitudinalEndBodyMidCells = 0;
+            int directMaterialBoundaryOverwriteCells = 0;
+            string? edgeRoleId = plan.Rules.SingleOrDefault(value =>
+                value.IsPaintable && value.Region == Ra2VoxelStyleRegionKind.EdgeOrRidge)?.RoleId;
+            string? undersideRoleId = plan.Rules.SingleOrDefault(value =>
+                value.IsPaintable && value.Region == Ra2VoxelStyleRegionKind.UnderExposed)?.RoleId;
+            string? bodyMidRoleId = plan.Roles.FirstOrDefault(value =>
+                value.Category == Ra2VoxelStyleRoleCategory.BodyMid)?.Id;
+            for (int index = 0; index < composition.CellCount; index++)
+            {
+                Ra2VoxelGeometryRegionBits bits = geometry[index];
+                if ((bits & Ra2VoxelGeometryRegionBits.Interior) != 0)
+                    continue;
+                visibleSurfaceCells++;
+                if (bodyBase is not null && string.Equals(facts.AppliedRoleIds[index], bodyBase.Id, StringComparison.Ordinal))
+                    bodyBaseVisibleCells++;
+                if ((bits & Ra2VoxelGeometryRegionBits.EdgeOrRidge) != 0 && edgeRoleId is not null &&
+                    string.Equals(facts.AppliedRoleIds[index], edgeRoleId, StringComparison.Ordinal))
+                    edgeVisibleCells++;
+                Ra2VoxelSemanticEffectiveAssignment assignment = composition[index];
+                bool bodyMaterial = assignment.RemapIntent != Ra2VoxelSemanticRemapIntent.ExplicitlyApproved &&
+                    assignment.MaterialRole is Ra2VoxelSemanticMaterialRole.Unknown or Ra2VoxelSemanticMaterialRole.PaintedSurface;
+                bool directMaterial = assignment.RemapIntent != Ra2VoxelSemanticRemapIntent.ExplicitlyApproved &&
+                    assignment.MaterialRole is not (Ra2VoxelSemanticMaterialRole.Unknown or Ra2VoxelSemanticMaterialRole.PaintedSurface);
+                bool sideOnly = (bits & Ra2VoxelGeometryRegionBits.SideExposed) != 0 &&
+                    (bits & (Ra2VoxelGeometryRegionBits.TopExposed | Ra2VoxelGeometryRegionBits.UnderExposed |
+                        Ra2VoxelGeometryRegionBits.EdgeOrRidge)) == 0;
+                if (bodyMaterial && sideOnly)
+                    bodyBaseOpportunityCells++;
+                if ((bits & (Ra2VoxelGeometryRegionBits.SideExposed | Ra2VoxelGeometryRegionBits.UnderExposed)) ==
+                    (Ra2VoxelGeometryRegionBits.SideExposed | Ra2VoxelGeometryRegionBits.UnderExposed) &&
+                    undersideRoleId is not null && string.Equals(facts.AppliedRoleIds[index], undersideRoleId, StringComparison.Ordinal))
+                {
+                    undersideSideLeakCells++;
+                }
+                bool longitudinalEnd = bodyMaterial &&
+                    (bits & Ra2VoxelGeometryRegionBits.LongitudinalEndExposed) != 0 &&
+                    (bits & (Ra2VoxelGeometryRegionBits.TopExposed | Ra2VoxelGeometryRegionBits.UnderExposed |
+                        Ra2VoxelGeometryRegionBits.EdgeOrRidge)) == 0;
+                if (longitudinalEnd)
+                {
+                    longitudinalEndOpportunityCells++;
+                    if (bodyMidRoleId is not null && string.Equals(facts.AppliedRoleIds[index], bodyMidRoleId, StringComparison.Ordinal))
+                        longitudinalEndBodyMidCells++;
+                }
+                if (directMaterial && edgeRoleId is not null &&
+                    string.Equals(facts.AppliedRoleIds[index], edgeRoleId, StringComparison.Ordinal))
+                {
+                    directMaterialBoundaryOverwriteCells++;
+                }
+            }
+            if (bodyBaseOpportunityCells > 0 && bodyBaseVisibleCells == 0)
+            {
+                blocked = true;
+                warnings.Add(new("BodyBaseNotVisible",
+                    "The selected body-base colour was not applied to any eligible visible body surface."));
+            }
+            if (undersideSideLeakCells > 0)
+            {
+                blocked = true;
+                warnings.Add(new("UndersideSideLeak",
+                    "Underside colour leaked onto visible lateral or longitudinal body surfaces."));
+            }
+            if (longitudinalEndOpportunityCells > 0 && longitudinalEndBodyMidCells == 0)
+            {
+                blocked = true;
+                warnings.Add(new("LongitudinalEndNotReadable",
+                    "Eligible longitudinal end surfaces did not receive the body-mid recognition step."));
+            }
+            if (directMaterialBoundaryOverwriteCells > 0)
+            {
+                blocked = true;
+                warnings.Add(new("SemanticBoundaryMaterialOverwrite",
+                    "Semantic boundary accent overwrote a direct material role."));
+            }
+            double edgeVisibleRatio = visibleSurfaceCells == 0 ? 0d : (double)edgeVisibleCells / visibleSurfaceCells;
+            double edgeWarningLimit = technique.EdgePolicy == Ra2VoxelColourEdgePolicy.Subtle ? 0.15d : 0.25d;
+            if (visibleSurfaceCells >= 64 && technique.EdgePolicy != Ra2VoxelColourEdgePolicy.None &&
+                edgeVisibleRatio > edgeWarningLimit)
+            {
+                warnings.Add(new("EdgeCoverageTooHigh",
+                    "The edge/ridge role covers too much of the visible surface for the selected technique."));
+            }
+            metrics.Add(new("body_base_visible_cells", bodyBaseVisibleCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("body_base_opportunity_cells", bodyBaseOpportunityCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("edge_visible_cells", edgeVisibleCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("edge_visible_ratio", edgeVisibleRatio.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("underside_side_leak_cells", undersideSideLeakCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("longitudinal_end_opportunity_cells", longitudinalEndOpportunityCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("longitudinal_end_body_mid_cells", longitudinalEndBodyMidCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("direct_material_boundary_overwrite_cells", directMaterialBoundaryOverwriteCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
+            int boundaryAppliedCells = 0;
+            if (boundaryProjection is not null && edgeRoleId is not null)
+            {
+                for (int index = 0; index < composition.CellCount; index++)
+                {
+                    if (boundaryProjection.Mask.IsSelected(index) &&
+                        string.Equals(facts.AppliedRoleIds[index], edgeRoleId, StringComparison.Ordinal))
+                    {
+                        boundaryAppliedCells++;
+                    }
+                }
+                if (boundaryProjection.SelectedCellCount > 0 && boundaryAppliedCells == 0)
+                {
+                    blocked = true;
+                    warnings.Add(new("SemanticBoundaryNotVisible",
+                        "Eligible semantic part boundaries did not retain their accent role."));
+                }
+            }
+            double boundaryRatio = visibleSurfaceCells == 0 ? 0d : boundaryAppliedCells / (double)visibleSurfaceCells;
+            metrics.Add(new("semantic_boundary_opportunity_cells", (boundaryProjection?.OpportunityCellCount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("semantic_boundary_selected_cells", (boundaryProjection?.SelectedCellCount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("semantic_boundary_accented_cells", boundaryAppliedCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("semantic_boundary_protected_direct_material_cells", (boundaryProjection?.ProtectedDirectMaterialCellCount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            metrics.Add(new("semantic_boundary_visible_ratio", boundaryRatio.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+
             foreach (Ra2VoxelSemanticColourBinding binding in bindings.Bindings.Where(value =>
                          value.BindingMode == Ra2VoxelSemanticColourBindingMode.DirectRole))
             {
@@ -285,6 +424,14 @@ internal static class Ra2VoxelColourQualityEvaluator
         metrics.Add(new("occupancy", source.OccupancyCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         metrics.Add(new("known_cells", (source.OccupancyCount - requirements.UnknownCellCount).ToString(System.Globalization.CultureInfo.InvariantCulture)));
         metrics.Add(new("unknown_cells", requirements.UnknownCellCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("visible_surface_cells", (surfaceCoverage?.VisibleSurfaceCellCount ?? 0)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("known_visible_surface_cells", (surfaceCoverage?.KnownVisibleSurfaceCellCount ?? 0)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("unknown_visible_surface_cells", (surfaceCoverage?.UnknownVisibleSurfaceCellCount ?? 0)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("visible_surface_coverage_ratio", (surfaceCoverage?.KnownVisibleSurfaceRatio ?? 0d)
+            .ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
         metrics.Add(new("approved_remap_cells", requirements.ApprovedRemapCellCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
         metrics.Add(new("actual_remap_cells", candidate.Cells.Count(value => source.Palette.IsRemap(value.PaletteIndex))
             .ToString(System.Globalization.CultureInfo.InvariantCulture)));
@@ -327,6 +474,9 @@ internal static class Ra2VoxelColourQualityEvaluator
             metrics.Add(new(prefix + ".anchor_chroma_delta", role.AnchorChromaDelta.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
             metrics.Add(new(prefix + ".family_fallback", role.FamilyFallback.ToString()));
         }
+        int baseRamp = baseColour.PaletteIndex / 16;
+        bool familyUsesAnchorRamp = family.Roles.All(role => role.PaletteIndex / 16 == baseRamp);
+        metrics.Add(new("family_uses_anchor_indexed_ramp", familyUsesAnchorRamp.ToString()));
 
         Ra2VoxelColourAdmissionState state = blocked
             ? Ra2VoxelColourAdmissionState.Blocked

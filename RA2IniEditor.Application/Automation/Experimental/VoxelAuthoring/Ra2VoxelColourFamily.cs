@@ -40,7 +40,7 @@ internal sealed class Ra2VoxelColourFamilySelection
         _warnings = warnings.Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal).ToArray();
         SelectionHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
         {
-            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-family-selection/1");
+            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-family-selection/2");
             writer.Write(_roles.Length);
             foreach (Ra2VoxelColourFamilyRoleSelection role in _roles)
             {
@@ -78,7 +78,7 @@ internal sealed record Ra2VoxelColourFamilyResult(
 /// </summary>
 internal static class Ra2VoxelColourFamilySelector
 {
-    internal const string Revision = "oklab-anchor-family-selector/1";
+    internal const string Revision = "indexed-ramp-oklab-family-selector/2";
     private const double ChromaticHueDriftLimit = 30d;
     private const double ChromaticChromaDeltaLimit = 0.12d;
     private const double NeutralAnchorChromaLimit = 0.035d;
@@ -114,18 +114,25 @@ internal static class Ra2VoxelColourFamilySelector
         }
 
         Candidate anchor = Candidate.Create(baseColour.PaletteIndex, palette[baseColour.PaletteIndex]);
-        Candidate[] family = Enumerable.Range(0, Ra2VoxelPaletteProfile.ColourCount)
+        Candidate[] preferredFamily = Enumerable.Range(0, Ra2VoxelPaletteProfile.ColourCount)
             .Select(index => checked((byte)index))
             .Where(index => !palette.IsTransparent(index) && !palette.IsRemap(index))
             .Select(index => Candidate.Create(index, palette[index]))
             .Where(candidate => IsPreferredFamily(anchor, candidate))
             .OrderBy(candidate => candidate.Index)
             .ToArray();
-        if (family.Length == 0)
+        if (preferredFamily.Length == 0)
             return Failure(Ra2VoxelColourFamilyFailureKind.PaletteFamilyUnavailable,
                 "The active palette has no eligible colour in the selected anchor family.");
 
         int minimum = technique.MinimumBodyLuminanceSeparation;
+        Candidate[] indexedRamp = preferredFamily
+            .Where(candidate => candidate.Index / 16 == anchor.Index / 16)
+            .ToArray();
+        bool indexedHierarchyComplete = CanSatisfyBodyHierarchy(indexedRamp, anchor, minimum, adaptation);
+        bool usesIndexedRamp = indexedHierarchyComplete ||
+            (anchor.Chroma >= NeutralAnchorChromaLimit && indexedRamp.Length >= 4);
+        Candidate[] family = usesIndexedRamp ? indexedRamp : preferredFamily;
         double boost = contrast ? minimum : 0d;
         double topTarget = Clamp(anchor.Luminance + technique.TopLuminanceOffset + boost);
         double midTarget = Clamp(anchor.Luminance + technique.SideLuminanceOffset - boost);
@@ -144,6 +151,10 @@ internal static class Ra2VoxelColourFamilySelector
         double edgeTarget = Clamp(anchor.Luminance + technique.EdgeLuminanceOffset + boost);
 
         List<string> warnings = [];
+        if (usesIndexedRamp && !indexedHierarchyComplete)
+            warnings.Add("IndexedPaletteRampIncomplete");
+        else if (!usesIndexedRamp && anchor.Chroma >= NeutralAnchorChromaLimit)
+            warnings.Add("IndexedPaletteRampUnavailable");
         try
         {
             List<Ra2VoxelColourFamilyRoleSelection> selected =
@@ -267,6 +278,39 @@ internal static class Ra2VoxelColourFamilySelector
             ? candidate.Chroma <= NeutralCandidateChromaLimit
             : HueDifference(anchor.HueDegrees, candidate.HueDegrees) <= ChromaticHueDriftLimit &&
               Math.Abs(candidate.Chroma - anchor.Chroma) <= ChromaticChromaDeltaLimit;
+
+    private static bool CanSatisfyBodyHierarchy(
+        IReadOnlyList<Candidate> candidates,
+        Candidate anchor,
+        int minimum,
+        Ra2VoxelUnitAdaptationPolicy adaptation)
+    {
+        bool hasLight = candidates.Any(candidate => candidate.Luminance >= anchor.Luminance + minimum);
+        Candidate? mid = candidates
+            .Where(candidate => candidate.Luminance <= anchor.Luminance - minimum)
+            .OrderByDescending(candidate => candidate.Luminance)
+            .Cast<Candidate?>()
+            .FirstOrDefault();
+        if (!hasLight || mid is null)
+            return false;
+        Candidate? dark = candidates
+            .Where(candidate => candidate.Luminance <= mid.Value.Luminance - minimum)
+            .OrderByDescending(candidate => candidate.Luminance)
+            .Cast<Candidate?>()
+            .FirstOrDefault();
+        if (dark is null)
+            return false;
+        return adaptation.UndersideDirection switch
+        {
+            Ra2VoxelUndersideDirectionPolicy.DarkerRequired =>
+                candidates.Any(candidate => candidate.Luminance <= dark.Value.Luminance - minimum),
+            Ra2VoxelUndersideDirectionPolicy.EitherDirection =>
+                candidates.Any(candidate => Math.Abs(candidate.Luminance - anchor.Luminance) >= minimum),
+            Ra2VoxelUndersideDirectionPolicy.DarkerPreferred =>
+                candidates.Any(candidate => candidate.Luminance < dark.Value.Luminance),
+            _ => false
+        };
+    }
 
     internal static double Luminance(Ra2Rgba32 colour)
         => (0.2126d * colour.Red) + (0.7152d * colour.Green) + (0.0722d * colour.Blue);

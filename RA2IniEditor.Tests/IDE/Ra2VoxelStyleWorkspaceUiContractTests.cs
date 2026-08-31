@@ -74,6 +74,7 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
             "VoxelStyle.Semantics.ReviewPart",
             "VoxelStyle.Semantics.ReviewMaterial",
             "VoxelStyle.Semantics.ReviewLegend",
+            "VoxelStyle.Preview.SemanticReviewControls",
             "VoxelStyle.Model",
             "VoxelStyle.Compile",
             "VoxelStyle.Cancel",
@@ -199,6 +200,11 @@ public sealed class Ra2VoxelStyleWorkspaceUiContractTests
         int classAnalyze = xaml.IndexOf("VoxelStyle.UnitClass.Selector", StringComparison.Ordinal);
         int styleSources = xaml.IndexOf("VoxelStyle.StyleSources", StringComparison.Ordinal);
         Assert.True(classAnalyze >= 0 && styleSources > classAnalyze);
+        int previewToolbar = xaml.IndexOf("VoxelStyle.Preview.Toolbar", StringComparison.Ordinal);
+        int semanticReviewControls = xaml.IndexOf("VoxelStyle.Preview.SemanticReviewControls", StringComparison.Ordinal);
+        Assert.True(previewToolbar >= 0 && semanticReviewControls > previewToolbar);
+        Assert.Contains("Text=\"分类预览\"", xaml, StringComparison.Ordinal);
+        Assert.Contains("Visibility=\"{Binding IsSemanticsMode, Converter={StaticResource BoolToVisibility}}\"", xaml, StringComparison.Ordinal);
 
         Assert.Contains("<Viewport3D", viewportXaml, StringComparison.Ordinal);
         Assert.Contains("x:Name=\"InputSurface\"", viewportXaml, StringComparison.Ordinal);

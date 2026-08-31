@@ -11,7 +11,9 @@ internal enum Ra2VoxelGeometryRegionBits : byte
     SideExposed = 1 << 1,
     UnderExposed = 1 << 2,
     EdgeOrRidge = 1 << 3,
-    Interior = 1 << 4
+    Interior = 1 << 4,
+    LateralSideExposed = 1 << 5,
+    LongitudinalEndExposed = 1 << 6
 }
 
 [Flags]
@@ -55,11 +57,13 @@ internal sealed class Ra2VoxelGeometryRegionMask
             throw new ArgumentOutOfRangeException(nameof(regions));
         if (_regions.Any(value => (value & ~(byte)(Ra2VoxelGeometryRegionBits.TopExposed |
             Ra2VoxelGeometryRegionBits.SideExposed | Ra2VoxelGeometryRegionBits.UnderExposed |
-            Ra2VoxelGeometryRegionBits.EdgeOrRidge | Ra2VoxelGeometryRegionBits.Interior)) != 0))
+            Ra2VoxelGeometryRegionBits.EdgeOrRidge | Ra2VoxelGeometryRegionBits.Interior |
+            Ra2VoxelGeometryRegionBits.LateralSideExposed |
+            Ra2VoxelGeometryRegionBits.LongitudinalEndExposed)) != 0))
         {
             throw new ArgumentException("Geometry region mask contains unsupported bits.", nameof(regions));
         }
-        MaskHash = ComputeMaskHash("geometry-mask/1", SourceSnapshotHash, _regions);
+        MaskHash = ComputeMaskHash("geometry-mask/2", SourceSnapshotHash, _regions);
     }
 
     internal string SourceSnapshotHash { get; }
@@ -172,9 +176,16 @@ internal static class Ra2VoxelColourizer
     internal static Ra2VoxelGeometryRegionMask BuildGeometryMask(
         Ra2VoxelSceneSnapshot snapshot,
         CancellationToken cancellationToken = default)
+        => BuildGeometryMask(snapshot, null, cancellationToken);
+
+    internal static Ra2VoxelGeometryRegionMask BuildGeometryMask(
+        Ra2VoxelSceneSnapshot snapshot,
+        Ra2VoxelColourEdgePolicy? edgePolicy,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         byte[] regions = new byte[snapshot.OccupancyCount];
+        bool longitudinalAxisIsY = snapshot.Part.YSize >= snapshot.Part.XSize;
         for (int index = 0; index < snapshot.Cells.Count; index++)
         {
             if ((index & 4095) == 0)
@@ -193,7 +204,26 @@ internal static class Ra2VoxelColourizer
             if (top) bits |= Ra2VoxelGeometryRegionBits.TopExposed;
             if (under) bits |= Ra2VoxelGeometryRegionBits.UnderExposed;
             if (xFamily || yFamily) bits |= Ra2VoxelGeometryRegionBits.SideExposed;
-            if (familyCount >= 2) bits |= Ra2VoxelGeometryRegionBits.EdgeOrRidge;
+            if (longitudinalAxisIsY)
+            {
+                if (xFamily) bits |= Ra2VoxelGeometryRegionBits.LateralSideExposed;
+                if (yFamily) bits |= Ra2VoxelGeometryRegionBits.LongitudinalEndExposed;
+            }
+            else
+            {
+                if (yFamily) bits |= Ra2VoxelGeometryRegionBits.LateralSideExposed;
+                if (xFamily) bits |= Ra2VoxelGeometryRegionBits.LongitudinalEndExposed;
+            }
+            bool edgeOrRidge = edgePolicy switch
+            {
+                Ra2VoxelColourEdgePolicy.None => false,
+                Ra2VoxelColourEdgePolicy.Subtle => familyCount >= 3,
+                Ra2VoxelColourEdgePolicy.Strong => familyCount >= 3 ||
+                    (top && (xFamily || yFamily)),
+                null => familyCount >= 2,
+                _ => false
+            };
+            if (edgeOrRidge) bits |= Ra2VoxelGeometryRegionBits.EdgeOrRidge;
             if (familyCount == 0) bits |= Ra2VoxelGeometryRegionBits.Interior;
             regions[index] = (byte)bits;
         }
@@ -205,7 +235,7 @@ internal static class Ra2VoxelColourizer
         Ra2CompiledVoxelStylePlan plan,
         IEnumerable<Ra2VoxelExplicitMask>? explicitMasks = null,
         CancellationToken cancellationToken = default)
-        => ColourizeCore(source, plan, explicitMasks, null, cancellationToken);
+        => ColourizeCore(source, plan, explicitMasks, null, null, cancellationToken);
 
     internal static Ra2VoxelColourizationResult Colourize(
         Ra2VoxelSceneSnapshot source,
@@ -213,13 +243,23 @@ internal static class Ra2VoxelColourizer
         IEnumerable<Ra2VoxelExplicitMask>? explicitMasks,
         Ra2VoxelDualSurfacePolicy dualSurfacePolicy,
         CancellationToken cancellationToken = default)
-        => ColourizeCore(source, plan, explicitMasks, dualSurfacePolicy, cancellationToken);
+        => ColourizeCore(source, plan, explicitMasks, dualSurfacePolicy, null, cancellationToken);
+
+    internal static Ra2VoxelColourizationResult Colourize(
+        Ra2VoxelSceneSnapshot source,
+        Ra2CompiledVoxelStylePlan plan,
+        IEnumerable<Ra2VoxelExplicitMask>? explicitMasks,
+        Ra2VoxelDualSurfacePolicy dualSurfacePolicy,
+        Ra2VoxelColourEdgePolicy edgePolicy,
+        CancellationToken cancellationToken = default)
+        => ColourizeCore(source, plan, explicitMasks, dualSurfacePolicy, edgePolicy, cancellationToken);
 
     private static Ra2VoxelColourizationResult ColourizeCore(
         Ra2VoxelSceneSnapshot source,
         Ra2CompiledVoxelStylePlan plan,
         IEnumerable<Ra2VoxelExplicitMask>? explicitMasks,
         Ra2VoxelDualSurfacePolicy? dualSurfacePolicy,
+        Ra2VoxelColourEdgePolicy? edgePolicy,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -229,7 +269,7 @@ internal static class Ra2VoxelColourizer
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            Ra2VoxelGeometryRegionMask geometry = BuildGeometryMask(source, cancellationToken);
+            Ra2VoxelGeometryRegionMask geometry = BuildGeometryMask(source, edgePolicy, cancellationToken);
             Dictionary<string, Ra2VoxelExplicitMask> masks = (explicitMasks ?? [])
                 .ToDictionary(mask => mask.MaskId, StringComparer.Ordinal);
             foreach (Ra2VoxelExplicitMask mask in masks.Values)
@@ -348,13 +388,17 @@ internal static class Ra2VoxelColourizer
                 Ra2CompiledVoxelStyleRole? sideRole = FindRole(Ra2VoxelStyleRegionKind.SideExposed);
                 Ra2CompiledVoxelStyleRole? topRole = FindRole(Ra2VoxelStyleRegionKind.TopExposed);
                 Ra2CompiledVoxelStyleRole? underRole = FindRole(Ra2VoxelStyleRegionKind.UnderExposed);
+                Ra2CompiledVoxelStyleRole? endRole = roles.Values.FirstOrDefault(value =>
+                    value.Category == Ra2VoxelStyleRoleCategory.BodyMid);
                 for (int index = 0; index < indices.Length; index++)
                 {
                     Ra2VoxelGeometryRegionBits bits = geometry[index];
                     bool top = (bits & Ra2VoxelGeometryRegionBits.TopExposed) != 0;
                     bool under = (bits & Ra2VoxelGeometryRegionBits.UnderExposed) != 0;
+                    bool side = (bits & Ra2VoxelGeometryRegionBits.SideExposed) != 0;
+                    bool longitudinalEnd = (bits & Ra2VoxelGeometryRegionBits.LongitudinalEndExposed) != 0;
                     Ra2CompiledVoxelStyleRole? selected = null;
-                    if (top && under)
+                    if (top && under && !side)
                     {
                         selected = policy switch
                         {
@@ -368,13 +412,17 @@ internal static class Ra2VoxelColourizer
                     {
                         selected = topRole;
                     }
+                    else if (longitudinalEnd)
+                    {
+                        selected = endRole ?? sideRole;
+                    }
+                    else if (side)
+                    {
+                        selected = sideRole;
+                    }
                     else if (under)
                     {
                         selected = underRole;
-                    }
-                    else if ((bits & Ra2VoxelGeometryRegionBits.SideExposed) != 0)
-                    {
-                        selected = sideRole;
                     }
                     if (selected is not null)
                     {
@@ -423,7 +471,8 @@ internal static class Ra2VoxelColourizer
                  {
                      Ra2VoxelGeometryRegionBits.TopExposed, Ra2VoxelGeometryRegionBits.SideExposed,
                      Ra2VoxelGeometryRegionBits.UnderExposed, Ra2VoxelGeometryRegionBits.EdgeOrRidge,
-                     Ra2VoxelGeometryRegionBits.Interior
+                     Ra2VoxelGeometryRegionBits.Interior, Ra2VoxelGeometryRegionBits.LateralSideExposed,
+                     Ra2VoxelGeometryRegionBits.LongitudinalEndExposed
                  })
         {
             int count = Enumerable.Range(0, mask.CellCount).Count(index => (mask[index] & bit) != 0);

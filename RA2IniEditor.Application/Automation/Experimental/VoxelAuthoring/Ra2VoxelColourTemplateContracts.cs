@@ -149,7 +149,7 @@ internal enum Ra2VoxelUndersideDirectionPolicy
 internal sealed class Ra2VoxelColourTechniquePolicy
 {
     internal const string LuminanceMetricId = "rec709-srgb-byte-luma-v1";
-    internal const string ColourFamilyMetricId = "oklab-anchor-v1";
+    internal const string ColourFamilyMetricId = "indexed-ramp-oklab-v2";
 
     internal Ra2VoxelColourTechniquePolicy(
         string techniqueId,
@@ -243,23 +243,23 @@ internal static class Ra2VoxelColourTechniqueCatalog
 {
     private static readonly Ra2VoxelColourTechniquePolicy[] Policies =
     [
-        new("balanced-rts-volume", "1", "RTS 均衡体积", "中等体积层次、克制边缘和均衡材质分离。",
+        new("balanced-rts-volume", "2", "RTS 均衡体积", "中等体积层次、主要语义边界和均衡材质分离。",
             18, -8, -28, -38, Ra2VoxelColourEdgePolicy.Subtle, 24,
             Ra2VoxelMaterialSeparationPolicy.Balanced, 8, 18,
             Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("strong-silhouette-readability", "1", "强轮廓可读", "扩大明暗级差并强化小比例预览轮廓。",
+        new("strong-silhouette-readability", "2", "强轮廓可读", "扩大明暗级差并强化高置信结构与语义边界。",
             28, -12, -38, -52, Ra2VoxelColourEdgePolicy.Strong, 34,
             Ra2VoxelMaterialSeparationPolicy.Strong, 12, 24,
             Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("subtle-matte-shading", "1", "克制哑光层次", "使用低频、低高光的宽阔哑光层次。",
+        new("subtle-matte-shading", "2", "克制哑光层次", "使用低频宽阔哑光层次，只保留主要部件细边。",
             12, -5, -20, -28, Ra2VoxelColourEdgePolicy.Subtle, 15,
             Ra2VoxelMaterialSeparationPolicy.Conservative, 6, 14,
             Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("semantic-material-separation", "1", "材质分离优先", "优先保持玻璃、橡胶、金属、灯具和开口可分辨。",
-            16, -7, -26, -36, Ra2VoxelColourEdgePolicy.Subtle, 20,
+        new("semantic-material-separation", "2", "材质分离优先", "强化可信材质接口，同时保持主体体积克制。",
+            16, -7, -26, -36, Ra2VoxelColourEdgePolicy.Subtle, 34,
             Ra2VoxelMaterialSeparationPolicy.Strong, 8, 18,
             Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.Block),
-        new("compact-unit-clarity", "1", "小型单位清晰化", "强化少量关键结构提示并抑制装饰噪声。",
+        new("compact-unit-clarity", "2", "小型单位清晰化", "优先保护小型部件边界并抑制长平面装饰噪声。",
             24, -10, -34, -46, Ra2VoxelColourEdgePolicy.Strong, 30,
             Ra2VoxelMaterialSeparationPolicy.Strong, 10, 22,
             Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent)
@@ -319,13 +319,13 @@ internal static class Ra2VoxelUnitAdaptationCatalog
 {
     private static readonly Ra2VoxelUnitAdaptationPolicy[] Policies =
     [
-        new("ground", "1", Ra2VoxelUnitClass.Ground, "ra2-ground-voxel-colour-techniques",
+        new("ground", "2", Ra2VoxelUnitClass.Ground, "ra2-ground-voxel-colour-techniques",
             Ra2VoxelUndersideDirectionPolicy.DarkerRequired, Ra2VoxelDualSurfacePolicy.UnderPreferred, false),
-        new("air", "1", Ra2VoxelUnitClass.Air, "ra2-air-voxel-colour-techniques",
+        new("air", "2", Ra2VoxelUnitClass.Air, "ra2-air-voxel-colour-techniques",
             Ra2VoxelUndersideDirectionPolicy.EitherDirection, Ra2VoxelDualSurfacePolicy.BodyBase, false),
-        new("large-surface", "1", Ra2VoxelUnitClass.LargeSurface, "ra2-large-surface-voxel-colour-techniques",
+        new("large-surface", "2", Ra2VoxelUnitClass.LargeSurface, "ra2-large-surface-voxel-colour-techniques",
             Ra2VoxelUndersideDirectionPolicy.DarkerPreferred, Ra2VoxelDualSurfacePolicy.TopPreferred, false),
-        new("unknown", "1", Ra2VoxelUnitClass.Unknown, "ra2-voxel-colour-techniques",
+        new("unknown", "2", Ra2VoxelUnitClass.Unknown, "ra2-voxel-colour-techniques",
             Ra2VoxelUndersideDirectionPolicy.EitherDirection, Ra2VoxelDualSurfacePolicy.BodyBase, true)
     ];
 

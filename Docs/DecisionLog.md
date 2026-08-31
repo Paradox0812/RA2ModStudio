@@ -1868,3 +1868,50 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - One Provider call and its cache/Skill dependency disappear from the normal colouring workflow.
   - Unit classification accuracy becomes an explicit user responsibility; Unknown remains the conservative review path.
   - UI physical acceptance is still mandatory and is owned by the user; no computer-use automation is permitted.
+
+## 2026-08-31 — RA2 indexed ramp and visible-surface coverage replace global family/region-count rules
+
+- Status: Accepted / implemented / automated focused verified / physical visual acceptance pending
+- Task: ASSET-VOX-4E Rev.5 / UI-R1-FIX2
+- Context:
+  - VXLSE III RA2 `unittem` index 72 was grouped with neighbouring brown ramps by the global OKLab threshold.
+  - Side, top, underside and edge rules could cover every visible BodyBase cell; the subtle edge mask covered too much area.
+  - The workflow counted all Unknown spatial regions even though most unknown cells in the real sample were enclosed interior.
+- Decision:
+  - Make the anchor's 16-entry indexed ramp the first authority for chromatic body-family selection and never silently
+    cross ramps when that local ramp is incomplete.
+  - Use BodyBase on dominant side surfaces and technique-specific edge breadth; add visible BodyBase and edge-share facts.
+  - Derive semantic completion from visible-surface material coverage. Hidden interior Unknown is allowed; visible coverage
+    below 98% is review-only and never blocks colouring by region count.
+  - Redirect invalidated styled preview modes to Semantics or Original 3D.
+- Consequences:
+  - `indexed-ramp-oklab-v2`, normalizer v2 and quality v2 invalidate prior local derived candidates deterministically.
+  - Public API, sidecar schema, Provider calls, project Save/Apply, writer and Shell remain unchanged.
+  - Real-model visual quality and DPI remain manual acceptance gates.
+
+## 2026-08-31 — Directional surfaces and effective semantic boundaries own Rev.6 colour differentiation
+
+- Status: Accepted / implemented / focused automated verified / physical visual acceptance pending
+- Task: ASSET-VOX-4E Rev.6
+- Context:
+  - A real ground vehicle showed continuous dark strips where visible side cells also exposed a bottom face, while front/end
+    planes remained visually flat.
+  - Spatial partition IDs are implementation detail and cannot safely stand in for meaningful part/material boundaries.
+  - The five UI techniques could appear identical when differentiation was left mainly to the raw model proposal.
+- Decision:
+  - Derive longitudinal-end and lateral-side geometry bits locally; use Top → End → Side → Under precedence and forbid
+    Underside on side-plus-under cells.
+  - Derive a one-cell boundary only from effective PartRole or technique-eligible MaterialRole changes. Accent only the
+    PaintedSurface owner, ignore RegionId-only seams and preserve all direct semantic/remap materials.
+  - Make five-technique differentiation a typed Host guarantee through distinct revision-2 value, edge, material-boundary
+    and accent policies. Keep manual base colour and technique outside the Provider request.
+  - Move the preserved part/material review controls to the global preview toolbar; selecting either dimension switches to
+    Semantics 3D without changing workflow stage.
+- Rejected alternatives:
+  - Darken every bottom-exposed cell, outline every generated region, ask DeepSeek for voxel coordinates, or add technique
+    parameters to the Provider schema.
+  - Add a persisted boundary layer, modify the 4D sidecar, or create a second material-review workspace.
+- Consequences:
+  - Derived cache/policy hashes change; public API, persistence, Provider protocol, writers, Shell and legacy remain unchanged.
+  - Automated tests prove direction masks, direct-material protection and five distinct fixture candidate hashes; real-model
+    visual quality remains a user-owned manual gate.

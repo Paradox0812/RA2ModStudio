@@ -144,6 +144,19 @@ swatch; the existing SliceStack can be selected as a diagnostic view and is used
 cannot be built. The same viewport now compares Current/Direct/Refined/optional Symmetry geometry and Styled/Contrast
 results. This viewport is a review surface, not a VXL/HVA writer or game-lighting simulator.
 
+The 4E colouring workflow now treats the manually selected RA2 palette index as a visible body anchor: chromatic shades
+are selected from its local indexed ramp, dominant side surfaces retain BodyBase, and subtle edge highlights are limited
+to high-confidence corners. Semantic readiness is measured on visible surface materials rather than every generated
+spatial region, so enclosed unknown voxels do not prevent colouring. Changing class, base colour or technique invalidates
+the old candidate and returns the viewport to a valid 3D semantic/original view.
+
+Rev.6 further distinguishes longitudinal front/rear ends from broad lateral sides: end planes receive a bounded mid-tone
+direction cue, while side-plus-under cells remain in the body family instead of becoming black strips. Effective part and
+eligible material interfaces receive a one-cell painted-side edge accent; spatial RegionId-only seams are ignored and
+direct glass/rubber/metal/light/opening/accent/remap cells are protected. Five technique policies now have distinct local
+runtime effects even when the Provider returns the same raw role proposal. The global preview toolbar exposes `部件 / 材质`
+classification review and returns directly to the semantic 3D view without changing the current workflow stage.
+
 ## 13. Known Limitations
 
 - Some reference and diagnostic results depend on available project context and field metadata.

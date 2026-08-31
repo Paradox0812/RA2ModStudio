@@ -36,6 +36,41 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task StyleInputChange_LeavesStaleResultAndReturnsToSemanticThreeDimensionalPreview()
+    {
+        TestContext test = CreateContext();
+        using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
+        await viewModel.LoadSourceAsync(test.VoxPath);
+        await viewModel.PrepareSemanticRegionsAsync();
+        await PrepareColourInputsAsync(viewModel);
+        await viewModel.CompileAsync();
+        Assert.True(viewModel.IsResultMode);
+
+        viewModel.SelectedTechnique = Assert.Single(viewModel.TechniqueOptions,
+            value => value.TechniqueId == "subtle-matte-shading");
+
+        Assert.False(viewModel.HasPreview);
+        Assert.True(viewModel.IsSemanticsMode);
+        Assert.True(viewModel.IsThreeDimensionalPreview);
+        Assert.NotNull(viewModel.CurrentPreviewSnapshot);
+    }
+
+    [Fact]
+    public async Task Workflow_DoesNotRequireEverySpatialRegionBeforeColouring()
+    {
+        TestContext test = CreateContext();
+        using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient());
+        await viewModel.LoadSourceAsync(test.VoxPath);
+        await viewModel.PrepareSemanticRegionsAsync();
+
+        Assert.True(viewModel.UnclassifiedSemanticRegionCount > 0);
+        Assert.Contains("可见表面已标注", viewModel.WorkflowNextActionText, StringComparison.Ordinal);
+        Assert.Contains("未分类分区可按需处理", viewModel.WorkflowNextActionText, StringComparison.Ordinal);
+        Assert.Contains("人工确认单位类型", viewModel.WorkflowNextActionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("完成后进入上色", viewModel.WorkflowNextActionText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WorkingGeometryState_AdvancesLinearlyAndIgnoresNoOpAdoption()
     {
         Ra2VoxelSceneSnapshot root = CreateSnapshot();
@@ -505,9 +540,15 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         Assert.Equal(1, compositionPublications);
         Assert.True(viewModel.CanUndoSemanticBrush);
         string compositionHash = viewModel.CurrentPreviewSemanticComposition!.CompositionHash;
+        Ra2VoxelWorkspaceStage workflowStage = viewModel.SelectedWorkflowStage;
+        viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.Original);
+        Assert.True(viewModel.IsOriginalMode);
 
         viewModel.SetSemanticReviewDimension(Ra2VoxelSemanticReviewDimension.Material);
         Assert.True(viewModel.IsSemanticMaterialReview);
+        Assert.True(viewModel.IsSemanticsMode);
+        Assert.True(viewModel.IsThreeDimensionalPreview);
+        Assert.Equal(workflowStage, viewModel.SelectedWorkflowStage);
         Assert.Equal(compositionHash, viewModel.CurrentPreviewSemanticComposition!.CompositionHash);
         Assert.Equal(8, viewModel.SemanticReviewLegend.Count);
 

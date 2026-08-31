@@ -32,6 +32,8 @@ public sealed class Ra2VoxelColourMaterializationTests
             value.Category == Ra2VoxelStyleRoleCategory.BodyBase);
         Assert.Equal(fixture.Context.BaseColour.PaletteIndex, bodyBase.PaletteIndex);
         Assert.Equal(fixture.Context.BaseColour.PaletteIndex, bodyBase.RequestedExactPaletteIndex);
+        Assert.Equal(bodyBase.Id, first.Ordinary.Plan.Rules.Single(value =>
+            value.Region == Ra2VoxelStyleRegionKind.SideExposed).RoleId);
         Assert.Equal(fixture.Context.Source.Cells.Select(value => value.Coordinate),
             first.Ordinary.Colourization.Snapshot.Cells.Select(value => value.Coordinate));
     }
@@ -172,6 +174,7 @@ public sealed class Ra2VoxelColourMaterializationTests
             fixture.Context.Evidence,
             fixture.Context.Confirmation,
             fixture.Context.ColourSkill,
+            null,
             result.Ordinary.BundleHash);
 
         Assert.Equal(Ra2VoxelColourAdmissionState.Blocked, blocked.State);
@@ -232,12 +235,141 @@ public sealed class Ra2VoxelColourMaterializationTests
     }
 
     [Fact]
+    public void FamilySelector_RealRa2StyleRampDoesNotJumpToNeighbouringBrownRamps()
+    {
+        Ra2VoxelPaletteProfile palette = CreateRa2IndexedRampPalette();
+        Ra2VoxelBaseColourSelection baseColour = Assert.IsType<Ra2VoxelBaseColourSelection>(
+            Ra2VoxelBaseColourSelection.Create(palette, palette.ProfileHash, 72).Selection);
+
+        Ra2VoxelColourFamilyResult result = Ra2VoxelColourFamilySelector.Select(
+            palette,
+            baseColour,
+            Assert.IsType<Ra2VoxelColourTechniquePolicy>(Ra2VoxelColourTechniqueCatalog.Find("subtle-matte-shading")),
+            Ra2VoxelUnitAdaptationCatalog.For(Ra2VoxelUnitClass.Ground));
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.All(result.Selection!.Roles, role => Assert.InRange(role.PaletteIndex, (byte)64, (byte)79));
+        Assert.Equal((byte)72, result.Selection[Ra2VoxelBodyColourRole.BodyBase].PaletteIndex);
+        Assert.DoesNotContain(result.Selection.Roles, role => role.PaletteIndex is 112 or 138 or 152 or 154);
+        Assert.DoesNotContain("IndexedPaletteRampUnavailable", result.Selection.Warnings);
+    }
+
+    [Fact]
+    public void Materializer_FiveTechniquesProduceFiveDistinctVoxelResults()
+    {
+        string[] resultHashes = Ra2VoxelColourTechniqueCatalog.All.Select(technique =>
+        {
+            Ra2VoxelColourMaterializationResult result = Ra2VoxelSemanticColourMaterializer.Materialize(
+                CreateFixture(
+                    Ra2VoxelUnitClass.Ground,
+                    technique.TechniqueId,
+                    baseIndex: 72,
+                    paletteFactory: CreateMaterializationRa2Palette).Context);
+            Assert.True(result.IsSuccess, $"{technique.TechniqueId}: {result.Message}");
+            return result.Ordinary!.Colourization.Snapshot!.CanonicalHash;
+        }).ToArray();
+
+        Assert.Equal(5, resultHashes.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public void Materializer_GroundVolumeKeepsSideUndersideCleanAndUsesMidToneOnEnds()
+    {
+        Fixture fixture = CreateFixture(
+            Ra2VoxelUnitClass.Ground,
+            sourceFactory: palette => CreateVolume(palette, 3, 5, 3));
+
+        Ra2VoxelColourMaterializationResult result = Ra2VoxelSemanticColourMaterializer.Materialize(fixture.Context);
+
+        Assert.True(result.IsSuccess, result.Message);
+        Ra2VoxelColourizationFacts facts = result.Ordinary!.Colourization.Facts!;
+        AssertRole(new(0, 2, 0), "body.base");
+        AssertRole(new(1, 0, 1), "body.mid");
+        Assert.DoesNotContain(result.Ordinary.Quality.Warnings, value => value.Code == "UndersideSideLeak");
+
+        void AssertRole(Ra2VoxelCoordinate coordinate, string expectedRole)
+        {
+            int index = fixture.Context.Source.Cells.ToList().FindIndex(value => value.Coordinate == coordinate);
+            Assert.True(index >= 0);
+            Assert.Equal(expectedRole, facts.AppliedRoleIds[index]);
+        }
+    }
+
+    [Fact]
+    public void SemanticBoundary_UsesEffectiveRolesAndProtectsDirectMaterials()
+    {
+        Ra2VoxelPaletteProfile palette = CreatePalette();
+        Ra2VoxelSceneSnapshot source = CreateVolume(palette, 3, 3, 1);
+        Ra2VoxelSemanticEffectiveAssignment[] effective = source.Cells.Select(cell => cell.Coordinate.X < 2
+            ? Assignment(Ra2VoxelSemanticMaterialRole.PaintedSurface, part: Ra2VoxelSemanticPartRole.BodyShell,
+                regionId: cell.Coordinate.X == 0 ? "partition-a" : "partition-b")
+            : Assignment(Ra2VoxelSemanticMaterialRole.Rubber, part: Ra2VoxelSemanticPartRole.Wheel,
+                regionId: "wheel")).ToArray();
+        Ra2VoxelSemanticMaskComposition composition = new(source.CanonicalHash, effective, new string('C', 64));
+        Ra2VoxelGeometryRegionMask geometry = Ra2VoxelColourizer.BuildGeometryMask(
+            source, Ra2VoxelColourTechniqueCatalog.Default.EdgePolicy);
+
+        Ra2VoxelSemanticBoundaryProjection projection = Ra2VoxelSemanticBoundaryProjector.Project(
+            source, composition, geometry, Ra2VoxelColourTechniqueCatalog.Default);
+
+        Assert.True(projection.OpportunityCellCount > 0);
+        Assert.True(projection.SelectedCellCount > 0);
+        Assert.True(projection.ProtectedDirectMaterialCellCount > 0);
+        Assert.All(Enumerable.Range(0, source.OccupancyCount).Where(projection.Mask.IsSelected),
+            index => Assert.Equal(Ra2VoxelSemanticMaterialRole.PaintedSurface, composition[index].MaterialRole));
+
+        Ra2VoxelSemanticEffectiveAssignment[] partitionOnly = source.Cells.Select((cell, index) =>
+            Assignment(Ra2VoxelSemanticMaterialRole.PaintedSurface,
+                regionId: index % 2 == 0 ? "partition-a" : "partition-b")).ToArray();
+        Ra2VoxelSemanticBoundaryProjection ignoredPartitions = Ra2VoxelSemanticBoundaryProjector.Project(
+            source,
+            new(source.CanonicalHash, partitionOnly, new string('D', 64)),
+            geometry,
+            Ra2VoxelColourTechniqueCatalog.Default);
+        Assert.Equal(0, ignoredPartitions.OpportunityCellCount);
+        Assert.Equal(0, ignoredPartitions.SelectedCellCount);
+    }
+
+    [Fact]
+    public void SurfaceCoverage_IgnoresUnknownEnclosedInteriorButCountsUnknownVisibleCells()
+    {
+        Ra2VoxelPaletteProfile palette = CreatePalette();
+        Ra2VoxelPartDescriptor part = new("body", Ra2VoxelAssemblyPartRole.Body, "Body", "coverage", 3, 3, 3);
+        List<Ra2VoxelCell> cells = [];
+        for (int z = 0; z < 3; z++)
+        for (int y = 0; y < 3; y++)
+        for (int x = 0; x < 3; x++)
+            cells.Add(new(new Ra2VoxelCoordinate(x, y, z), 100));
+        Ra2VoxelSceneSnapshot source = new("COVERAGE", part, palette, cells,
+            [new("fixture", new string('E', 64))]);
+        Ra2VoxelSemanticEffectiveAssignment known = Assignment(Ra2VoxelSemanticMaterialRole.PaintedSurface);
+        Ra2VoxelSemanticEffectiveAssignment unknown = new("unknown", Ra2VoxelSemanticPartRole.Unknown,
+            Ra2VoxelSemanticMaterialRole.Unknown, Ra2VoxelSemanticRemapIntent.None,
+            Ra2VoxelSemanticAssignmentSource.Unknown, 0d, "fixture");
+        Ra2VoxelSemanticEffectiveAssignment[] assignments = Enumerable.Repeat(known, source.OccupancyCount).ToArray();
+        int centre = source.Cells.ToList().FindIndex(value => value.Coordinate == new Ra2VoxelCoordinate(1, 1, 1));
+        assignments[centre] = unknown;
+
+        Ra2VoxelSemanticSurfaceCoverage interiorUnknown = Ra2VoxelSemanticSurfaceCoverageProjector.Project(
+            source, new(source.CanonicalHash, assignments, new string('C', 64)));
+        Assert.Equal(26, interiorUnknown.VisibleSurfaceCellCount);
+        Assert.Equal(26, interiorUnknown.KnownVisibleSurfaceCellCount);
+        Assert.Equal(0, interiorUnknown.UnknownVisibleSurfaceCellCount);
+
+        assignments[0] = unknown;
+        Ra2VoxelSemanticSurfaceCoverage visibleUnknown = Ra2VoxelSemanticSurfaceCoverageProjector.Project(
+            source, new(source.CanonicalHash, assignments, new string('D', 64)));
+        Assert.Equal(25, visibleUnknown.KnownVisibleSurfaceCellCount);
+        Assert.Equal(1, visibleUnknown.UnknownVisibleSurfaceCellCount);
+    }
+
+    [Fact]
     public void Materializer_FailsClosedForStaleBindingAndWrongColourSkill()
     {
         Fixture fixture = CreateFixture(Ra2VoxelUnitClass.Ground);
         Ra2VoxelColourMaterializationContext wrongSkill = fixture.Context with
         {
-            ColourSkill = new("ra2-air-voxel-colour-techniques", "1", new string('B', 64))
+            ColourSkill = new("ra2-air-voxel-colour-techniques", "2", new string('B', 64))
         };
         Assert.Equal(Ra2VoxelColourMaterializationFailureKind.IdentityMismatch,
             Ra2VoxelSemanticColourMaterializer.Materialize(wrongSkill).FailureKind);
@@ -292,10 +424,12 @@ public sealed class Ra2VoxelColourMaterializationTests
         Ra2VoxelUnitClass unitClass,
         string techniqueId = "balanced-rts-volume",
         Func<Ra2VoxelSceneSnapshot, Ra2VoxelSemanticEffectiveAssignment[], Ra2VoxelSemanticEffectiveAssignment[]>? assignments = null,
-        byte baseIndex = 100)
+        byte baseIndex = 100,
+        Func<Ra2VoxelPaletteProfile, Ra2VoxelSceneSnapshot>? sourceFactory = null,
+        Func<Ra2VoxelPaletteProfile>? paletteFactory = null)
     {
-        Ra2VoxelPaletteProfile palette = CreatePalette();
-        Ra2VoxelSceneSnapshot source = CreateSheet(palette);
+        Ra2VoxelPaletteProfile palette = paletteFactory?.Invoke() ?? CreatePalette();
+        Ra2VoxelSceneSnapshot source = sourceFactory?.Invoke(palette) ?? CreateSheet(palette);
         Ra2VoxelSemanticEffectiveAssignment[] values = Enumerable.Range(0, source.OccupancyCount)
             .Select(_ => Assignment(Ra2VoxelSemanticMaterialRole.PaintedSurface))
             .ToArray();
@@ -325,7 +459,7 @@ public sealed class Ra2VoxelColourMaterializationTests
             bindingPlan,
             evidence,
             confirmationResult.Confirmation!,
-            new(adaptation.ColouringSkillId, "1", new string('B', 64)),
+            new(adaptation.ColouringSkillId, "2", new string('B', 64)),
             baseResult.Selection!,
             technique,
             adaptation);
@@ -398,12 +532,20 @@ public sealed class Ra2VoxelColourMaterializationTests
     }
 
     private static Ra2VoxelSceneSnapshot CreateSheet(Ra2VoxelPaletteProfile palette)
+        => CreateVolume(palette, 3, 3, 1);
+
+    private static Ra2VoxelSceneSnapshot CreateVolume(
+        Ra2VoxelPaletteProfile palette,
+        int xSize,
+        int ySize,
+        int zSize)
     {
-        Ra2VoxelPartDescriptor part = new("body", Ra2VoxelAssemblyPartRole.Body, "Body", "colour-4e", 3, 3, 1);
+        Ra2VoxelPartDescriptor part = new("body", Ra2VoxelAssemblyPartRole.Body, "Body", "colour-4e", xSize, ySize, zSize);
         List<Ra2VoxelCell> cells = [];
-        for (int y = 0; y < 3; y++)
-        for (int x = 0; x < 3; x++)
-            cells.Add(new(new Ra2VoxelCoordinate(x, y, 0), 90));
+        for (int z = 0; z < zSize; z++)
+        for (int y = 0; y < ySize; y++)
+        for (int x = 0; x < xSize; x++)
+            cells.Add(new(new Ra2VoxelCoordinate(x, y, z), 90));
         return new("COLOUR_4E", part, palette, cells, [new("fixture", new string('E', 64))]);
     }
 
@@ -424,6 +566,49 @@ public sealed class Ra2VoxelColourMaterializationTests
         return new("sparse-4e", colours, transparent);
     }
 
+    private static Ra2VoxelPaletteProfile CreateRa2IndexedRampPalette()
+    {
+        Ra2Rgba32[] colours = Enumerable.Repeat(new Ra2Rgba32(255, 0, 255), 256).ToArray();
+        (byte R, byte G, byte B)[] ramp =
+        [
+            (208, 208, 184), (196, 196, 172), (184, 184, 160), (172, 172, 148),
+            (160, 160, 136), (148, 148, 124), (136, 136, 112), (124, 124, 100),
+            (112, 112, 88), (100, 100, 76), (88, 88, 64), (76, 76, 52),
+            (64, 64, 40), (52, 52, 28), (40, 40, 16), (28, 28, 4)
+        ];
+        for (int offset = 0; offset < ramp.Length; offset++)
+            colours[64 + offset] = new(ramp[offset].R, ramp[offset].G, ramp[offset].B);
+        colours[112] = new(136, 128, 88);
+        colours[138] = new(120, 104, 64);
+        colours[152] = new(108, 88, 44);
+        colours[154] = new(100, 80, 40);
+        byte[] eligible = Enumerable.Range(64, 16).Concat([112, 138, 152, 154])
+            .Select(value => checked((byte)value)).ToArray();
+        byte[] transparent = Enumerable.Range(0, 256)
+            .Except(eligible.Select(value => (int)value))
+            .Select(value => checked((byte)value)).ToArray();
+        return new("ra2-indexed-ramp-fixture", colours, transparent);
+    }
+
+    private static Ra2VoxelPaletteProfile CreateMaterializationRa2Palette()
+    {
+        Ra2Rgba32[] colours = Enumerable.Range(0, 256)
+            .Select(index => new Ra2Rgba32((byte)index, (byte)index, (byte)index))
+            .ToArray();
+        (byte R, byte G, byte B)[] ramp =
+        [
+            (208, 208, 184), (196, 196, 172), (184, 184, 160), (172, 172, 148),
+            (160, 160, 136), (148, 148, 124), (136, 136, 112), (124, 124, 100),
+            (112, 112, 88), (100, 100, 76), (88, 88, 64), (76, 76, 52),
+            (64, 64, 40), (52, 52, 28), (40, 40, 16), (28, 28, 4)
+        ];
+        for (int offset = 0; offset < ramp.Length; offset++)
+            colours[64 + offset] = new(ramp[offset].R, ramp[offset].G, ramp[offset].B);
+        colours[0] = new(0, 0, 0, 0);
+        return new("ra2-materialization-fixture", colours, [0],
+            Enumerable.Range(16, 16).Select(value => (byte)value));
+    }
+
     private static Ra2VoxelStyleRoleDefinition Role(string id, Ra2VoxelStyleRoleCategory category, byte index)
         => new(id, category, index, null, ["built-in"]);
 
@@ -432,8 +617,10 @@ public sealed class Ra2VoxelColourMaterializationTests
 
     private static Ra2VoxelSemanticEffectiveAssignment Assignment(
         Ra2VoxelSemanticMaterialRole material,
-        Ra2VoxelSemanticRemapIntent remap = Ra2VoxelSemanticRemapIntent.None)
-        => new("fixture", Ra2VoxelSemanticPartRole.BodyShell, material, remap,
+        Ra2VoxelSemanticRemapIntent remap = Ra2VoxelSemanticRemapIntent.None,
+        Ra2VoxelSemanticPartRole part = Ra2VoxelSemanticPartRole.BodyShell,
+        string regionId = "fixture")
+        => new(regionId, part, material, remap,
             Ra2VoxelSemanticAssignmentSource.HumanOverride, 1d, "fixture");
 
     private sealed record Fixture(Ra2VoxelColourMaterializationContext Context);

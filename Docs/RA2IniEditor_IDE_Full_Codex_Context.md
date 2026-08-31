@@ -3,10 +3,11 @@
 更新时间：2026-08-31
 用途：为新任务恢复最小充分工程上下文；阶段历史不在此重复。
 
-当前工作树状态（2026-08-31）：ASSET-VOX-4E Rev.4 UI-R1 已实现并通过聚焦自动验证，正在等待用户手动 UI
-验收。活动上色链不再调用 DeepSeek 判型；用户人工选择单位类型，Host 确定性路由唯一 colouring Skill。Voxel
-Style workspace 已改为五阶段任务流。不得在人工验收前声称 4E-5 或 clean package 完成。详见
-`Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md`。
+当前工作树状态（2026-08-31）：ASSET-VOX-4E Rev.6 已实现并通过完整自动验证，用户手动视觉验收进行中。
+活动上色链由用户人工选择单位类型，Host 确定性路由唯一 colouring Skill；方向面区分 longitudinal end / lateral
+side，side+under 不再产生黑带，effective semantic boundary 强调且保护 direct materials。五种技法由 Host revision 2
+typed policy 保证最终差异；部件/材质分类预览入口位于全局预览工具栏。不得在人工验收前声称 4E-5 或 clean
+package 完成。详见 `Docs/ASSET-VOX-4E_DirectionalSurfaceSemanticBoundaryTechniqueDifferentiationRev6.md`。
 
 ## 1. 产品与仓库身份
 
@@ -170,6 +171,12 @@ IDE full 2913/2914；唯一 WPF deferred-resource test 单独 1/1 通过但全�
 - 不把结构/审阅标注色直接写入最终 palette。
 
 ## 10. 下一安全入口
+
+2026-08-31：`4E Rev.5 / UI-R1-FIX2` 已替换真实样本暴露的不可靠规则：chromatic Body family 优先锁定
+人工 anchor 所在的 16-entry indexed ramp，Side 使用 BodyBase，Subtle/Strong edge 使用不同暴露阈值，语义完成度
+只看可见表面材质覆盖，style input 失效后回到 Semantics/Original 3D。Application 353/353、workspace ViewModel
+25/25、Debug solution build 通过；IDE full 2919/2920，失败的既有 WPF resource test 单独 1/1 通过。物理视觉、DPI、
+真实模型和 package 仍未完成。
 
 `ASSET-VOX-4E-1..4E-4` 已完成。下一安全阶段是收口 `4E-5`：先单独处理 full-suite-only 的 WPF
 DeferredAppResource/Popup dispatcher 测试隔离失败；完整 IDE suite 通过后再 clean package；随后记录现有 workspace

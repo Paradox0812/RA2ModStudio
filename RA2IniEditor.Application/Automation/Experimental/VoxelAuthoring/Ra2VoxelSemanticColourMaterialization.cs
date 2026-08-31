@@ -65,7 +65,7 @@ internal sealed record Ra2VoxelColourMaterializationResult(
 
 internal static class Ra2VoxelSemanticColourMaterializer
 {
-    internal const string NormalizerRevision = "ra2-voxel-style-normalizer/1";
+    internal const string NormalizerRevision = "ra2-voxel-style-normalizer/3";
 
     internal static Ra2VoxelColourMaterializationResult Materialize(
         Ra2VoxelColourMaterializationContext context,
@@ -97,13 +97,16 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 context.Composition,
                 context.Requirements,
                 context.BindingPlan,
-                context.RawPlan.PlanHash);
+                context.RawPlan.PlanHash,
+                context.Source,
+                context.Technique);
             string ordinaryBundleHash = ComputeBundleHash(context, integration.Plan.PlanHash, contrast: false);
             Ra2VoxelColourizationResult ordinaryColourization = Ra2VoxelColourizer.Colourize(
                 context.Source,
                 integration.Plan,
                 integration.Masks,
                 context.Adaptation.DualSurfacePolicy,
+                context.Technique.EdgePolicy,
                 cancellationToken);
             if (!ordinaryColourization.IsSuccess)
                 return Failure(Ra2VoxelColourMaterializationFailureKind.ColourizationFailed, ordinaryColourization.Message,
@@ -123,6 +126,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 context.Evidence,
                 context.Confirmation,
                 context.ColourSkill,
+                integration.BoundaryProjection,
                 ordinaryBundleHash);
             Ra2VoxelColourMaterializationCandidate ordinary = new(
                 integration.Plan,
@@ -168,6 +172,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
                             contrast.Plan,
                             integration.Masks,
                             context.Adaptation.DualSurfacePolicy,
+                            context.Technique.EdgePolicy,
                             cancellationToken);
                         if (contrastColourization.IsSuccess)
                         {
@@ -185,6 +190,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
                                 context.Evidence,
                                 context.Confirmation,
                                 context.ColourSkill,
+                                integration.BoundaryProjection,
                                 contrastBundleHash);
                             contrastCandidate = new(
                                 contrast.Plan,
@@ -323,7 +329,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
         [
             Geometry(Ra2VoxelStyleRegionKind.WholePart, bodyBase),
             Geometry(Ra2VoxelStyleRegionKind.Interior, bodyDark),
-            Geometry(Ra2VoxelStyleRegionKind.SideExposed, bodyMid),
+            Geometry(Ra2VoxelStyleRegionKind.SideExposed, bodyBase),
             Geometry(Ra2VoxelStyleRegionKind.TopExposed, bodyLight),
             Geometry(Ra2VoxelStyleRegionKind.UnderExposed, underside)
         ];

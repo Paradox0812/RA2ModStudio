@@ -13,9 +13,9 @@ INI、Cameo/Icon、VOX/VXL 与 SHP 内容生产。
 
 ## 2. 最新可信状态
 
-### 当前未提交实现：ASSET-VOX-4E Rev.4 UI-R1
+### 当前未提交实现：ASSET-VOX-4E Rev.6
 
-Rev.4 已按用户批准实现，但等待用户手动 UI 验收，尚未生成 clean package：
+Rev.6 已按用户批准实现并完成全量自动验证，正在等待用户手动 UI/模型验收，尚未生成 clean package：
 
 - 活动上色链已移除 DeepSeek 自动单位判型；用户直接选择 Ground/Air/LargeSurface/Unknown，Host 以
   `HumanManualSelection` 和当前 evidence identity 确定性路由一个 colouring Skill。
@@ -28,8 +28,15 @@ Rev.4 已按用户批准实现，但等待用户手动 UI 验收，尚未生成 
 - UI-R1-FIX1 已修复首次截图发现的单位类型/基准色下拉空白：两个 `DisplayMemberPath` 已从错误的
   `DisplayName` 改为真实 `Display`；隔离 Release XAML build 通过，workspace UI/ViewModel 26/26 通过，等待用户
   重启后的截图复验。
+- Rev.6 将 X/Y 外露面拆分为 longitudinal end 与 lateral side，禁止 side+under 形成黑带，并用 BodyMid 给前后端
+  提供方向识别；effective Part/Material boundary 以一体素 EdgeOrRidge 强调，但忽略 RegionId-only 分区且保护
+  direct materials/remap。
+- 五种技法 revision 2 由 Host typed policy 确保最终结果差异；四个 colouring Skill revision 2 明确基准色/技法
+  不进入 Provider request。部件/材质分类预览入口已恢复到全局预览工具栏，点击返回 Semantics 3D 而不切换阶段。
+- 当前证据：Debug build passed；Application 358/358；AssetHost 50/50；IDE 2920/2920；VoxelColour 55/55；
+  VoxelStyle workspace 28/28；Skill catalog 18/18。真实模型视觉仍由用户手动验收。
 
-权威修订：`Docs/ASSET-VOX-4E_ManualUnitClassAndWorkspaceUiAmendmentRev4.md`。
+权威修订：`Docs/ASSET-VOX-4E_DirectionalSurfaceSemanticBoundaryTechniqueDifferentiationRev6.md`。
 
 ### 最新已提交 Git 基线
 
@@ -169,6 +176,11 @@ DeepSeek、WPF screenshot/model visual 和 clean package 均未完成。
 - Shell 关闭/项目切换 dirty guard、sidecar merge/迁移仍在 Deferred Governance Queue。
 
 ## 7. 下一安全入口
+
+2026-08-31 补充：`4E Rev.5 / UI-R1-FIX2` 已实现 indexed-ramp 上色、Side→BodyBase、按技法收敛 edge、
+可见表面覆盖率和失效结果→3D 回退。Application 353/353、workspace ViewModel 25/25、Debug solution build
+0 warning/0 error；IDE full 2919/2920，唯一既有 WPF DeferredAppResource/Popup 测试单独复跑 1/1 通过。
+真实模型视觉验收仍由用户手动执行，未生成 clean package。
 
 `ASSET-VOX-4E-1..4E-4` 已完成实现与聚焦自动化验证。下一安全入口是收口 `4E-5`：
 

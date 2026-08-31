@@ -89,6 +89,8 @@
 | 4E-5 | full verification/package/physical acceptance | verification and documentation only | Restore/build passed；Application 350/350；AssetHost 50/50；IDE full 2913/2914 with one stable full-suite-only WPF resource failure；failed test alone 1/1 passed | InProgress / mandatory full-suite gate not satisfied | No：clean package and physical model acceptance not claimed |
 | 4E-UI-R1 Rev.4 | manual unit class + five-stage workspace | Application internal identity、IDE router/compiler/coordinator/ViewModel/XAML、focused tests/docs | Release build passed；Application 39/39；IDE 39/39；physical UI pending | Implemented / focused verified / physical pending | No：wait for user screenshot/manual result before final package |
 | 4E-UI-R1-FIX1 | unit-class/base-colour selector visible labels | workspace XAML、UI/ViewModel regression tests、status docs | Isolated Release XAML build 0 warning/0 error；UI/ViewModel 26/26 | Completed / screenshot recheck pending | No：user must rebuild/restart and confirm labels visibly render |
+| 4E-Rev5 / UI-R1-FIX2 | indexed ramp、BodyBase 可见性、edge 收敛、可见表面覆盖与失效预览回退 | Application family/materializer/colourizer/quality/semantic coverage、workspace ViewModel、direct tests/docs | Application 353/353；colour focused 45/45；workspace ViewModel 25/25；Debug solution build 0 warning/0 error；IDE full 2919/2920，唯一既有 WPF resource test 单独复跑 1/1 Passed | Implemented / automated focused verified / physical visual pending | No：等待用户真实模型视觉验收；full-suite isolation gate仍未满足 |
+| 4E-Rev6 | directional surface、effective semantic boundary、five-technique differentiation、全局分类预览入口 | Application geometry/materializer/quality/Skills、workspace XAML/ViewModel、tests/docs | Debug build passed；Application 358/358；AssetHost 50/50；IDE 2920/2920；VoxelColour 55/55；VoxelStyle workspace 28/28；Skill catalog 18/18；final XAML wrap 后 IDE build + UI contract 3/3 | Implemented / automated verified / physical visual pending | No：等待用户真实模型视觉验收 |
 
 ## Verification Matrix
 
@@ -115,6 +117,8 @@
 | Skill Creator helper | Failed (optional environment check) | `quick_validate.py` could not start because both available Python runtimes lack PyYAML；no dependency was installed；authoritative project bundled parser/tests passed |
 | Clean package | NotRun | mandatory IDE full-suite gate仍失败，未生成交付包 |
 | Real DeepSeek / WPF / model visual | NotRun / Pending | 未获真实付费调用授权；WPF 截图和用户提供 ground/air/large-surface 样本的物理视觉验收待用户执行 |
+| 4E Rev.5 colour/surface regression | Passed | Application full 353/353；colour/materialization 45/45；workspace ViewModel 25/25；RA2 indexed-ramp、edge policy、interior Unknown、Side→BodyBase、stale-result→3D 均有直接断言 |
+| 4E Rev.6 direction/boundary/technique/UI | Passed | Application 358/358；AssetHost 50/50；IDE 2920/2920；direction masks、side-under protection、effective boundary/direct-material protection、RA2 indexed-ramp 五技法五 candidate hash、全局分类预览均有直接断言 |
 
 ## Boundary audit
 

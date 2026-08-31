@@ -542,3 +542,21 @@ base-colour selection to a public façade/persisted project model requires a sep
 
 `HumanManualSelection` and `SelectedWorkflowStage` remain internal session state. Promotion to persisted project state,
 plugin/public API or cross-version interchange requires a separate compatibility review.
+
+## 45. ASSET-VOX-4E Rev.5 / UI-R1-FIX2 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|
+| ASSET-VOX-4E Rev.5 / UI-R1-FIX2 | None | Application-internal indexed ramp/materialization/quality/surface coverage and IDE-internal preview/workflow projection | Correct real-palette colour quality and remove all-region completion requirement | Internal / focused-verified / physical pending | Application 353/353；workspace ViewModel 25/25；Debug solution build passed | No public type, serializer, 4D sidecar, Provider protocol, project write, writer, dependency, AutomationId or Shell delta |
+
+The revised hashes invalidate only derived local colour candidates/reports. Persisted project and semantic-sidecar
+compatibility is unchanged; public promotion still requires a separate compatibility review.
+
+## 46. ASSET-VOX-4E Rev.6 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|
+| ASSET-VOX-4E Rev.6 | None | Application-internal directional geometry/semantic boundary/quality and IDE-internal preview projection | Correct side/end/under shading, distinguish techniques and restore classification preview | Internal / automated-verified / physical pending | Debug build；Application 358/358；AssetHost 50/50；IDE 2920/2920 | No public type, serializer, 4D sidecar, Provider protocol, project write, writer or Shell delta |
+
+All new masks and metrics are derived session data. Technique/Skill revision changes invalidate derived local caches only;
+the preserved AutomationIds and one new toolbar container do not create a public or persisted API.

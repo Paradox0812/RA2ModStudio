@@ -425,3 +425,16 @@ or add project writes to the façade. Live provider probes require a separate ap
 `AtomicTextFileWriter`, rejects paths outside the active project or through reparse points, and performs complete temporary
 validation before ViewModel publication. The three authoring layers remain separate. Do not fold this sidecar into project
 Save/Apply, model writers, provider DTOs or public C# APIs without a separately approved compatibility stage.
+
+## ASSET-VOX-4E Rev.6 directional/boundary boundary
+
+- `Ra2VoxelColourizer.BuildGeometryMask` is the sole owner of longitudinal/lateral surface derivation. Keep it bound to the
+  canonical occupied ordering; do not persist orientation bits or create an IDE-side geometry classifier.
+- Exclusive primary surfaces use Top → LongitudinalEnd → Side → Under. Side-plus-under must remain the side/body family;
+  changing this precedence requires a new colour-quality contract and real-model regression.
+- `Ra2VoxelSemanticBoundaryProjector` owns runtime-only effective PartRole/MaterialRole interfaces. It ignores RegionId,
+  selects only PaintedSurface ownership and relies on later direct/remap rules for exact protection.
+- Technique differentiation belongs to typed revision-2 policy and local materialization. Manual base colour and technique
+  remain outside the Provider request; never widen its JSON or ask for coordinates to reproduce local masks.
+- Part/Material review buttons are global presentation controls. They may select Semantics 3D but must not change workflow
+  stage, authoring state, persistence or materializable candidate identity.

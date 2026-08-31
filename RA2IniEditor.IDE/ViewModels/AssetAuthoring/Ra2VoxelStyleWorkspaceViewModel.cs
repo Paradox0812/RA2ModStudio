@@ -32,6 +32,8 @@ using Ra2VoxelSemanticBrushFailureKind = Ra2Application::RA2IniEditor.Applicatio
 using Ra2VoxelSemanticManualMaskLayer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticManualMaskLayer;
 using Ra2VoxelSemanticMaskComposition = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposition;
 using Ra2VoxelSemanticMaskComposer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposer;
+using Ra2VoxelSemanticSurfaceCoverage = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticSurfaceCoverage;
+using Ra2VoxelSemanticSurfaceCoverageProjector = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticSurfaceCoverageProjector;
 using Ra2VoxelSemanticMaskEditor = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskEditor;
 using Ra2Rgba32 = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2Rgba32;
 using Ra2VoxelBaseColourSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBaseColourSelection;
@@ -429,7 +431,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public string GeometryStageStatus => !HasSource ? "待开始" : _workingGeometryState?.Revision > 0 ? "已完成" : "可选";
     public string SemanticsStageStatus => !HasSource ? "待开始" : IsSemanticSidecarDirty
         ? "有未保存更改"
-        : HasSemanticEvidence ? "已完成" : "可开始";
+        : !HasSemanticEvidence ? "可开始"
+        : ResolveSemanticSurfaceCoverage() is { KnownVisibleSurfaceRatio: >= 0.98d } ? "已完成" : "可上色/待完善";
     public string ColourStageStatus => !HasSemanticEvidence ? "待开始" : HasPreview ? "已完成"
         : HasConfirmedUnitClass || SelectedBaseColour is not null ? "配置中" : "可开始";
     public string ReviewStageStatus => _acceptedCandidate is not null ? "已固化" : HasPreview ? "待审阅" : "待开始";
@@ -441,12 +444,14 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         {
             if (!HasSource) return "下一步：载入项目内的 VOX/VXL，或从参考图生成模型";
             if (!HasSemanticEvidence) return "下一步：创建人工区域或载入已有分划";
-            if (UnclassifiedSemanticRegionCount > 0)
-                return $"下一步：仍有 {UnclassifiedSemanticRegionCount} 个未分类区域，完成后进入上色";
-            if (!HasConfirmedUnitClass) return "下一步：进入上色并人工确认单位类型";
-            if (_baseColourSelection is null) return "下一步：选择当前 RA2 色盘中的主体基准色";
-            if (!HasPreview) return "下一步：编译着色预览";
-            if (_acceptedCandidate is null) return "下一步：审阅质量警告并固化最终候选";
+            string coverage = ResolveSemanticSurfaceCoverage() is { } surface
+                ? $"可见表面已标注 {surface.KnownVisibleSurfaceCellCount:N0}/{surface.VisibleSurfaceCellCount:N0}（{surface.KnownVisibleSurfaceRatio * 100d:F1}%）"
+                : "可见表面覆盖率暂不可用";
+            string optionalRegions = UnclassifiedSemanticRegionCount > 0 ? "；其余未分类分区可按需处理" : string.Empty;
+            if (!HasConfirmedUnitClass) return $"{coverage}{optionalRegions}。下一步：进入上色并人工确认单位类型";
+            if (_baseColourSelection is null) return $"{coverage}{optionalRegions}。下一步：选择当前 RA2 色盘中的主体基准色";
+            if (!HasPreview) return $"{coverage}{optionalRegions}。下一步：编译着色预览";
+            if (_acceptedCandidate is null) return $"{coverage}{optionalRegions}。下一步：审阅质量警告并固化最终候选";
             return "已完成：可以导出固化的 VOX 候选";
         }
     }
@@ -609,7 +614,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public string BaseColourStatusText => _baseColourSelection is null
         ? "未选择。必须从当前 active palette 的 opaque / non-remap 条目中人工锁定。"
         : $"{ActiveGeometrySnapshot!.Palette.ProfileId} · {_baseColourSelection.PaletteProfileHash[..12]} · " +
-          $"#{_baseColourSelection.PaletteIndex} · {SelectedBaseColour!.RgbHex} · 主体基准色由人工锁定";
+          $"#{_baseColourSelection.PaletteIndex} · {SelectedBaseColour!.RgbHex} · 主体基准色由人工锁定 · " +
+          $"当前连续索引色阶 #{(_baseColourSelection.PaletteIndex / 16) * 16}–#{((_baseColourSelection.PaletteIndex / 16) * 16) + 15}";
     public Brush? BaseColourSwatch => _selectedBaseColour?.Swatch;
     public string TechniqueDescription => $"{_selectedTechnique.DisplayName} · revision {_selectedTechnique.Policy.Revision} · " +
         $"{_selectedTechnique.Description} 只改变相对明暗、边缘和材质分离，不改变颜色主题。";
@@ -1270,13 +1276,18 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
 
     internal void SetSemanticReviewDimension(Ra2VoxelSemanticReviewDimension dimension)
     {
-        if (!Enum.IsDefined(dimension) || _semanticReviewDimension == dimension)
+        if (!Enum.IsDefined(dimension))
             return;
-        _semanticReviewDimension = dimension;
-        OnPropertyChanged(nameof(SemanticReviewDimension));
-        OnPropertyChanged(nameof(IsSemanticPartReview));
-        OnPropertyChanged(nameof(IsSemanticMaterialReview));
-        OnPropertyChanged(nameof(SemanticReviewLegend));
+        if (_semanticReviewDimension != dimension)
+        {
+            _semanticReviewDimension = dimension;
+            OnPropertyChanged(nameof(SemanticReviewDimension));
+            OnPropertyChanged(nameof(IsSemanticPartReview));
+            OnPropertyChanged(nameof(IsSemanticMaterialReview));
+            OnPropertyChanged(nameof(SemanticReviewLegend));
+        }
+        if (HasSemanticEvidence)
+            SetPreviewMode(Ra2VoxelStylePreviewMode.Semantics);
     }
 
     internal bool HandleSemanticCellClick(string regionId, Ra2VoxelCoordinate coordinate)
@@ -1966,6 +1977,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
 
     private void ClearStylePreview()
     {
+        bool redirectStyleDependentMode = _previewMode is Ra2VoxelStylePreviewMode.Result or
+            Ra2VoxelStylePreviewMode.Contrast or Ra2VoxelStylePreviewMode.RegionMask or Ra2VoxelStylePreviewMode.Palette;
         _preview = null;
         _resultImage = null;
         _contrastImage = null;
@@ -1975,6 +1988,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         _hasPendingStyleChanges = false;
         ClearReviewProjection();
         ClearColourQualityProjection();
+        if (redirectStyleDependentMode)
+            SetPreviewMode(HasSemanticEvidence ? Ra2VoxelStylePreviewMode.Semantics : Ra2VoxelStylePreviewMode.Original);
     }
 
     private void ClearSemanticState()
@@ -2025,6 +2040,13 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             _semanticEvidence,
             ResolveSemanticAssignments(),
             _semanticManualMaskLayer!);
+    }
+
+    private Ra2VoxelSemanticSurfaceCoverage? ResolveSemanticSurfaceCoverage()
+    {
+        if (ActiveGeometrySnapshot is not { } snapshot || ResolveSemanticComposition() is not { } composition)
+            return null;
+        return Ra2VoxelSemanticSurfaceCoverageProjector.Project(snapshot, composition);
     }
 
     private Ra2VoxelSemanticMaskComposition ResolveColourComposition(Ra2VoxelSceneSnapshot snapshot)
