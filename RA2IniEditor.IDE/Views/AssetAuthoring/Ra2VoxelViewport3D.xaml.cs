@@ -18,6 +18,10 @@ using Ra2VoxelSemanticEffectiveAssignment = Ra2Application::RA2IniEditor.Applica
 using Ra2VoxelCoordinate = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelCoordinate;
 using Ra2VoxelSemanticMaskComposition = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposition;
 using Ra2VoxelSemanticMaskEditor = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskEditor;
+using Ra2VoxelFormZoneProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFormZoneProjection;
+using Ra2VoxelBoundaryIntentProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBoundaryIntentProjection;
+using Ra2VoxelFeatureScaleProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFeatureScaleProjection;
+using Ra2VoxelColourQualityReport = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourQualityReport;
 
 namespace RA2IniEditor.IDE.Views.AssetAuthoring;
 
@@ -73,6 +77,7 @@ internal partial class Ra2VoxelViewport3D : UserControl, IDisposable
     private double _pitch = 0.48d;
     private string? _cameraGroupKey;
     private Ra2VoxelViewportCameraState? _savedCameraState;
+    private Ra2VoxelViewportCameraState? _gameScaleRestoreState;
     private bool _hasUserInteraction;
     private Point _lastPointer;
     private DragMode _dragMode;
@@ -111,6 +116,12 @@ internal partial class Ra2VoxelViewport3D : UserControl, IDisposable
         IReadOnlyList<Ra2VoxelSemanticEffectiveAssignment>? semanticAssignments = null,
         Ra2VoxelSemanticMaskComposition? semanticComposition = null,
         Ra2VoxelSemanticReviewDimension semanticReviewDimension = Ra2VoxelSemanticReviewDimension.Material,
+        Ra2VoxelFormZoneProjection? formZones = null,
+        Ra2VoxelBoundaryIntentProjection? boundaryIntents = null,
+        Ra2VoxelFeatureScaleProjection? featureScale = null,
+        Ra2VoxelSceneSnapshot? riskCandidate = null,
+        Ra2VoxelSemanticMaskComposition? riskComposition = null,
+        Ra2VoxelColourQualityReport? quality = null,
         string? cameraGroupKey = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -127,6 +138,7 @@ internal partial class Ra2VoxelViewport3D : UserControl, IDisposable
                 comparisonSnapshot, protectionMask, semanticPartition,
                 semanticEvidence, semanticAssignments, semanticComposition,
                 semanticReviewDimension,
+                formZones, boundaryIntents, featureScale, riskCandidate, riskComposition, quality,
                 cancellationToken: cancellationToken),
             CancellationToken.None);
         if (_disposed || cancellationToken.IsCancellationRequested || generation != Interlocked.Read(ref _sceneGeneration))
@@ -199,6 +211,30 @@ internal partial class Ra2VoxelViewport3D : UserControl, IDisposable
         _pitch = 0.48d;
         _hasUserInteraction = false;
         UpdateCamera();
+    }
+
+    internal bool EnterGameScaleReview()
+    {
+        if (_bounds.IsEmpty || _gameScaleRestoreState is not null)
+            return false;
+        if (!Ra2VoxelViewportCameraState.TryCapture(
+                _bounds, _target, _distance, _yaw, _pitch, _hasUserInteraction, out Ra2VoxelViewportCameraState state))
+            return false;
+        _gameScaleRestoreState = state;
+        double diagonal = Math.Sqrt((_bounds.SizeX * _bounds.SizeX) +
+            (_bounds.SizeY * _bounds.SizeY) + (_bounds.SizeZ * _bounds.SizeZ));
+        _distance = Math.Max(8d, diagonal * 4.8d);
+        _hasUserInteraction = false;
+        UpdateCamera();
+        return true;
+    }
+
+    internal bool ExitGameScaleReview()
+    {
+        if (_gameScaleRestoreState is not { } state)
+            return false;
+        _gameScaleRestoreState = null;
+        return RestoreCamera(state);
     }
 
     public void Dispose()

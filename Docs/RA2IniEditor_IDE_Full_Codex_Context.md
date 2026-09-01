@@ -3,11 +3,19 @@
 更新时间：2026-08-31
 用途：为新任务恢复最小充分工程上下文；阶段历史不在此重复。
 
-当前工作树状态（2026-08-31）：ASSET-VOX-4E Rev.6 已实现并通过完整自动验证，用户手动视觉验收进行中。
+当前工作树状态（2026-08-31）：ASSET-VOX-4E Rev.7 精确合同已批准并完成 Rev.7-B..G 自动门；新增人工前向、
+form-zone tonal bands、boundary intent、material-local family、feature/accent budget、technique revision 3 和
+game-scale quality。最终证据为 Debug build 0 warning/error、Application 368/368、AssetHost 50/50、IDE
+2922/2922；IdeOnly clean package 1470 entries。真实三类模型、100%/125% DPI 和视觉质量仍由用户手动验收。
+权威入口：`Docs/ASSET-VOX-4E_FormZoneBoundaryIntentGameScaleFinalContractRev7.md`。Rev.7 不包含 VPL parser、
+VXL/HVA 或 GameReady。
+
+Rev.6 基线仍为：
+ASSET-VOX-4E Rev.6 已实现并通过完整自动验证，用户手动视觉验收进行中。
 活动上色链由用户人工选择单位类型，Host 确定性路由唯一 colouring Skill；方向面区分 longitudinal end / lateral
 side，side+under 不再产生黑带，effective semantic boundary 强调且保护 direct materials。五种技法由 Host revision 2
-typed policy 保证最终差异；部件/材质分类预览入口位于全局预览工具栏。不得在人工验收前声称 4E-5 或 clean
-package 完成。详见 `Docs/ASSET-VOX-4E_DirectionalSurfaceSemanticBoundaryTechniqueDifferentiationRev6.md`。
+typed policy 保证最终差异；部件/材质分类预览入口位于全局预览工具栏。Rev.7 已取代 Rev.6 作为当前上色候选
+质量基线。详见 `Docs/ASSET-VOX-4E_DirectionalSurfaceSemanticBoundaryTechniqueDifferentiationRev6.md`。
 
 ## 1. 产品与仓库身份
 
@@ -86,7 +94,8 @@ User/policy           = external cost, overwrite and final commit authority
   层次。4E-1 已提供 evidence/proposal/confirmation、BaseColour、technique/adaptation、requirements/binding、
   classifier/Ground/Air/LargeSurface Skills；4E-2 已提供独立 classification/style cache、confirmation-only exact route、
   semantic binding cache v2；4E-3 已提供 base-centred family/materialization/contrast/quality；4E-4 已接入现有
-  workspace 的显式判型确认、基准色、技法和质量警告 gate。4E-5 的完整 IDE suite、package 和物理验证未完成。
+  workspace 的显式判型确认、基准色、技法和质量警告 gate。Rev.7-G 已补齐完整 IDE suite 与 package；物理视觉
+  验证仍为 Pending。
 - `4E-R1`：8 个用户 ZIP + VXLSE III `RA2/unittem.pal` + 公开教程/许可明确 VOX 模型的上色研究已完成；
   新增 Chat-only `ra2-voxel-colour-techniques` 供通用 DeepSeek 选择，聚焦测试 16/16 通过。专用 4E style
   compiler 尚未接入该 Skill；全量测试、package 和真实模型调用未运行。
@@ -147,9 +156,15 @@ Wrong-model / dirty / DPI: NotRun or Unknown
 4E-1 最新验证（`Docs/ASSET-VOX-4E_StageLedger.md`）：13/13 新 contract、45/45 affected Application、
 18/18 Skill catalog、88/88 affected IDE。4E-2：26/26 classifier/router/compiler/cache、49/49 affected Application、
 107/107 affected IDE。4E-3：35/35 new materialization、77/77 affected Application、89/89 affected IDE。4E-4：
-workspace UI/ViewModel 25/25，Debug/XAML build 0 warning/0 error。4E-5 full Application 350/350、AssetHost 50/50，
-IDE full 2913/2914；唯一 WPF deferred-resource test 单独 1/1 通过但全套仍失败。package、真实 DeepSeek、截图/DPI
-和真实模型视觉均未完成。
+workspace UI/ViewModel 25/25，Debug/XAML build 0 warning/0 error。历史 4E-5 首轮为 Application 350/350、
+AssetHost 50/50、IDE 2913/2914；该失败已由下述 Rev.7-G 最终门取代，不再是当前阻塞。
+
+4E Rev.7-B..G 已按批准的精确契约连续通过自动停止门：新增人工前向、FormZone、BoundaryIntent、material-local
+family、feature scale、五种 revision-3 technique、八固定视角及 explicit Normal/VPL review facts；第16节 UI 已接线。
+聚焦证据为 Application 65/65 与 IDE/Skill/UI 112/112。全部类型均 internal、derived、session-only；4D sidecar、
+Provider protocol、project Save/Apply、VOX/VXL/HVA writer 和 Shell 未改变。WPF resource test 使用测试自有
+Application 的 explicit shutdown 修复其 Popup/DeferredAppResource 生命周期；最终 Application 368/368、AssetHost
+50/50、IDE 2922/2922，clean package 1470 entries。真实三类模型和 DPI 仍由用户手动验收。
 
 ## 8. 当前明确不足
 
@@ -172,15 +187,10 @@ IDE full 2913/2914；唯一 WPF deferred-resource test 单独 1/1 通过但全�
 
 ## 10. 下一安全入口
 
-2026-08-31：`4E Rev.5 / UI-R1-FIX2` 已替换真实样本暴露的不可靠规则：chromatic Body family 优先锁定
-人工 anchor 所在的 16-entry indexed ramp，Side 使用 BodyBase，Subtle/Strong edge 使用不同暴露阈值，语义完成度
-只看可见表面材质覆盖，style input 失效后回到 Semantics/Original 3D。Application 353/353、workspace ViewModel
-25/25、Debug solution build 通过；IDE full 2919/2920，失败的既有 WPF resource test 单独 1/1 通过。物理视觉、DPI、
-真实模型和 package 仍未完成。
-
-`ASSET-VOX-4E-1..4E-4` 已完成。下一安全阶段是收口 `4E-5`：先单独处理 full-suite-only 的 WPF
-DeferredAppResource/Popup dispatcher 测试隔离失败；完整 IDE suite 通过后再 clean package；随后记录现有 workspace
-截图、100%/125% DPI 和真实 ground/air/large-surface 样本人工验收。真实 DeepSeek 仍需单独付费授权。
+`ASSET-VOX-4E Rev.7-G` 自动门与洁净包已完成。下一安全阶段是由用户在现有 workspace 手动记录截图、
+100%/125% DPI，以及 ground/air/large-surface 各一个真实样本的视觉验收；重点确认平滑侧面无无原因暗块、
+前后识别、五技法可辨差异、诊断入口与游戏尺寸视图、切换 technique 不进入 Slice。用户明确要求不使用电脑
+操控，因此 Codex 不代替该物理验收。真实 DeepSeek 仍需单独付费授权。
 
 4D 的错模型、dirty confirmation 和 DPI 指针项仍需补验，不得推断为通过。4E 不包含 VXL/HVA、
 项目 Apply/Save 或 GameReady。

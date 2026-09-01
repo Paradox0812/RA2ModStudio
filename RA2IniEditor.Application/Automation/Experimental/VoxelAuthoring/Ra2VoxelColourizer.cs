@@ -105,6 +105,7 @@ internal sealed class Ra2VoxelExplicitMask
     internal string MaskId { get; }
     internal string SourceSnapshotHash { get; }
     internal int CellCount => _selected.Length;
+    internal int SelectedCount => _selected.Count(value => value != 0);
     internal string MaskHash { get; }
     internal bool IsSelected(int index) => _selected[index] != 0;
     internal IReadOnlyList<byte> Selected => Array.AsReadOnly(_selected);

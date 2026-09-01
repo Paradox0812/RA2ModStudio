@@ -26,8 +26,12 @@ public sealed class Ra2VoxelColourMaterializationTests
         Assert.Equal(first.Ordinary!.BundleHash, second.Ordinary!.BundleHash);
         Assert.Equal(first.Ordinary.Colourization.Snapshot!.CanonicalHash,
             second.Ordinary.Colourization.Snapshot!.CanonicalHash);
-        Assert.Equal(Ra2VoxelColourAdmissionState.ReviewReady, first.Ordinary.Quality.State);
+        Assert.Equal(Ra2VoxelColourAdmissionState.NeedsReview, first.Ordinary.Quality.State);
         Assert.Equal(Ra2VoxelColourVisualAcceptance.Pending, first.Ordinary.Quality.VisualAcceptance);
+        Assert.Contains(first.Ordinary.Quality.Warnings, value => value.Code == "VplNotEvaluated");
+        Assert.Contains(first.Ordinary.Quality.Warnings, value => value.Code == "NormalContextNotAvailable");
+        Assert.Equal(8, first.Ordinary.GameScale!.Views.Count);
+        Assert.Equal(first.Ordinary.GameScale.FactsHash, second.Ordinary.GameScale!.FactsHash);
         Ra2CompiledVoxelStyleRole bodyBase = first.Ordinary.Plan.Roles.Single(value =>
             value.Category == Ra2VoxelStyleRoleCategory.BodyBase);
         Assert.Equal(fixture.Context.BaseColour.PaletteIndex, bodyBase.PaletteIndex);
@@ -58,7 +62,7 @@ public sealed class Ra2VoxelColourMaterializationTests
             value.FileName == "colour-review-report.json").Content);
         JsonElement quality = document.RootElement.GetProperty("quality");
         Assert.Equal(result.Ordinary.Quality.ReportHash, quality.GetProperty("report_hash").GetString());
-        Assert.Equal("ReviewReady", quality.GetProperty("state").GetString());
+        Assert.Equal("NeedsReview", quality.GetProperty("state").GetString());
         Assert.Equal("Pending", quality.GetProperty("visual_acceptance").GetString());
         Assert.False(quality.TryGetProperty("score", out _));
     }
@@ -76,10 +80,7 @@ public sealed class Ra2VoxelColourMaterializationTests
 
         Assert.True(result.IsSuccess, result.Message);
         Assert.NotEqual(Ra2VoxelColourAdmissionState.Blocked, result.Ordinary!.Quality.State);
-        Assert.Equal(unitClass == Ra2VoxelUnitClass.Unknown
-                ? Ra2VoxelColourAdmissionState.NeedsReview
-                : Ra2VoxelColourAdmissionState.ReviewReady,
-            result.Ordinary.Quality.State);
+        Assert.Equal(Ra2VoxelColourAdmissionState.NeedsReview, result.Ordinary.Quality.State);
         Assert.Equal(fixture.Context.BaseColour.PaletteIndex,
             result.FamilySelection![Ra2VoxelBodyColourRole.BodyBase].PaletteIndex);
     }
@@ -273,7 +274,28 @@ public sealed class Ra2VoxelColourMaterializationTests
     }
 
     [Fact]
-    public void Materializer_GroundVolumeKeepsSideUndersideCleanAndUsesMidToneOnEnds()
+    public void Materializer_FiveTechniquesProduceFiveSpatialRoleDistributions()
+    {
+        string[] signatures = Ra2VoxelColourTechniqueCatalog.All.Select(technique =>
+        {
+            Fixture fixture = CreateFixture(
+                Ra2VoxelUnitClass.Ground,
+                technique.TechniqueId,
+                sourceFactory: palette => CreateVolume(palette, 4, 6, 4));
+            Ra2VoxelColourMaterializationResult result =
+                Ra2VoxelSemanticColourMaterializer.Materialize(fixture.Context);
+            Assert.True(result.IsSuccess, $"{technique.TechniqueId}: {result.Message}");
+            return string.Join('|', result.Ordinary!.Colourization.Facts!.RoleCounts
+                .Where(value => value.Id.StartsWith("body.", StringComparison.Ordinal))
+                .OrderBy(value => value.Id, StringComparer.Ordinal)
+                .Select(value => $"{value.Id}:{value.CellCount}"));
+        }).ToArray();
+
+        Assert.Equal(5, signatures.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Fact]
+    public void Materializer_GroundVolumeUsesLowerBandWithoutUndersideLeakAndKeepsEndsReadable()
     {
         Fixture fixture = CreateFixture(
             Ra2VoxelUnitClass.Ground,
@@ -283,7 +305,7 @@ public sealed class Ra2VoxelColourMaterializationTests
 
         Assert.True(result.IsSuccess, result.Message);
         Ra2VoxelColourizationFacts facts = result.Ordinary!.Colourization.Facts!;
-        AssertRole(new(0, 2, 0), "body.base");
+        AssertRole(new(0, 2, 0), "body.lower.v3");
         AssertRole(new(1, 0, 1), "body.mid");
         Assert.DoesNotContain(result.Ordinary.Quality.Warnings, value => value.Code == "UndersideSideLeak");
 
@@ -293,6 +315,45 @@ public sealed class Ra2VoxelColourMaterializationTests
             Assert.True(index >= 0);
             Assert.Equal(expectedRole, facts.AppliedRoleIds[index]);
         }
+    }
+
+    [Fact]
+    public void Materializer_ProjectsFormZonesAndTypedBoundaryIntentsThroughSinglePath()
+    {
+        Fixture fixture = CreateFixture(
+            Ra2VoxelUnitClass.Ground,
+            sourceFactory: palette => CreateVolume(palette, 4, 6, 4));
+        Ra2VoxelForwardDirectionSelection orientation = Assert.IsType<Ra2VoxelForwardDirectionSelection>(
+            Ra2VoxelForwardDirectionSelection.Create(fixture.Context.Source,
+                fixture.Context.Composition.CompositionHash, Ra2VoxelForwardDirection.PositiveY).Selection);
+
+        Ra2VoxelColourMaterializationResult result = Ra2VoxelSemanticColourMaterializer.Materialize(
+            fixture.Context with { Orientation = orientation });
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.NotNull(result.SemanticIntegration!.FormZones);
+        Assert.NotNull(result.SemanticIntegration.BoundaryIntents);
+        Assert.NotNull(result.MaterialFamilies);
+        Assert.Contains(result.Ordinary!.Plan.Roles, value => value.Id == "body.upper.v3");
+        Assert.Contains(result.Ordinary.Plan.Rules, value => value.MaskId == "form.lower-skirt");
+        Assert.Equal(orientation.SelectionHash,
+            result.SemanticIntegration.FormZones!.OrientationSelectionHash);
+    }
+
+    [Fact]
+    public void MaterialFamily_SparseDirectMaskPreservesExactAnchor()
+    {
+        Fixture fixture = CreateFixture(
+            Ra2VoxelUnitClass.Ground,
+            assignments: (_, original) => original.Select((value, index) =>
+                index == 0 ? Assignment(Ra2VoxelSemanticMaterialRole.Glass) : value).ToArray());
+
+        Ra2VoxelColourMaterializationResult result = Ra2VoxelSemanticColourMaterializer.Materialize(fixture.Context);
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.Equal((byte)150, result.Ordinary!.Colourization.Snapshot!.Cells[0].PaletteIndex);
+        Assert.DoesNotContain(result.Ordinary.Quality.Warnings,
+            value => value.Code == "SemanticPrecedenceMismatch");
     }
 
     [Fact]

@@ -438,3 +438,21 @@ Save/Apply, model writers, provider DTOs or public C# APIs without a separately 
   remain outside the Provider request; never widen its JSON or ask for coordinates to reproduce local masks.
 - Part/Material review buttons are global presentation controls. They may select Semantics 3D but must not change workflow
   stage, authoring state, persistence or materializable candidate identity.
+
+## ASSET-VOX-4E Rev.7 form-zone/game-scale boundary
+
+- `Ra2VoxelForwardDirectionSelection` is human-owned, session-only and bound to snapshot + semantic composition hashes.
+  Unknown is valid but never aliases a guessed front.
+- `FormZoneProjection → FeatureScaleProjection → BoundaryIntentProjection → SemanticStyleIntegrator` is the sole derived
+  spatial path. The IDE visualizes these facts but does not recompute or persist an alternative classifier.
+- Direct semantic materials/remap remain later exact rules. Material-local highlight/base/shadow stay within the anchor's
+  legal 16-index ramp; sparse masks do not receive invented texture.
+- Revision-3 techniques differ through typed spatial profile, band count, allowed boundary intents and detail/accent budgets.
+  Provider JSON remains unchanged and contains neither coordinates nor numeric technique/base-colour control.
+- Fixed eight-view game-scale facts are deterministic diagnostics. Normal context must match the current snapshot;
+  authoritative VPL is unavailable and stays `NotEvaluated`. WPF lighting is never a VPL substitute.
+- Section-16 UI is the complete approved surface. Do not add another colour workspace, persist camera/orientation, or widen
+  Shell, project Save/Apply, 4D sidecar or writer behavior.
+- `IdeVisualSystemBoundaryTests` owns its temporary WPF `Application`. Keep `ShutdownMode.OnExplicitShutdown` for the full
+  resource assertion lifetime, close Popup surfaces and drain Dispatcher callbacks before restoring resources, then call
+  `Shutdown`; closing the only host under `OnLastWindowClose` invalidates deferred app-resource resolution mid-test.

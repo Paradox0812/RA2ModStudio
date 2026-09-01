@@ -2,7 +2,7 @@
 name: ra2-air-voxel-colour-techniques
 description: Propose evidence-bound colour roles and semantic bindings for a human-confirmed RA2/YR air unit while preserving shallow planform readability and the manual base colour.
 metadata:
-  version: "2"
+  version: "3"
   ra2-domains: voxel-colour-air
   ra2-modes: chat
 ---
@@ -19,7 +19,8 @@ metadata:
 
 ## Planform hierarchy
 
-- Aircraft are shallow, surface-heavy forms. Prioritize nose/tail direction, wing roots, leading/trailing edges, paired
+- Aircraft are shallow, surface-heavy forms. Use the human ForwardDirection for nose/tail; when it is unknown, do not infer
+  it from weapons or the longest axis. Prioritize wing roots, leading/trailing edges, paired
   wings or nacelles, and separation between fuselage, wings, engines and control surfaces.
 - Use broad, quiet bands across wings and fuselage. Do not apply a tank-like vertical gradient across an entire wing and do
   not turn every leading edge into a bright one-voxel stripe.
@@ -28,6 +29,8 @@ metadata:
 - On cells representing both top and underside faces, accept the Host's BodyBase dual-surface decision; do not rely on rule order.
 - Keep fuselage nose/tail end cues distinct from broad side surfaces without drawing a continuous dark band around the
   airframe. Thin side-plus-under cells remain in the body family unless they are semantically underside structure.
+- Preserve macro planform and meso wing-root/nacelle junctions; compress isolated micro steps that would flicker or disappear
+  at game scale. A silhouette ridge may be emphasized, but a full bright outline is never an aircraft-lighting substitute.
 
 ## Materials, symmetry and remap
 
@@ -45,3 +48,4 @@ metadata:
   canopy/opening recognition, underside separation and paired-feature balance.
 - Prefer low-frequency form cues over decorative palette noise. Report palette collapse or lost small accents as warnings.
 - Do not claim flight animation, normals, HVA, shadow, pivot or GameReady correctness.
+- Require eight-view game-scale facts, explicit normal availability and `VplNotEvaluated` when no authoritative VPL exists.

@@ -13,9 +13,28 @@ INI、Cameo/Icon、VOX/VXL 与 SHP 内容生产。
 
 ## 2. 最新可信状态
 
-### 当前未提交实现：ASSET-VOX-4E Rev.6
+### 当前活动阶段：ASSET-VOX-4E Rev.7-G（自动门完成 / 人工视觉待验收）
 
-Rev.6 已按用户批准实现并完成全量自动验证，正在等待用户手动 UI/模型验收，尚未生成 clean package：
+用户已批准精确契约；`Rev.7-B..G` 已连续通过自动停止门：
+
+- 人工前向绑定当前 snapshot/composition；未确认时不猜 front/rear，并进入 NeedsReview；
+- FormZone、BoundaryIntent、material-local family、Macro/Meso/Micro/SubPixelRisk 和八固定视角均为可重建派生事实；
+- 五种 technique revision 3 具有不同空间/边界/细节预算；四个 colouring Skill revision 3 同步该语义；
+- 第16节 UI 已增加前向选择、形体区/边界/风险/游戏尺寸入口和四类质量分组，原部件/材质入口保留；
+- 继续扩展现有 `TechniquePolicy → Colourizer → SemanticMaterializer → QualityEvaluator → Workspace` 单一路径，
+  不建立第二套上色器；
+- 不修改 4D sidecar、canonical snapshot、Provider protocol、VOX/VXL/HVA writer、项目保存或 Shell；
+- VPL 没有 authority，质量报告明确为 `NotEvaluated`；法线缺失/过期也不会被伪装为通过；
+- 聚焦门已通过：Application 65/65、IDE/Skill/UI 112/112。
+- WPF visual-resource 门的根因为测试自有临时 Application 在关闭唯一 Window 后按默认
+  `OnLastWindowClose` 提前结束；测试现使用 explicit shutdown，并在恢复 resources 前完成 Popup/Dispatcher 清理。
+- 最终门：restore、Debug build 0 warning/0 error、Application 368/368、AssetHost 50/50、IDE 2922/2922。
+- IdeOnly clean package 已生成：`artifacts/RA2IniEditor.IDE.SourceClean.zip`，1470 entries，禁入项 0。
+- 物理视觉、100%/125% DPI 和真实 ground/air/large-surface 样本验收仍由用户手动执行。
+
+### 当前继承实现基线：ASSET-VOX-4E Rev.6
+
+Rev.6 已按用户批准实现并完成全量自动验证；Rev.7 在其单一路径上继续扩展，以下事实仍成立：
 
 - 活动上色链已移除 DeepSeek 自动单位判型；用户直接选择 Ground/Air/LargeSurface/Unknown，Host 以
   `HumanManualSelection` 和当前 evidence identity 确定性路由一个 colouring Skill。
@@ -151,7 +170,11 @@ Real DeepSeek/WPF/model: NotRun
 affected IDE 107/107。4E-3：new materialization 35/35、affected Application 77/77、affected IDE 89/89。4E-4：
 workspace UI/ViewModel 25/25，XAML/Debug build 0 warning/0 error。4E-5：Application 350/350、AssetHost 50/50；IDE
 full suite 两次均 2913/2914，唯一失败的 WPF visual-resource test 单独 1/1 通过。测试只使用 fake clients；真实
-DeepSeek、WPF screenshot/model visual 和 clean package 均未完成。
+DeepSeek 与 WPF screenshot/model visual 未完成。
+
+Rev.7-G 当前最终证据：failing WPF resource test 1/1、完整 visual boundary 17/17、Application 368/368、
+AssetHost 50/50、IDE 2922/2922、Debug solution build 0 warning/0 error；IdeOnly clean package 1470 entries，
+包内禁入目录和嵌套压缩包检查 0 违规。真实 DeepSeek 未调用，人工视觉仍为 Pending。
 
 4E-4 判型兼容修复：真实 Provider 的精确五字段提案允许 enum token 大小写差异与多行 reason 的等价空白归一化；
 未知 enum、额外字段、伪造 FactId、越界或 stale evidence 仍 fail closed；安全解包字符串化/arguments 包装后仍执行
@@ -177,18 +200,14 @@ DeepSeek、WPF screenshot/model visual 和 clean package 均未完成。
 
 ## 7. 下一安全入口
 
-2026-08-31 补充：`4E Rev.5 / UI-R1-FIX2` 已实现 indexed-ramp 上色、Side→BodyBase、按技法收敛 edge、
-可见表面覆盖率和失效结果→3D 回退。Application 353/353、workspace ViewModel 25/25、Debug solution build
-0 warning/0 error；IDE full 2919/2920，唯一既有 WPF DeferredAppResource/Popup 测试单独复跑 1/1 通过。
-真实模型视觉验收仍由用户手动执行，未生成 clean package。
+`ASSET-VOX-4E Rev.7-G` 自动门和洁净包已完成。下一安全入口是用户手动验收并记录：
 
-`ASSET-VOX-4E-1..4E-4` 已完成实现与聚焦自动化验证。下一安全入口是收口 `4E-5`：
+1. ground、air、large-surface 各一个真实样本；
+2. 五技法的正常视距可辨差异，平滑侧面无无原因暗块，前/后识别清晰；
+3. 部件/材质/形体区/边界/风险/游戏尺寸入口、切换 technique 不进入 Slice；
+4. 100%/125% DPI 无裁切或空白 selector。
 
-1. 先为 full-suite-only 的 `IdeVisualSystemBoundaryTests` WPF DeferredAppResource/Popup dispatcher 隔离失败单独立约
-   诊断或修复；不得把 focused 1/1 通过冒充 full-suite pass。
-2. 通过完整 IDE suite 后运行 IdeOnly clean package。
-3. 请求并记录真实 WPF 截图、100%/125% DPI 和 ground/air/large-surface 样本人工验收；真实 DeepSeek 调用需另行
-   明确付费授权。
+用户明确要求不使用电脑操控，因此 Codex 不代替该物理验收。真实 DeepSeek 调用仍需另行明确付费授权。
 
 4D 的错模型拒绝、未保存确认和 100%/125% DPI 指针体验仍应补测，但不得把这些未确认项写成通过；
 4E 仍不得宣称 VXL/HVA 或 GameReady。

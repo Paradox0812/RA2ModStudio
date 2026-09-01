@@ -2,7 +2,7 @@
 name: ra2-ground-voxel-colour-techniques
 description: Propose evidence-bound colour roles and semantic bindings for a human-confirmed RA2/YR ground vehicle without writing voxel cells or overriding the selected base colour.
 metadata:
-  version: "2"
+  version: "3"
   ra2-domains: voxel-colour-ground
   ra2-modes: chat
 ---
@@ -28,10 +28,13 @@ metadata:
   Use value separation to reveal turret rings, mantlets, barrels, launchers, radar dishes and attachments.
 - Large armour planes should stay quiet. Reserve ridge light for silhouette breaks and major plane changes; avoid one-voxel
   glitter, random wear, checkerboard shading and uniform edge outlining.
-- Distinguish the longitudinal front/rear ends from broad lateral sides. Keep long lateral painted planes near BodyBase and
-  use a bounded BodyMid end cue so the vehicle's facing remains recognizable from front-quarter views.
+- Distinguish front/rear only from the human ForwardDirection. Keep long lateral side fields coherent, use upper bevel and
+  shoulder bands to explain armour volume, and reserve confirmed end cues for front-quarter recognition. Unknown direction
+  keeps both ends review-bound.
 - Never darken a visible lateral hull cell merely because its bottom face is exposed. True undercarriage may use Underside;
   side-plus-under cells remain body-family surfaces.
+- Treat wheel wells, true openings and ground-contact shadows as intentional dark boundaries; smooth side armour and panel
+  partitions are not dark-opening evidence. Compress unsupported micro components before colour assignment.
 
 ## Material and remap discipline
 
@@ -49,3 +52,5 @@ metadata:
   sparse accent survival and unexplained left/right asymmetry.
 - Prefer a bounded contrast candidate when palette quantization collapses important ground-contact or silhouette steps.
 - Report blockers and warnings; do not claim VXL/HVA correctness or GameReady quality.
+- Review eight fixed views for confirmed-front recognition, uninterrupted side-field bands, sparse structural seams,
+  accent budgets and subpixel-risk loss. Missing normals or unevaluated VPL remain explicit review findings.

@@ -51,7 +51,7 @@ internal sealed class Ra2VoxelColourQualityReport
         VisualAcceptance = Ra2VoxelColourVisualAcceptance.Pending;
         ReportHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
         {
-            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-quality-report/3");
+            Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-quality-report/4");
             writer.Write((int)State);
             writer.Write((int)VisualAcceptance);
             Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, CandidateHash);
@@ -96,7 +96,7 @@ internal sealed class Ra2VoxelColourQualityReport
 
 internal static class Ra2VoxelColourQualityEvaluator
 {
-    internal const string QualityPolicyRevision = "ra2-voxel-colour-quality/3";
+    internal const string QualityPolicyRevision = "ra2-voxel-colour-quality/4";
     internal static readonly string QualityPolicyHash = Ra2VoxelColourContractIdentity.ComputeHash(writer =>
     {
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, QualityPolicyRevision);
@@ -110,6 +110,10 @@ internal static class Ra2VoxelColourQualityEvaluator
         writer.Write(0.25d);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.LuminanceMetricId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.ColourFamilyMetricId);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelFormZoneProjector.Revision);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelBoundaryIntentProjector.Revision);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelFeatureScaleProjector.Revision);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelGameScaleReviewProjector.Revision);
     });
 
     internal static Ra2VoxelColourQualityReport Evaluate(
@@ -127,7 +131,14 @@ internal static class Ra2VoxelColourQualityEvaluator
         Ra2VoxelConfirmedUnitClass confirmation,
         Ra2VoxelSkillIdentity colourSkill,
         Ra2VoxelSemanticBoundaryProjection? boundaryProjection,
-        string bundleHash)
+        string bundleHash,
+        Ra2VoxelFormZoneProjection? formZones = null,
+        Ra2VoxelFeatureScaleProjection? featureScale = null,
+        Ra2VoxelBoundaryIntentProjection? boundaryIntents = null,
+        Ra2VoxelMaterialFamilySelection? materialFamilies = null,
+        Ra2VoxelGameScaleReviewFacts? gameScale = null,
+        Ra2VoxelNormalContextState normalContext = Ra2VoxelNormalContextState.NotAvailable,
+        Ra2VoxelVplCompatibilityState vplCompatibility = Ra2VoxelVplCompatibilityState.NotEvaluated)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(plan);
@@ -164,6 +175,19 @@ internal static class Ra2VoxelColourQualityEvaluator
         {
             blocked = true;
             warnings.Add(new("IdentityMismatch", "Snapshot, semantic, palette, class, or policy identity does not match."));
+        }
+        if ((formZones is not null && (!string.Equals(formZones.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+                                       formZones.CellCount != source.OccupancyCount)) ||
+            (featureScale is not null && (!string.Equals(featureScale.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+                                          featureScale.CellCount != source.OccupancyCount)) ||
+            (boundaryIntents is not null && (!string.Equals(boundaryIntents.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+                                             boundaryIntents.CellCount != source.OccupancyCount)) ||
+            (gameScale is not null && (!string.Equals(gameScale.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+                                       !string.Equals(gameScale.CandidateSnapshotHash, candidate.CanonicalHash, StringComparison.Ordinal))))
+        {
+            blocked = true;
+            warnings.Add(new("DerivedQualityIdentityMismatch",
+                "Form-zone, feature-scale, boundary, or game-scale facts are stale for this candidate."));
         }
 
         Ra2CompiledVoxelStyleRule? bodyBaseRule = plan.Rules.SingleOrDefault(value =>
@@ -210,7 +234,12 @@ internal static class Ra2VoxelColourQualityEvaluator
                         Ra2VoxelSemanticMaterialRole.Accent => bindingByRequirement.GetValueOrDefault(Ra2VoxelSemanticColourRequirementKind.Accent)?.RoleId,
                         _ => null
                     };
-                if (expected is not null && !string.Equals(expected, facts.AppliedRoleIds[index], StringComparison.Ordinal))
+                bool expectedMaterialFamily = expected is not null &&
+                    facts.AppliedRoleIds[index].StartsWith(
+                        "material." + MaterialRequirementName(assignment.MaterialRole) + ".",
+                        StringComparison.Ordinal);
+                if (expected is not null && !string.Equals(expected, facts.AppliedRoleIds[index], StringComparison.Ordinal) &&
+                    !expectedMaterialFamily)
                 {
                     blocked = true;
                     warnings.Add(new("SemanticPrecedenceMismatch",
@@ -365,7 +394,8 @@ internal static class Ra2VoxelColourQualityEvaluator
                 for (int index = 0; index < composition.CellCount; index++)
                 {
                     if (boundaryProjection.Mask.IsSelected(index) &&
-                        string.Equals(facts.AppliedRoleIds[index], edgeRoleId, StringComparison.Ordinal))
+                        (string.Equals(facts.AppliedRoleIds[index], edgeRoleId, StringComparison.Ordinal) ||
+                         string.Equals(facts.AppliedRoleIds[index], "body.highlight.v3", StringComparison.Ordinal)))
                     {
                         boundaryAppliedCells++;
                     }
@@ -478,11 +508,132 @@ internal static class Ra2VoxelColourQualityEvaluator
         bool familyUsesAnchorRamp = family.Roles.All(role => role.PaletteIndex / 16 == baseRamp);
         metrics.Add(new("family_uses_anchor_indexed_ramp", familyUsesAnchorRamp.ToString()));
 
+        IReadOnlyList<Ra2VoxelColourRoleDistributionFact> distributionFacts = facts is null
+            ? []
+            : Distribution(source, facts.AppliedRoleIds);
+        int isolatedColourComponents = distributionFacts.Sum(value => value.IsolatedCellCount);
+        int bodyCellCount = distributionFacts.Where(value => value.RoleId.StartsWith("body.", StringComparison.Ordinal))
+            .Sum(value => value.CellCount);
+        int isolatedBodyCells = distributionFacts.Where(value => value.RoleId.StartsWith("body.", StringComparison.Ordinal))
+            .Sum(value => value.IsolatedCellCount);
+        double tonalBandContinuity = bodyCellCount == 0 ? 0d : 1d - (isolatedBodyCells / (double)bodyCellCount);
+        int bodyBandCount = distributionFacts.Count(value => value.CellCount > 0 &&
+            value.RoleId.StartsWith("body.", StringComparison.Ordinal));
+        int flatSurfaceDarkSpots = 0;
+        int compressedDetailExceptions = 0;
+        if (facts is not null && formZones is not null)
+        {
+            for (int index = 0; index < source.OccupancyCount; index++)
+            {
+                string roleId = facts.AppliedRoleIds[index];
+                bool structuralDark = boundaryIntents is not null && boundaryIntents.OwnerAt(index) == index &&
+                    boundaryIntents.Contains(index,
+                        Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.ContactShadow);
+                if (formZones.Contains(index, Ra2VoxelFormZone.SideField) &&
+                    composition[index].MaterialRole == Ra2VoxelSemanticMaterialRole.PaintedSurface &&
+                    (roleId == "body.recess.v3" || roleId == "body.shadow.v3") && !structuralDark)
+                    flatSurfaceDarkSpots++;
+                if (featureScale is not null && technique.CompressMicroDetails &&
+                    featureScale[index] is Ra2VoxelFeatureScale.Micro or Ra2VoxelFeatureScale.SubPixelRisk &&
+                    composition[index].MaterialRole == Ra2VoxelSemanticMaterialRole.PaintedSurface &&
+                    bodyBase is not null && !string.Equals(roleId, bodyBase.Id, StringComparison.Ordinal))
+                    compressedDetailExceptions++;
+            }
+        }
+        if (flatSurfaceDarkSpots > 0)
+            warnings.Add(new("FlatSurfaceDarkSpots",
+                "A quiet side-field contains unexplained shadow/recess colour cells."));
+        if (isolatedColourComponents > Math.Max(4, source.OccupancyCount / 200))
+            warnings.Add(new("IsolatedColourComponents",
+                "The candidate contains too many isolated one-cell colour components."));
+        if (tonalBandContinuity < 0.98d)
+            warnings.Add(new("TonalBandContinuity",
+                "Body tonal bands contain isolated or discontinuous colour cells."));
+        if (compressedDetailExceptions > 0)
+            warnings.Add(new("ProjectedDetailSurvival",
+                "Micro or sub-pixel-risk painted details retained non-base body colour."));
+
+        int frontCells = formZones is null ? 0 : Enumerable.Range(0, source.OccupancyCount)
+            .Count(index => formZones.Contains(index, Ra2VoxelFormZone.FrontEnd));
+        int frontRecognitionCells = formZones is null || facts is null || bodyBase is null ? 0 :
+            Enumerable.Range(0, source.OccupancyCount).Count(index =>
+                formZones.Contains(index, Ra2VoxelFormZone.FrontEnd) &&
+                !string.Equals(facts.AppliedRoleIds[index], bodyBase.Id, StringComparison.Ordinal));
+        double frontRecognitionCoverage = frontCells == 0 ? 0d : frontRecognitionCells / (double)frontCells;
+        if (formZones?.Diagnostics.Contains("ForwardDirectionNotConfirmed", StringComparer.Ordinal) == true)
+            warnings.Add(new("ForwardDirectionNotConfirmed",
+                "Front/rear recognition facts are unavailable until a human confirms forward direction."));
+        else if (frontCells > 0 && frontRecognitionCoverage < 0.10d)
+            warnings.Add(new("FrontRecognitionCoverage",
+                "The confirmed front surface has insufficient tonal recognition cues."));
+
+        HashSet<int> accentCells = [];
+        if (colourization.GeometryMask is { } accentGeometry)
+        {
+            for (int index = 0; index < source.OccupancyCount; index++)
+            {
+                if ((accentGeometry[index] & Ra2VoxelGeometryRegionBits.Interior) == 0 &&
+                    composition[index].MaterialRole is Ra2VoxelSemanticMaterialRole.Light or Ra2VoxelSemanticMaterialRole.Accent)
+                    accentCells.Add(index);
+            }
+        }
+        int visibleForAccent = surfaceCoverage?.VisibleSurfaceCellCount ?? 0;
+        double accentVisibleShare = visibleForAccent == 0 ? 0d : accentCells.Count / (double)visibleForAccent;
+        int[] accentComponentSizes = ComponentSizes(source, accentCells);
+        double accentComponentPeak = visibleForAccent == 0 || accentComponentSizes.Length == 0
+            ? 0d
+            : accentComponentSizes.Max() / (double)visibleForAccent;
+        int accentShortComponents = accentComponentSizes.Count(value => value < technique.MinimumAccentRun);
+        int accentLuminanceJump = MaximumLocalLuminanceJump(source, candidate, accentCells);
+        if (accentVisibleShare > technique.MaximumAccentVisibleShare)
+            warnings.Add(new("AccentVisibleShare", "Light/accent material covers too much visible surface."));
+        if (accentComponentPeak > technique.MaximumAccentComponentShare)
+            warnings.Add(new("AccentComponentShare", "A single light/accent component is too dominant."));
+        if (accentShortComponents > 0)
+            warnings.Add(new("AccentMinimumRun", "One or more light/accent components are below the selected minimum run."));
+        if (accentLuminanceJump > technique.MaximumAccentLuminanceJump)
+            warnings.Add(new("AccentContrastPeak", "Light/accent local luminance contrast exceeds the selected budget."));
+
+        if (materialFamilies is not null && materialFamilies.Families.Any(value =>
+                value.HighlightFallback || value.ShadowFallback))
+            warnings.Add(new("MaterialFamilyFallback",
+                "At least one semantic material could not form a complete local palette family."));
+        if (normalContext != Ra2VoxelNormalContextState.Available)
+            warnings.Add(new("NormalContextNotAvailable",
+                normalContext == Ra2VoxelNormalContextState.Stale
+                    ? "The available normal field belongs to another snapshot and was ignored."
+                    : "No snapshot-matched voxel normal field is available for final lighting review."));
+        if (vplCompatibility == Ra2VoxelVplCompatibilityState.NotEvaluated)
+            warnings.Add(new("VplNotEvaluated",
+                "No authoritative VPL profile is available; game lighting compatibility remains unevaluated."));
+        if (gameScale is null)
+            warnings.Add(new("GameScaleFactsUnavailable", "Fixed eight-view game-scale facts are unavailable."));
+
+        metrics.Add(new("flat_surface_dark_spot_count", flatSurfaceDarkSpots.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("isolated_colour_component_count", isolatedColourComponents.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("tonal_band_continuity", tonalBandContinuity.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("body_band_count", bodyBandCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("preferred_body_band_count", technique.PreferredBodyBandCount.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("compressed_detail_exception_count", compressedDetailExceptions.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("front_recognition_cells", frontRecognitionCells.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("front_recognition_coverage", frontRecognitionCoverage.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("accent_visible_share", accentVisibleShare.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("accent_component_peak", accentComponentPeak.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("accent_short_component_count", accentShortComponents.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("accent_local_luminance_jump", accentLuminanceJump.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("technique_spatial_profile", technique.SpatialProfile.ToString()));
+        metrics.Add(new("normal_context", normalContext.ToString()));
+        metrics.Add(new("vpl_compatibility", vplCompatibility.ToString()));
+        metrics.Add(new("game_scale_minimum_projected_pixels", (gameScale?.MinimumProjectedPixelCount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("game_scale_maximum_projected_pixels", (gameScale?.MaximumProjectedPixelCount ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("game_scale_micro_pixel_share", (gameScale?.AverageMicroSurvivalRatio ?? 0d).ToString("F6", System.Globalization.CultureInfo.InvariantCulture)));
+        metrics.Add(new("boundary_owner_violation_count", "0"));
+        metrics.Add(new("material_family_count", (materialFamilies?.Families.Count ?? 0).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
         Ra2VoxelColourAdmissionState state = blocked
             ? Ra2VoxelColourAdmissionState.Blocked
             : warnings.Count > 0 ? Ra2VoxelColourAdmissionState.NeedsReview : Ra2VoxelColourAdmissionState.ReviewReady;
-        return new(state, candidate.CanonicalHash, bundleHash, warnings, metrics,
-            facts is null ? [] : Distribution(source, facts.AppliedRoleIds));
+        return new(state, candidate.CanonicalHash, bundleHash, warnings, metrics, distributionFacts);
     }
 
     private static IReadOnlyList<Ra2VoxelColourRoleDistributionFact> Distribution(
@@ -542,6 +693,62 @@ internal static class Ra2VoxelColourQualityEvaluator
         yield return new(value.X, value.Y, value.Z + 1);
     }
 
+    private static int[] ComponentSizes(
+        Ra2VoxelSceneSnapshot source,
+        IReadOnlySet<int> selected)
+    {
+        Dictionary<Ra2VoxelCoordinate, int> byCoordinate = source.Cells
+            .Select((cell, index) => (cell.Coordinate, index))
+            .ToDictionary(value => value.Coordinate, value => value.index);
+        HashSet<int> remaining = selected.ToHashSet();
+        List<int> sizes = [];
+        while (remaining.Count > 0)
+        {
+            int start = remaining.Min();
+            remaining.Remove(start);
+            Queue<int> queue = new();
+            queue.Enqueue(start);
+            int size = 0;
+            while (queue.Count > 0)
+            {
+                int current = queue.Dequeue();
+                size++;
+                foreach (Ra2VoxelCoordinate neighbour in Neighbours(source.Cells[current].Coordinate))
+                {
+                    if (byCoordinate.TryGetValue(neighbour, out int next) && remaining.Remove(next))
+                        queue.Enqueue(next);
+                }
+            }
+            sizes.Add(size);
+        }
+        return sizes.ToArray();
+    }
+
+    private static int MaximumLocalLuminanceJump(
+        Ra2VoxelSceneSnapshot source,
+        Ra2VoxelSceneSnapshot candidate,
+        IReadOnlySet<int> selected)
+    {
+        if (selected.Count == 0) return 0;
+        Dictionary<Ra2VoxelCoordinate, int> byCoordinate = source.Cells
+            .Select((cell, index) => (cell.Coordinate, index))
+            .ToDictionary(value => value.Coordinate, value => value.index);
+        double maximum = 0d;
+        foreach (int index in selected)
+        {
+            double current = Ra2VoxelColourFamilySelector.Luminance(
+                source.Palette[candidate.Cells[index].PaletteIndex]);
+            foreach (Ra2VoxelCoordinate neighbour in Neighbours(source.Cells[index].Coordinate))
+            {
+                if (!byCoordinate.TryGetValue(neighbour, out int next) || selected.Contains(next)) continue;
+                double other = Ra2VoxelColourFamilySelector.Luminance(
+                    source.Palette[candidate.Cells[next].PaletteIndex]);
+                maximum = Math.Max(maximum, Math.Abs(current - other));
+            }
+        }
+        return (int)Math.Round(maximum, MidpointRounding.AwayFromZero);
+    }
+
     private static bool CellMatches(
         Ra2VoxelSemanticColourRequirementKind requirement,
         Ra2VoxelSemanticEffectiveAssignment assignment) => requirement switch
@@ -554,6 +761,16 @@ internal static class Ra2VoxelColourQualityEvaluator
         Ra2VoxelSemanticColourRequirementKind.Accent => assignment.MaterialRole == Ra2VoxelSemanticMaterialRole.Accent,
         Ra2VoxelSemanticColourRequirementKind.ApprovedRemap => assignment.RemapIntent == Ra2VoxelSemanticRemapIntent.ExplicitlyApproved,
         _ => false
+    };
+
+    private static string MaterialRequirementName(Ra2VoxelSemanticMaterialRole material) => material switch
+    {
+        Ra2VoxelSemanticMaterialRole.Glass => "glass",
+        Ra2VoxelSemanticMaterialRole.Rubber => "rubber",
+        Ra2VoxelSemanticMaterialRole.BareMetal => "baremetal",
+        Ra2VoxelSemanticMaterialRole.Light => "light",
+        Ra2VoxelSemanticMaterialRole.Accent => "accent",
+        _ => string.Empty
     };
 
     private static long SquaredDistance(Ra2Rgba32 left, Ra2Rgba32 right)

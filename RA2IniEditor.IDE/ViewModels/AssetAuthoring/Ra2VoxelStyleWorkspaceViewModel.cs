@@ -39,6 +39,7 @@ using Ra2Rgba32 = Ra2Application::RA2IniEditor.Application.Automation.Experiment
 using Ra2VoxelBaseColourSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBaseColourSelection;
 using Ra2VoxelColourAdmissionState = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourAdmissionState;
 using Ra2VoxelColourQualityMetric = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourQualityMetric;
+using Ra2VoxelColourQualityReport = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourQualityReport;
 using Ra2VoxelColourTechniqueCatalog = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniqueCatalog;
 using Ra2VoxelColourTechniquePolicy = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniquePolicy;
 using Ra2VoxelConfirmedUnitClass = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelConfirmedUnitClass;
@@ -47,6 +48,11 @@ using Ra2VoxelUnitClassConfirmationSource = Ra2Application::RA2IniEditor.Applica
 using Ra2VoxelUnitClassEvidence = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassEvidence;
 using Ra2VoxelUnitClassConfirmationResult = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitClassConfirmationResult;
 using Ra2VoxelUnitAdaptationCatalog = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelUnitAdaptationCatalog;
+using Ra2VoxelForwardDirection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelForwardDirection;
+using Ra2VoxelForwardDirectionSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelForwardDirectionSelection;
+using Ra2VoxelFormZoneProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFormZoneProjection;
+using Ra2VoxelBoundaryIntentProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBoundaryIntentProjection;
+using Ra2VoxelFeatureScaleProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFeatureScaleProjection;
 
 namespace RA2IniEditor.IDE.ViewModels.AssetAuthoring;
 
@@ -62,7 +68,10 @@ internal enum Ra2VoxelStylePreviewMode
     Result,
     Contrast,
     RegionMask,
-    Palette
+    Palette,
+    FormZones,
+    BoundaryIntent,
+    RiskOverlay
 }
 
 internal enum Ra2VoxelWorkspaceStage
@@ -96,6 +105,7 @@ internal sealed record Ra2VoxelStyleRuleRow(
 internal sealed record Ra2VoxelSemanticPartOption(Ra2VoxelSemanticPartRole Value, string Display);
 internal sealed record Ra2VoxelSemanticMaterialOption(Ra2VoxelSemanticMaterialRole Value, string Display);
 internal sealed record Ra2VoxelUnitClassOption(Ra2VoxelUnitClass Value, string Display);
+internal sealed record Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection Value, string Display);
 internal sealed record Ra2VoxelTechniqueOption(Ra2VoxelColourTechniquePolicy Policy)
 {
     public string TechniqueId => Policy.TechniqueId;
@@ -297,6 +307,7 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     private Ra2VoxelConfirmedUnitClass? _confirmedUnitClass;
     private Ra2VoxelColourSkillRoute? _colourSkillRoute;
     private Ra2VoxelUnitClassOption? _selectedUnitClass;
+    private Ra2VoxelForwardDirectionOption _selectedForwardDirection;
     private Ra2VoxelPaletteColourOption? _selectedBaseColour;
     private Ra2VoxelBaseColourSelection? _baseColourSelection;
     private Ra2VoxelTechniqueOption _selectedTechnique;
@@ -324,6 +335,15 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.LargeSurface, "大型水面单位"),
             new Ra2VoxelUnitClassOption(Ra2VoxelUnitClass.Unknown, "未知 / 保守模式")
         });
+        ForwardDirectionOptions = Array.AsReadOnly(new[]
+        {
+            new Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection.Unknown, "尚未确认"),
+            new Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection.PositiveX, "+X"),
+            new Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection.NegativeX, "-X"),
+            new Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection.PositiveY, "+Y"),
+            new Ra2VoxelForwardDirectionOption(Ra2VoxelForwardDirection.NegativeY, "-Y")
+        });
+        _selectedForwardDirection = ForwardDirectionOptions[0];
         TechniqueOptions = Array.AsReadOnly(Ra2VoxelColourTechniqueCatalog.All
             .Select(value => new Ra2VoxelTechniqueOption(value)).ToArray());
         _selectedTechnique = TechniqueOptions.Single(value =>
@@ -342,7 +362,12 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public ObservableCollection<Ra2VoxelPaletteColourOption> BaseColourOptions { get; } = [];
     public ObservableCollection<string> ColourQualityMetrics { get; } = [];
     public ObservableCollection<string> ColourQualityWarnings { get; } = [];
+    public ObservableCollection<string> ColourQualityFormZones { get; } = [];
+    public ObservableCollection<string> ColourQualityBoundaries { get; } = [];
+    public ObservableCollection<string> ColourQualityAccents { get; } = [];
+    public ObservableCollection<string> ColourQualityGameScale { get; } = [];
     public IReadOnlyList<Ra2VoxelUnitClassOption> UnitClassOptions { get; }
+    public IReadOnlyList<Ra2VoxelForwardDirectionOption> ForwardDirectionOptions { get; }
     public IReadOnlyList<Ra2VoxelTechniqueOption> TechniqueOptions { get; }
     public Ra2VoxelSemanticAssignmentRow? SelectedSemanticAssignment
     {
@@ -595,6 +620,21 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             RaiseColourInputProperties();
         }
     }
+    public Ra2VoxelForwardDirectionOption SelectedForwardDirection
+    {
+        get => _selectedForwardDirection;
+        set
+        {
+            if (value is null || Equals(_selectedForwardDirection, value)) return;
+            _selectedForwardDirection = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ForwardDirectionStatusText));
+            InvalidateColourCandidate("人工前向已更改；形体区、边界和上色候选需要重新生成。");
+        }
+    }
+    public string ForwardDirectionStatusText => _selectedForwardDirection.Value == Ra2VoxelForwardDirection.Unknown
+        ? "状态：尚未确认。前/后保持未知，候选必须人工审阅。"
+        : $"状态：已确认 {_selectedForwardDirection.Display}。只用于区分前/后，不改变模型方向或几何。";
     public Ra2VoxelTechniqueOption SelectedTechnique
     {
         get => _selectedTechnique;
@@ -696,6 +736,11 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     public bool IsContrastMode => _previewMode == Ra2VoxelStylePreviewMode.Contrast;
     public bool IsRegionMaskMode => _previewMode == Ra2VoxelStylePreviewMode.RegionMask;
     public bool IsPaletteMode => _previewMode == Ra2VoxelStylePreviewMode.Palette;
+    public bool IsFormZonesMode => _previewMode == Ra2VoxelStylePreviewMode.FormZones;
+    public bool IsBoundaryIntentMode => _previewMode == Ra2VoxelStylePreviewMode.BoundaryIntent;
+    public bool IsRiskOverlayMode => _previewMode == Ra2VoxelStylePreviewMode.RiskOverlay;
+    public bool CanUseRev7DiagnosticPreviews => !_isBusy &&
+        _preview?.Materialization?.SemanticIntegration is { FormZones: not null, BoundaryIntents: not null, FeatureScale: not null };
     public bool IsThreeDimensionalPreview => !_isSliceFallback && !IsPaletteMode && CurrentPreviewSnapshot is not null;
     public bool IsImagePreviewVisible => !IsThreeDimensionalPreview;
     public bool CanUseSliceFallback => !IsPaletteMode && CurrentPreviewSnapshot is not null;
@@ -750,6 +795,9 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         Ra2VoxelStylePreviewMode.Result => _preview?.ResultSnapshot,
         Ra2VoxelStylePreviewMode.Contrast => _preview?.ContrastResultSnapshot,
         Ra2VoxelStylePreviewMode.RegionMask => ActiveGeometrySnapshot,
+        Ra2VoxelStylePreviewMode.FormZones => CanUseRev7DiagnosticPreviews ? ActiveGeometrySnapshot : null,
+        Ra2VoxelStylePreviewMode.BoundaryIntent => CanUseRev7DiagnosticPreviews ? ActiveGeometrySnapshot : null,
+        Ra2VoxelStylePreviewMode.RiskOverlay => CanUseRev7DiagnosticPreviews ? ActiveGeometrySnapshot : null,
         _ => null
     };
     internal Ra2VoxelSceneSnapshot? ActiveGeometrySnapshot => _workingGeometryState?.Snapshot;
@@ -775,6 +823,18 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         _previewMode == Ra2VoxelStylePreviewMode.Semantics && _semanticEvidence is not null ? ResolveSemanticAssignments() : null;
     internal Ra2VoxelSemanticMaskComposition? CurrentPreviewSemanticComposition =>
         _previewMode == Ra2VoxelStylePreviewMode.Semantics ? ResolveSemanticComposition() : null;
+    internal Ra2VoxelFormZoneProjection? CurrentPreviewFormZones =>
+        _previewMode == Ra2VoxelStylePreviewMode.FormZones ? _preview?.Materialization?.SemanticIntegration?.FormZones : null;
+    internal Ra2VoxelBoundaryIntentProjection? CurrentPreviewBoundaryIntents =>
+        _previewMode == Ra2VoxelStylePreviewMode.BoundaryIntent ? _preview?.Materialization?.SemanticIntegration?.BoundaryIntents : null;
+    internal Ra2VoxelFeatureScaleProjection? CurrentPreviewFeatureScale =>
+        _previewMode == Ra2VoxelStylePreviewMode.RiskOverlay ? _preview?.Materialization?.SemanticIntegration?.FeatureScale : null;
+    internal Ra2VoxelSemanticMaskComposition? CurrentPreviewRiskComposition =>
+        _previewMode == Ra2VoxelStylePreviewMode.RiskOverlay ? ResolveColourComposition(ActiveGeometrySnapshot!) : null;
+    internal Ra2VoxelSceneSnapshot? CurrentPreviewRiskCandidate =>
+        _previewMode == Ra2VoxelStylePreviewMode.RiskOverlay ? _preview?.ResultSnapshot : null;
+    internal Ra2VoxelColourQualityReport? CurrentPreviewQuality =>
+        _previewMode == Ra2VoxelStylePreviewMode.RiskOverlay ? _preview?.Materialization?.Ordinary?.Quality : null;
 
     public string StyleOverride
     {
@@ -1617,6 +1677,15 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         Ra2VoxelStyleSourceLoadResult source = _source with { Snapshot = activeSnapshot };
         string styleOverride = _styleOverride;
         Ra2VoxelSemanticMaskComposition semanticComposition = ResolveColourComposition(activeSnapshot);
+        var orientationResult = Ra2VoxelForwardDirectionSelection.Create(
+            activeSnapshot,
+            semanticComposition.CompositionHash,
+            _selectedForwardDirection.Value);
+        if (!orientationResult.IsSuccess || orientationResult.Selection is null)
+        {
+            SetStatus("人工前向选择与当前模型或语义分划不匹配，请重新选择。", isError: true);
+            return;
+        }
         DeepSeekRa2AiModel model = _modelAccessor();
         (long generation, CancellationToken token) = BeginOperation("正在编译结构化风格计划…");
         Ra2VoxelStylePreviewResult result = await _coordinator.CompilePreviewV2Async(
@@ -1629,6 +1698,7 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             _confirmedUnitClass,
             _baseColourSelection,
             _selectedTechnique.Policy,
+            orientationResult.Selection,
             token);
         if (!IsCurrent(generation))
             return;
@@ -1780,6 +1850,12 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             return;
         if (mode == Ra2VoxelStylePreviewMode.Semantics && _semanticEvidence is null)
             return;
+        if ((mode is Ra2VoxelStylePreviewMode.FormZones or Ra2VoxelStylePreviewMode.BoundaryIntent or
+            Ra2VoxelStylePreviewMode.RiskOverlay) && !CanUseRev7DiagnosticPreviews)
+        {
+            SetPreviewMode(HasSemanticEvidence ? Ra2VoxelStylePreviewMode.Semantics : Ra2VoxelStylePreviewMode.Original);
+            return;
+        }
         ImageSource? image = mode switch
         {
             Ra2VoxelStylePreviewMode.Original => _originalImage,
@@ -1793,6 +1869,9 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             Ra2VoxelStylePreviewMode.Contrast => _contrastImage,
             Ra2VoxelStylePreviewMode.RegionMask => _regionMaskImage,
             Ra2VoxelStylePreviewMode.Palette => _paletteImage,
+            Ra2VoxelStylePreviewMode.FormZones => _originalImage,
+            Ra2VoxelStylePreviewMode.BoundaryIntent => _originalImage,
+            Ra2VoxelStylePreviewMode.RiskOverlay => _originalImage,
             _ => null
         };
         if (image is null)
@@ -1978,7 +2057,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     private void ClearStylePreview()
     {
         bool redirectStyleDependentMode = _previewMode is Ra2VoxelStylePreviewMode.Result or
-            Ra2VoxelStylePreviewMode.Contrast or Ra2VoxelStylePreviewMode.RegionMask or Ra2VoxelStylePreviewMode.Palette;
+            Ra2VoxelStylePreviewMode.Contrast or Ra2VoxelStylePreviewMode.RegionMask or Ra2VoxelStylePreviewMode.Palette or
+            Ra2VoxelStylePreviewMode.FormZones or Ra2VoxelStylePreviewMode.BoundaryIntent or Ra2VoxelStylePreviewMode.RiskOverlay;
         _preview = null;
         _resultImage = null;
         _contrastImage = null;
@@ -2094,6 +2174,7 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         _colourSkillRoute = null;
         _selectedUnitClass = null;
         _unitClassStatus = "尚未选择";
+        _selectedForwardDirection = ForwardDirectionOptions[0];
         _qualityWarningsAccepted = false;
         if (clearBaseColour)
         {
@@ -2102,6 +2183,8 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
             BaseColourOptions.Clear();
         }
         OnPropertyChanged(nameof(SelectedUnitClass));
+        OnPropertyChanged(nameof(SelectedForwardDirection));
+        OnPropertyChanged(nameof(ForwardDirectionStatusText));
         OnPropertyChanged(nameof(SelectedBaseColour));
         ClearColourQualityProjection();
         RaiseColourInputProperties();
@@ -2120,6 +2203,10 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
     {
         ColourQualityMetrics.Clear();
         ColourQualityWarnings.Clear();
+        ColourQualityFormZones.Clear();
+        ColourQualityBoundaries.Clear();
+        ColourQualityAccents.Clear();
+        ColourQualityGameScale.Clear();
         OnPropertyChanged(nameof(ColourQualityStatusText));
         OnPropertyChanged(nameof(HasReviewableColourWarnings));
         OnPropertyChanged(nameof(QualityWarningsAccepted));
@@ -2131,18 +2218,49 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         if (result.Materialization?.Ordinary?.Quality is not { } quality)
             return;
         foreach (Ra2VoxelColourQualityMetric metric in quality.Metrics)
-            ColourQualityMetrics.Add($"{metric.Id} · {metric.Value}");
+        {
+            string item = $"{metric.Id} · {metric.Value}";
+            ColourQualityMetrics.Add(item);
+            QualityGroup(metric.Id).Add(item);
+        }
         foreach (var warning in quality.Warnings)
-            ColourQualityWarnings.Add($"{warning.Code} · {warning.Message}");
+        {
+            string item = $"{warning.Code} · {warning.Message}";
+            ColourQualityWarnings.Add(item);
+            QualityGroup(warning.Code).Add($"警告 · {item}");
+        }
         OnPropertyChanged(nameof(ColourQualityStatusText));
         OnPropertyChanged(nameof(HasReviewableColourWarnings));
         OnPropertyChanged(nameof(CanAccept));
+    }
+
+    private ObservableCollection<string> QualityGroup(string id)
+    {
+        if (id.Contains("game_scale", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("vpl", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("normal_context", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("GameScale", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("Vpl", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("NormalContext", StringComparison.OrdinalIgnoreCase))
+            return ColourQualityGameScale;
+        if (id.Contains("accent", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("isolated", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("detail", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("subpixel", StringComparison.OrdinalIgnoreCase))
+            return ColourQualityAccents;
+        if (id.Contains("boundary", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("material", StringComparison.OrdinalIgnoreCase) ||
+            id.Contains("seam", StringComparison.OrdinalIgnoreCase))
+            return ColourQualityBoundaries;
+        return ColourQualityFormZones;
     }
 
     private void RaiseColourInputProperties()
     {
         OnPropertyChanged(nameof(UnitClassStatusText));
         OnPropertyChanged(nameof(UnitClassSkillText));
+        OnPropertyChanged(nameof(SelectedForwardDirection));
+        OnPropertyChanged(nameof(ForwardDirectionStatusText));
         OnPropertyChanged(nameof(BaseColourStatusText));
         OnPropertyChanged(nameof(BaseColourSwatch));
         OnPropertyChanged(nameof(TechniqueDescription));
@@ -2496,6 +2614,10 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         OnPropertyChanged(nameof(IsContrastMode));
         OnPropertyChanged(nameof(IsRegionMaskMode));
         OnPropertyChanged(nameof(IsPaletteMode));
+        OnPropertyChanged(nameof(IsFormZonesMode));
+        OnPropertyChanged(nameof(IsBoundaryIntentMode));
+        OnPropertyChanged(nameof(IsRiskOverlayMode));
+        OnPropertyChanged(nameof(CanUseRev7DiagnosticPreviews));
         OnPropertyChanged(nameof(IsThreeDimensionalPreview));
         OnPropertyChanged(nameof(IsImagePreviewVisible));
         OnPropertyChanged(nameof(CanUseSliceFallback));
@@ -2507,6 +2629,12 @@ internal sealed class Ra2VoxelStyleWorkspaceViewModel : INotifyPropertyChanged, 
         OnPropertyChanged(nameof(CurrentPreviewSemanticPartition));
         OnPropertyChanged(nameof(CurrentPreviewSemanticEvidence));
         OnPropertyChanged(nameof(CurrentPreviewSemanticAssignments));
+        OnPropertyChanged(nameof(CurrentPreviewFormZones));
+        OnPropertyChanged(nameof(CurrentPreviewBoundaryIntents));
+        OnPropertyChanged(nameof(CurrentPreviewFeatureScale));
+        OnPropertyChanged(nameof(CurrentPreviewRiskComposition));
+        OnPropertyChanged(nameof(CurrentPreviewRiskCandidate));
+        OnPropertyChanged(nameof(CurrentPreviewQuality));
         OnPropertyChanged(nameof(ActiveGeometrySnapshot));
         OnPropertyChanged(nameof(CanAccept));
     }

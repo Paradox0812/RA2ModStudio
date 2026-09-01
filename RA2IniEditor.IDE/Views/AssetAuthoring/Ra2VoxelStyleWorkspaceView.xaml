@@ -111,6 +111,14 @@
                                 </Border>
                                 <Border Style="{StaticResource VoxelTaskCardStyle}">
                                     <StackPanel>
+                                        <TextBlock Text="1.5 人工确认前向" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" />
+                                        <ComboBox AutomationProperties.AutomationId="VoxelStyle.Orientation.Selector" ItemsSource="{Binding ForwardDirectionOptions}" DisplayMemberPath="Display" SelectedItem="{Binding SelectedForwardDirection, Mode=TwoWay}" IsEnabled="{Binding CanEditColourInputs}" Margin="0,7,0,4" />
+                                        <TextBlock AutomationProperties.AutomationId="VoxelStyle.Orientation.Status" Text="{Binding ForwardDirectionStatusText}" TextWrapping="Wrap" Foreground="{DynamicResource UiTextSecondaryBrush}" />
+                                        <TextBlock Text="只用于区分前/后，不改变模型方向或几何。" TextWrapping="Wrap" Foreground="{DynamicResource UiTextSecondaryBrush}" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource VoxelTaskCardStyle}">
+                                    <StackPanel>
                                         <TextBlock Text="从参考图生成（可选）" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" />
                                         <WrapPanel Margin="0,8,0,4">
                                             <Button AutomationProperties.AutomationId="VoxelStyle.Generation.ReferencePicker" Content="选择参考图…" IsEnabled="{Binding CanChooseSource}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ChooseGenerationReference_OnClick" />
@@ -222,7 +230,15 @@
                                     <StackPanel>
                                         <TextBlock Text="质量审阅" Style="{StaticResource IdeWorkspaceSectionTitleStyle}" />
                                         <TextBlock AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Status" Text="{Binding ColourQualityStatusText}" TextWrapping="Wrap" Margin="0,6,0,4" />
-                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Metrics" ItemsSource="{Binding ColourQualityMetrics}" />
+                                        <TextBlock Text="结构与色阶" FontWeight="SemiBold" Margin="0,6,0,2" />
+                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.FormZones" ItemsSource="{Binding ColourQualityFormZones}" />
+                                        <TextBlock Text="边界与材质" FontWeight="SemiBold" Margin="0,7,0,2" />
+                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Boundaries" ItemsSource="{Binding ColourQualityBoundaries}" />
+                                        <TextBlock Text="强调与细节" FontWeight="SemiBold" Margin="0,7,0,2" />
+                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Accents" ItemsSource="{Binding ColourQualityAccents}" />
+                                        <TextBlock Text="游戏尺寸与运行时边界" FontWeight="SemiBold" Margin="0,7,0,2" />
+                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.GameScale" ItemsSource="{Binding ColourQualityGameScale}" />
+                                        <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Metrics" ItemsSource="{Binding ColourQualityMetrics}" Visibility="Collapsed" />
                                         <ItemsControl AutomationProperties.AutomationId="VoxelStyle.ColourQuality.Warnings" ItemsSource="{Binding ColourQualityWarnings}" Margin="0,6,0,0" />
                                         <CheckBox AutomationProperties.AutomationId="VoxelStyle.ColourQuality.AcceptWarnings" Content="我已审阅本次候选的质量警告" IsChecked="{Binding QualityWarningsAccepted, Mode=TwoWay}" IsEnabled="{Binding HasReviewableColourWarnings}" Visibility="{Binding HasReviewableColourWarnings, Converter={StaticResource BoolToVisibility}}" Margin="0,8,0,0" />
                                     </StackPanel>
@@ -250,7 +266,7 @@
                 <Border Grid.Row="0" Style="{StaticResource IdeWorkspaceCommandBarStyle}" Padding="8,6">
                     <DockPanel AutomationProperties.AutomationId="VoxelStyle.Preview.Toolbar">
                         <WrapPanel DockPanel.Dock="Right"><Button AutomationProperties.AutomationId="VoxelStyle.Preview.ResetCamera" Content="重置视角" Style="{StaticResource VoxelSmallButtonStyle}" Click="ResetCamera_OnClick" /><Button AutomationProperties.AutomationId="VoxelStyle.Preview.SliceFallback" Content="切换切片" IsEnabled="{Binding CanUseSliceFallback}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ToggleSliceFallback_OnClick" /></WrapPanel>
-                        <WrapPanel><TextBlock Text="预览" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" /><ComboBox AutomationProperties.AutomationId="VoxelStyle.Preview.ModeSelector" SelectedIndex="{Binding PreviewModeIndex, Mode=TwoWay}" MinWidth="150"><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Original" Content="原始模型" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Direct" Content="基线候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Refined" Content="平滑候选" IsEnabled="{Binding HasRefinedCandidate}" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Difference" Content="几何差异" IsEnabled="{Binding HasQualityDifference}" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.StructureRegions" Content="结构区域" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Symmetry" Content="对称候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Semantics" Content="语义分划" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Result" Content="上色结果" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Contrast" Content="对比度候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.RegionMask" Content="区域蒙版" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Palette" Content="色盘" /></ComboBox>
+                        <WrapPanel><TextBlock Text="预览" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" /><ComboBox AutomationProperties.AutomationId="VoxelStyle.Preview.ModeSelector" SelectedIndex="{Binding PreviewModeIndex, Mode=TwoWay}" MinWidth="150"><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Original" Content="原始模型" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Direct" Content="基线候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Refined" Content="平滑候选" IsEnabled="{Binding HasRefinedCandidate}" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Difference" Content="几何差异" IsEnabled="{Binding HasQualityDifference}" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.StructureRegions" Content="结构区域" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Symmetry" Content="对称候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Semantics" Content="语义分划" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Result" Content="上色结果" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Contrast" Content="对比度候选" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.RegionMask" Content="区域蒙版" /><ComboBoxItem AutomationProperties.AutomationId="VoxelStyle.Preview.Palette" Content="色盘" /><ComboBoxItem Content="形体区" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" /><ComboBoxItem Content="边界" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" /><ComboBoxItem Content="风险" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" /></ComboBox>
                             <WrapPanel AutomationProperties.AutomationId="VoxelStyle.Preview.SemanticReviewControls" IsEnabled="{Binding HasSemanticEvidence}" Margin="10,0,0,0" VerticalAlignment="Center">
                                 <TextBlock Text="分类预览" VerticalAlignment="Center" Margin="0,0,6,0" />
                                 <WrapPanel AutomationProperties.AutomationId="VoxelStyle.Semantics.ReviewDimension"><Button AutomationProperties.AutomationId="VoxelStyle.Semantics.ReviewPart" Content="部件" Style="{StaticResource VoxelSmallButtonStyle}" Click="SemanticPartReview_OnClick" /><Button AutomationProperties.AutomationId="VoxelStyle.Semantics.ReviewMaterial" Content="材质" Style="{StaticResource VoxelSmallButtonStyle}" Click="SemanticMaterialReview_OnClick" /></WrapPanel>
@@ -258,6 +274,12 @@
                                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal" Margin="0,0,8,0"><Border Width="10" Height="10" Margin="0,0,3,0" Background="{Binding ColourHex}" BorderBrush="{DynamicResource UiDividerBrush}" BorderThickness="1" /><TextBlock Text="{Binding Display}" FontSize="11" VerticalAlignment="Center" /></StackPanel></DataTemplate></ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                            </WrapPanel>
+                            <WrapPanel Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Button AutomationProperties.AutomationId="VoxelStyle.Preview.FormZones" Content="形体区" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ShowFormZones_OnClick" />
+                                <Button AutomationProperties.AutomationId="VoxelStyle.Preview.BoundaryIntent" Content="边界" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ShowBoundaryIntent_OnClick" />
+                                <Button AutomationProperties.AutomationId="VoxelStyle.Preview.RiskOverlay" Content="风险" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ShowRiskOverlay_OnClick" />
+                                <Button x:Name="GameScalePreviewButton" AutomationProperties.AutomationId="VoxelStyle.Preview.GameScale" Content="游戏尺寸" IsEnabled="{Binding CanUseRev7DiagnosticPreviews}" Style="{StaticResource VoxelSmallButtonStyle}" Click="ToggleGameScale_OnClick" />
                             </WrapPanel>
                         </WrapPanel>
                     </DockPanel>

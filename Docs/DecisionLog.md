@@ -1915,3 +1915,35 @@ CurrentPhase 和对应 Stage Ledger 负责。
   - Derived cache/policy hashes change; public API, persistence, Provider protocol, writers, Shell and legacy remain unchanged.
   - Automated tests prove direction masks, direct-material protection and five distinct fixture candidate hashes; real-model
     visual quality remains a user-owned manual gate.
+
+## 2026-08-31 — Rev.7 typed form zones and boundary intents replace further prompt-only tuning
+
+- Status: Accepted / implemented through Rev.7-G / automated verified / physical visual acceptance pending
+- Task: ASSET-VOX-4E Rev.7
+- Context:
+  - Forum/tutorial study and a real ground sample show that Rev.6 coarse Top/Side/Under/Edge roles cannot reliably express
+    shoulder, side field, lower skirt, front recognition, contact shadow or material-local tonal hierarchy.
+  - Technique revision 2 guarantees different hashes but mostly changes numeric value/edge policies, so visible spatial
+    differentiation remains insufficient.
+  - The canonical snapshot does not own normal indexes, and the current authoring path has no VPL authority.
+- Decision:
+  - Extend the existing typed Host path with session-only human ForwardDirection, derived FormZoneProjection,
+    BoundaryIntentProjection, feature/accent budgets, material-local families and multidimensional game-scale review facts.
+  - Keep provider output qualitative and bounded; no coordinates, palette indexes, base-colour authority or VPL claims.
+  - Preserve the existing compiler/materializer/colourizer/quality path and all persistence/writer/Shell boundaries.
+- Rejected alternatives:
+  - Continue adding prompt prose or luminance offsets without changing Host spatial policy.
+  - Infer front from the longest axis, outline every semantic region, or let the model paint masks/cells.
+  - Add a persisted boundary/form-zone layer, a second colourizer, or a fake VPL preview based on WPF mesh lighting.
+- Consequences:
+  - Technique/Skill/quality and derived-bundle revisions invalidate only disposable local candidates and review facts.
+  - Missing snapshot-matched normals and absent authoritative VPL are explicit NeedsReview facts, never synthetic lighting.
+  - Exact UI changes are limited to contract section 16; all ten new AutomationIds are unique and Shell remains frozen.
+  - The final WPF resource gate required only a test-owned Application lifecycle correction: keep it alive with
+    `OnExplicitShutdown`, settle Popup/Dispatcher cleanup, then restore resources and shut it down explicitly.
+- Verification:
+  - Application 368/368, AssetHost 50/50, IDE 2922/2922, Debug solution build 0 warning/error.
+  - IdeOnly clean package contains 1470 entries with zero forbidden directory or nested archive matches.
+- Follow-up:
+  - User manually verifies ground/air/large-surface samples, five-technique differentiation, diagnostic previews and
+    100%/125% DPI. VisualAcceptance remains Pending until that evidence is reported.

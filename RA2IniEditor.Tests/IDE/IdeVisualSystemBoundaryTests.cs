@@ -817,9 +817,12 @@ public sealed class IdeVisualSystemBoundaryTests
     {
         RunInSta(() =>
         {
+            bool ownsApplication = WpfApplication.Current is null;
             WpfApplication application = WpfApplication.Current ?? new WpfApplication();
+            ShutdownMode previousShutdownMode = application.ShutdownMode;
             ResourceDictionary previousResources = application.Resources;
             ResourceDictionary applicationResources = new();
+            application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             application.Resources = applicationResources;
 
             try
@@ -964,6 +967,10 @@ public sealed class IdeVisualSystemBoundaryTests
             finally
             {
                 application.Resources = previousResources;
+                if (ownsApplication)
+                    application.Shutdown();
+                else
+                    application.ShutdownMode = previousShutdownMode;
             }
         });
     }
@@ -1285,7 +1292,9 @@ public sealed class IdeVisualSystemBoundaryTests
             comboBox.IsDropDownOpen = false;
             contextMenu.IsOpen = false;
             toolTip.IsOpen = false;
+            FlushDispatcher();
             host.Close();
+            FlushDispatcher();
         }
     }
 
@@ -1555,6 +1564,7 @@ public sealed class IdeVisualSystemBoundaryTests
         finally
         {
             host.Close();
+            FlushDispatcher();
         }
     }
 

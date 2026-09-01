@@ -228,16 +228,18 @@ proposal or accepted conversation state.
    size and mirror behavior. AI never approves remap; enable it only for intended regions.
 8. On `上色`, manually choose `地面载具 / 空中载具 / 大型水面单位 / 未知` and click `确认单位类型`. The IDE does not
    ask DeepSeek to classify the unit. The Host deterministically displays and loads exactly one matching colouring Skill.
-9. Select one legal opaque/non-remap base colour from the active RA2 palette and one rule/technique template. Enter a style
+9. Select the model's forward direction (`+X / -X / +Y / -Y`) when known. This only distinguishes front/rear; it does not
+   rotate or edit geometry. `尚未确认` is allowed, but front/rear remains unknown and the result requires review.
+10. Select one legal opaque/non-remap base colour from the active RA2 palette and one rule/technique template. Enter a style
    override or leave it empty, then click `编译上色预览`. This explicit compile may call the selected DeepSeek model and consume quota; the IDE
    does not retry automatically.
-10. Use the single preview selector to switch between Original, candidates, Semantics, Styled, optional Contrast, Region and Palette. Geometry and colour results are 3D;
+11. Use the single preview selector to switch between Original, candidates, Semantics, Styled, optional Contrast, Region and Palette. Geometry and colour results are 3D;
    Palette stays 2D. Use
    `Diagnostic Slices` when checking voxel axes/import layout or if the bounded 3D renderer reports a fallback. Review
    the lower `几何摘要 / 区域清单 / 上色计划 / 审阅问题` tabs; its divider can be dragged without changing the 3D camera.
-11. Select a materializable view (`Original`, `Direct`, an available `Refined`/`Agent Geometry`, `Styled`, or `Contrast`) and
+12. Select a materializable view (`Original`, `Direct`, an available `Refined`/`Agent Geometry`, `Styled`, or `Contrast`) and
    click `固化最终候选`. Difference, Structure Regions, Region Mask and Palette are review-only and cannot be frozen.
-12. On `审阅与导出`, click `导出 VOX…` and choose a new `.vox` path. The IDE writes a same-directory temporary file, reads it back through
+13. On `审阅与导出`, click `导出 VOX…` and choose a new `.vox` path. The IDE writes a same-directory temporary file, reads it back through
     the canonical codec, verifies deterministic bytes and only then publishes it. The currently loaded source VOX cannot be
     overwritten. This action exports a copy only; it does not create VXL/HVA, apply/save the project or register an asset.
 
@@ -327,6 +329,11 @@ Unknown 不影响上色。可见覆盖不足时会进入质量审阅提示，但
 Rev.6 上色会把前后端面与长侧面分开处理：长侧面保持人工基准色，前后端用同色族中间调提供方向辨识；同时
 属于侧面和底面的体素不会再被画成连续黑带。有效部件或材质交界会在 PaintedSurface 一侧使用一体素强调色，
 仅空间分区不同的接缝不会描边，玻璃、轮胎、金属、灯、开口、强调材质和阵营色也不会被该描边覆盖。
+
+Rev.7 要求在“基准色与上色技法”前人工选择前向；不知道时保留“尚未确认”，不要按炮管或文件名猜测。编译后，
+全局工具栏可打开“形体区 / 边界 / 风险”：它们分别显示派生形体分区、边界意图和异常暗点/孤立色块/accent/
+SubPixelRisk 诊断，不是最终色盘。点击“游戏尺寸”进入固定远距，再次点击“恢复视距”。第五阶段按“结构与色阶、
+边界与材质、强调与细节、游戏尺寸与运行时边界”审阅事实；无匹配法线或无权威 VPL 时会明确 NeedsReview。
 
 ## 从参考图生成会话内体素预览
 

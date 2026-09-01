@@ -157,6 +157,13 @@ direct glass/rubber/metal/light/opening/accent/remap cells are protected. Five t
 runtime effects even when the Provider returns the same raw role proposal. The global preview toolbar exposes `部件 / 材质`
 classification review and returns directly to the semantic 3D view without changing the current workflow stage.
 
+Rev.7 adds a human forward-direction fact rather than guessing the front of a model. The local pipeline derives form zones
+(upper plane/bevel, side shoulder/field, lower skirt, ends, recess/contact shadow), semantic boundary intents, material-local
+palette families and Macro/Meso/Micro/SubPixelRisk feature scale. Five revision-3 techniques spend their contrast and detail
+budgets differently. The toolbar exposes Form Zones, Boundary, Risk and a reversible Game Scale camera review; quality facts
+are grouped into structure/tonal bands, boundary/material, accent/detail and game-scale/runtime limits. These are diagnostic
+session views: they do not write the model, persist orientation, simulate VPL or change the frozen export candidate.
+
 ## 13. Known Limitations
 
 - Some reference and diagnostic results depend on available project context and field metadata.

@@ -98,6 +98,46 @@ public sealed class Ra2VoxelViewportSceneBuilderTests
     }
 
     [Fact]
+    public void Rev7DiagnosticModes_ConsumeGenerationBoundDerivedFacts()
+    {
+        Ra2VoxelSceneSnapshot snapshot = CreateSnapshot(
+            new Ra2VoxelCell(new Ra2VoxelCoordinate(0, 0, 0), 60),
+            new Ra2VoxelCell(new Ra2VoxelCoordinate(1, 0, 0), 61),
+            new Ra2VoxelCell(new Ra2VoxelCoordinate(0, 0, 1), 62));
+        Ra2VoxelSemanticEffectiveAssignment unknown = new(
+            "unclassified", Ra2VoxelSemanticPartRole.Unknown, Ra2VoxelSemanticMaterialRole.Unknown,
+            Ra2VoxelSemanticRemapIntent.None, Ra2VoxelSemanticAssignmentSource.Unknown, 0d, "fixture");
+        Ra2VoxelSemanticMaskComposition composition = new(
+            snapshot.CanonicalHash,
+            Enumerable.Repeat(unknown, snapshot.OccupancyCount),
+            snapshot.CanonicalHash);
+        Ra2VoxelForwardDirectionSelection orientation = Assert.IsType<Ra2VoxelForwardDirectionSelection>(
+            Ra2VoxelForwardDirectionSelection.Create(
+                snapshot, composition.CompositionHash, Ra2VoxelForwardDirection.PositiveX).Selection);
+        Ra2VoxelUnitAdaptationPolicy adaptation = Ra2VoxelUnitAdaptationCatalog.For(Ra2VoxelUnitClass.Ground);
+        Ra2VoxelFormZoneProjection formZones = Assert.IsType<Ra2VoxelFormZoneProjection>(
+            Ra2VoxelFormZoneProjector.Project(snapshot, composition.CompositionHash, orientation, adaptation).Projection);
+        Ra2VoxelFeatureScaleProjection featureScale = Ra2VoxelFeatureScaleProjector.Project(snapshot, composition, formZones);
+        Ra2VoxelBoundaryIntentProjection boundaries = Ra2VoxelBoundaryIntentProjector.Project(
+            snapshot, composition, formZones, Ra2VoxelColourTechniqueCatalog.Default, featureScale);
+
+        Ra2VoxelViewportSceneBuildResult form = Ra2VoxelViewportSceneBuilder.Build(
+            snapshot, null, Ra2VoxelViewportColourMode.FormZone, formZones: formZones);
+        Ra2VoxelViewportSceneBuildResult boundary = Ra2VoxelViewportSceneBuilder.Build(
+            snapshot, null, Ra2VoxelViewportColourMode.BoundaryIntent, boundaryIntents: boundaries);
+        Ra2VoxelViewportSceneBuildResult risk = Ra2VoxelViewportSceneBuilder.Build(
+            snapshot, null, Ra2VoxelViewportColourMode.RiskOverlay,
+            featureScale: featureScale, riskCandidate: snapshot, riskComposition: composition);
+
+        Assert.True(form.IsSuccess, form.Message);
+        Assert.True(boundary.IsSuccess, boundary.Message);
+        Assert.True(risk.IsSuccess, risk.Message);
+        Assert.Equal(snapshot.OccupancyCount, formZones.CellCount);
+        Assert.Equal(snapshot.OccupancyCount, boundaries.CellCount);
+        Assert.Equal(snapshot.OccupancyCount, featureScale.CellCount);
+    }
+
+    [Fact]
     public void BuildDifference_ShowsOnlyAddedRemovedAndUnchangedMaterials()
     {
         Ra2VoxelSceneSnapshot comparison = CreateSnapshot(

@@ -20,6 +20,7 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
     private bool _inspectorSizeWasAdjusted;
     private bool _detailsSizeWasAdjusted;
     private bool _detailsSelectionInitialized;
+    private bool _isGameScaleReview;
 
     public Ra2VoxelStyleWorkspaceView()
     {
@@ -336,6 +337,29 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
     private void ShowContrast_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.Contrast);
     private void ShowRegionMask_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.RegionMask);
     private void ShowPalette_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.Palette);
+    private void ShowFormZones_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.FormZones);
+    private void ShowBoundaryIntent_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.BoundaryIntent);
+    private void ShowRiskOverlay_OnClick(object sender, RoutedEventArgs e) => ViewModel?.SetPreviewMode(Ra2VoxelStylePreviewMode.RiskOverlay);
+    private void ToggleGameScale_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel?.CanUseRev7DiagnosticPreviews != true)
+            return;
+        bool changed = _isGameScaleReview
+            ? VoxelViewport.ExitGameScaleReview()
+            : VoxelViewport.EnterGameScaleReview();
+        if (!changed) return;
+        _isGameScaleReview = !_isGameScaleReview;
+        if (sender is Button button)
+            button.Content = _isGameScaleReview ? "恢复视距" : "游戏尺寸";
+    }
+
+    private void ExitGameScaleReviewIfActive()
+    {
+        if (!_isGameScaleReview) return;
+        VoxelViewport.ExitGameScaleReview();
+        _isGameScaleReview = false;
+        GameScalePreviewButton.Content = "游戏尺寸";
+    }
     private void ResetCamera_OnClick(object sender, RoutedEventArgs e) => VoxelViewport.ResetCamera();
     private void ToggleSliceFallback_OnClick(object sender, RoutedEventArgs e) => ViewModel?.ToggleSliceFallback();
 
@@ -382,6 +406,7 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
+        ExitGameScaleReviewIfActive();
         _renderKey = null;
         VoxelViewport.ClearScene();
     }
@@ -389,7 +414,13 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(Ra2VoxelStyleWorkspaceViewModel.SourcePath))
+        {
+            ExitGameScaleReviewIfActive();
             UpdateCameraSourceIdentity();
+        }
+        if (e.PropertyName is nameof(Ra2VoxelStyleWorkspaceViewModel.CanUseRev7DiagnosticPreviews) &&
+            ViewModel?.CanUseRev7DiagnosticPreviews != true)
+            ExitGameScaleReviewIfActive();
         if (e.PropertyName is nameof(Ra2VoxelStyleWorkspaceViewModel.SemanticEditMode) && ViewModel is { } modeViewModel)
             VoxelViewport.SetSemanticEditMode(modeViewModel.SemanticEditMode);
         if (e.PropertyName is nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewSnapshot) or
@@ -400,6 +431,12 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
             nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewSemanticEvidence) or
             nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewSemanticAssignments) or
             nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewSemanticComposition) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewFormZones) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewBoundaryIntents) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewFeatureScale) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewRiskComposition) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewRiskCandidate) or
+            nameof(Ra2VoxelStyleWorkspaceViewModel.CurrentPreviewQuality) or
             nameof(Ra2VoxelStyleWorkspaceViewModel.SemanticReviewDimension) or
             nameof(Ra2VoxelStyleWorkspaceViewModel.IsThreeDimensionalPreview) or
             nameof(Ra2VoxelStyleWorkspaceViewModel.PreviewMode))
@@ -430,6 +467,12 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
                 ? Ra2VoxelViewportColourMode.GeometryRegion
             : viewModel.IsSemanticsMode
                 ? Ra2VoxelViewportColourMode.SemanticMask
+            : viewModel.IsFormZonesMode
+                ? Ra2VoxelViewportColourMode.FormZone
+            : viewModel.IsBoundaryIntentMode
+                ? Ra2VoxelViewportColourMode.BoundaryIntent
+            : viewModel.IsRiskOverlayMode
+                ? Ra2VoxelViewportColourMode.RiskOverlay
                 : Ra2VoxelViewportColourMode.Palette;
         string key = $"{snapshot.CanonicalHash}:{viewModel.CurrentPreviewRegionMask?.MaskHash}:" +
             $"{viewModel.CurrentPreviewComparisonSnapshot?.CanonicalHash}:{viewModel.CurrentPreviewProtectionMask?.MaskHash}:{colourMode}";
@@ -437,6 +480,9 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
         key += $":{viewModel.CurrentPreviewSemanticEvidence?.PackageHash}:" +
                string.Join(',', viewModel.CurrentPreviewSemanticAssignments?.Select(value => $"{value.RegionId}-{value.PartRole}-{value.MaterialRole}-{value.RemapIntent}") ?? []);
         key += $":{viewModel.CurrentPreviewSemanticComposition?.CompositionHash}";
+        key += $":{viewModel.CurrentPreviewFormZones?.ProjectionHash}:{viewModel.CurrentPreviewBoundaryIntents?.ProjectionHash}:" +
+               $"{viewModel.CurrentPreviewFeatureScale?.ProjectionHash}:{viewModel.CurrentPreviewRiskCandidate?.CanonicalHash}:" +
+               $"{viewModel.CurrentPreviewQuality?.ReportHash}";
         key += $":{viewModel.SemanticReviewDimension}";
         if (string.Equals(_renderKey, key, StringComparison.Ordinal))
             return;
@@ -452,6 +498,12 @@ public partial class Ra2VoxelStyleWorkspaceView : UserControl
             viewModel.CurrentPreviewSemanticAssignments,
             viewModel.CurrentPreviewSemanticComposition,
             viewModel.SemanticReviewDimension,
+            viewModel.CurrentPreviewFormZones,
+            viewModel.CurrentPreviewBoundaryIntents,
+            viewModel.CurrentPreviewFeatureScale,
+            viewModel.CurrentPreviewRiskCandidate,
+            viewModel.CurrentPreviewRiskComposition,
+            viewModel.CurrentPreviewQuality,
             $"{_cameraGroupGeneration}");
     }
 

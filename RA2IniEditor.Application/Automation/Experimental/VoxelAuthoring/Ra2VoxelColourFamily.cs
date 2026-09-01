@@ -7,7 +7,12 @@ internal enum Ra2VoxelBodyColourRole
     BodyMid,
     BodyDark,
     Underside,
-    EdgeOrRidge
+    EdgeOrRidge,
+    BodyHighlight,
+    BodyUpper,
+    BodyLower,
+    BodyShadow,
+    BodyRecess
 }
 
 internal enum Ra2VoxelColourFamilyFailureKind
@@ -221,6 +226,18 @@ internal static class Ra2VoxelColourFamilySelector
             selected.Add(Selection(Ra2VoxelBodyColourRole.EdgeOrRidge, edge, edgeTarget, anchor,
                 technique.EdgePolicy != Ra2VoxelColourEdgePolicy.None &&
                 edge.Luminance < anchor.Luminance + minimum));
+            selected.Add(Selection(Ra2VoxelBodyColourRole.BodyHighlight, edge, edgeTarget, anchor,
+                technique.EdgePolicy != Ra2VoxelColourEdgePolicy.None &&
+                edge.Luminance < anchor.Luminance + minimum));
+            selected.Add(Selection(Ra2VoxelBodyColourRole.BodyUpper, light, topTarget, anchor,
+                light.Luminance < anchor.Luminance + minimum));
+            selected.Add(Selection(Ra2VoxelBodyColourRole.BodyLower, mid, midTarget, anchor,
+                mid.Luminance > anchor.Luminance - minimum));
+            selected.Add(Selection(Ra2VoxelBodyColourRole.BodyShadow, dark, darkTarget, anchor,
+                dark.Luminance > mid.Luminance - minimum));
+            Candidate recess = under.Luminance < dark.Luminance ? under : dark;
+            selected.Add(Selection(Ra2VoxelBodyColourRole.BodyRecess, recess,
+                Math.Min(underTarget, darkTarget), anchor, recess.Index == anchor.Index));
             return new(Ra2VoxelColourFamilyFailureKind.None, string.Empty,
                 new Ra2VoxelColourFamilySelection(selected, warnings));
         }

@@ -31,8 +31,44 @@ public sealed class Ra2VoxelStyleWorkspaceViewModelTests : IDisposable
         await viewModel.LoadSourceAsync(test.VoxPath);
 
         Assert.All(viewModel.UnitClassOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.Display)));
+        Assert.Equal(5, viewModel.ForwardDirectionOptions.Count);
+        Assert.All(viewModel.ForwardDirectionOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.Display)));
         Assert.All(viewModel.BaseColourOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.Display)));
         Assert.All(viewModel.TechniqueOptions, option => Assert.False(string.IsNullOrWhiteSpace(option.DisplayName)));
+    }
+
+    [Fact]
+    public async Task Rev7OrientationDiagnosticsAndQualityGroups_AreGenerationBound()
+    {
+        TestContext test = CreateContext();
+        using Ra2VoxelStyleWorkspaceViewModel viewModel = test.CreateViewModel(new FakeClient(ContrastProposalResponse()));
+        await viewModel.LoadSourceAsync(test.VoxPath);
+        await viewModel.PrepareSemanticRegionsAsync();
+        await PrepareColourInputsAsync(viewModel);
+        viewModel.SelectedForwardDirection = Assert.Single(viewModel.ForwardDirectionOptions,
+            value => value.Value == Ra2VoxelForwardDirection.PositiveX);
+
+        await viewModel.CompileAsync();
+
+        Assert.True(viewModel.CanUseRev7DiagnosticPreviews);
+        Assert.Contains("已确认 +X", viewModel.ForwardDirectionStatusText, StringComparison.Ordinal);
+        Assert.NotEmpty(viewModel.ColourQualityFormZones);
+        Assert.NotEmpty(viewModel.ColourQualityBoundaries);
+        Assert.NotEmpty(viewModel.ColourQualityAccents);
+        Assert.NotEmpty(viewModel.ColourQualityGameScale);
+        viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.FormZones);
+        Assert.NotNull(viewModel.CurrentPreviewFormZones);
+        viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.BoundaryIntent);
+        Assert.NotNull(viewModel.CurrentPreviewBoundaryIntents);
+        viewModel.SetPreviewMode(Ra2VoxelStylePreviewMode.RiskOverlay);
+        Assert.NotNull(viewModel.CurrentPreviewFeatureScale);
+        Assert.NotNull(viewModel.CurrentPreviewRiskCandidate);
+
+        viewModel.SelectedTechnique = Assert.Single(viewModel.TechniqueOptions,
+            value => value.TechniqueId == "subtle-matte-shading");
+        Assert.False(viewModel.CanUseRev7DiagnosticPreviews);
+        Assert.Equal(Ra2VoxelForwardDirection.PositiveX, viewModel.SelectedForwardDirection.Value);
+        Assert.False(viewModel.IsSliceFallback);
     }
 
     [Fact]

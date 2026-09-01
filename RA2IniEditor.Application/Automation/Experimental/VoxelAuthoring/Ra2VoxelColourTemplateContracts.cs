@@ -146,6 +146,15 @@ internal enum Ra2VoxelUndersideDirectionPolicy
     DarkerPreferred
 }
 
+internal enum Ra2VoxelTechniqueSpatialProfile
+{
+    BalancedVolume = 0,
+    StrongMacroReadability,
+    SubtleMatte,
+    MaterialPriority,
+    CompactClarity
+}
+
 internal sealed class Ra2VoxelColourTechniquePolicy
 {
     internal const string LuminanceMetricId = "rec709-srgb-byte-luma-v1";
@@ -166,7 +175,17 @@ internal sealed class Ra2VoxelColourTechniquePolicy
         int minimumBodyLuminanceSeparation,
         int darkOpeningMinimumDelta,
         Ra2VoxelAccentPolicy accentPolicy,
-        Ra2VoxelQuantizationFallback quantizationFallback)
+        Ra2VoxelQuantizationFallback quantizationFallback,
+        Ra2VoxelTechniqueSpatialProfile spatialProfile = Ra2VoxelTechniqueSpatialProfile.BalancedVolume,
+        int preferredBodyBandCount = 4,
+        Ra2VoxelBoundaryIntent allowedBoundaryIntents = Ra2VoxelBoundaryIntent.RaisedBevel |
+            Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.ContactShadow,
+        bool preserveMesoDetails = true,
+        bool compressMicroDetails = true,
+        double maximumAccentVisibleShare = 0.03d,
+        double maximumAccentComponentShare = 0.015d,
+        int maximumAccentLuminanceJump = 96,
+        int minimumAccentRun = 2)
     {
         TechniqueId = Ra2VoxelColourContractIdentity.RequireIdentifier(techniqueId, nameof(techniqueId));
         Revision = Ra2VoxelColourContractIdentity.RequireIdentifier(revision, nameof(revision));
@@ -180,12 +199,28 @@ internal sealed class Ra2VoxelColourTechniquePolicy
             throw new ArgumentOutOfRangeException(nameof(topLuminanceOffset), "Technique luminance policy is outside the v1 bounds.");
         }
         if (!Enum.IsDefined(edgePolicy) || !Enum.IsDefined(materialSeparationPolicy) ||
-            !Enum.IsDefined(accentPolicy) || !Enum.IsDefined(quantizationFallback))
+            !Enum.IsDefined(accentPolicy) || !Enum.IsDefined(quantizationFallback) ||
+            !Enum.IsDefined(spatialProfile))
         {
             throw new ArgumentException("Technique policy contains an unknown enum value.");
         }
         if ((edgePolicy == Ra2VoxelColourEdgePolicy.None) != (edgeLuminanceOffset == 0))
             throw new ArgumentException("Edge offset and edge policy are inconsistent.", nameof(edgeLuminanceOffset));
+        const Ra2VoxelBoundaryIntent knownBoundaryIntents = Ra2VoxelBoundaryIntent.RaisedBevel |
+            Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.DeepOpening |
+            Ra2VoxelBoundaryIntent.ContactShadow | Ra2VoxelBoundaryIntent.MaterialInterface |
+            Ra2VoxelBoundaryIntent.PanelLine | Ra2VoxelBoundaryIntent.Silhouette |
+            Ra2VoxelBoundaryIntent.DecorativeMark;
+        if (preferredBodyBandCount is < 3 or > 6 ||
+            (allowedBoundaryIntents & ~knownBoundaryIntents) != 0 ||
+            !double.IsFinite(maximumAccentVisibleShare) || maximumAccentVisibleShare is <= 0d or > 0.25d ||
+            !double.IsFinite(maximumAccentComponentShare) || maximumAccentComponentShare is <= 0d or > 0.15d ||
+            maximumAccentComponentShare > maximumAccentVisibleShare ||
+            maximumAccentLuminanceJump is < 16 or > 255 || minimumAccentRun is < 1 or > 8)
+        {
+            throw new ArgumentOutOfRangeException(nameof(preferredBodyBandCount),
+                "Technique spatial/detail/accent policy is outside the Rev.7 bounds.");
+        }
 
         TopLuminanceOffset = topLuminanceOffset;
         SideLuminanceOffset = sideLuminanceOffset;
@@ -198,6 +233,15 @@ internal sealed class Ra2VoxelColourTechniquePolicy
         DarkOpeningMinimumDelta = darkOpeningMinimumDelta;
         AccentPolicy = accentPolicy;
         QuantizationFallback = quantizationFallback;
+        SpatialProfile = spatialProfile;
+        PreferredBodyBandCount = preferredBodyBandCount;
+        AllowedBoundaryIntents = allowedBoundaryIntents;
+        PreserveMesoDetails = preserveMesoDetails;
+        CompressMicroDetails = compressMicroDetails;
+        MaximumAccentVisibleShare = maximumAccentVisibleShare;
+        MaximumAccentComponentShare = maximumAccentComponentShare;
+        MaximumAccentLuminanceJump = maximumAccentLuminanceJump;
+        MinimumAccentRun = minimumAccentRun;
         PolicyHash = ComputeHash();
     }
 
@@ -216,6 +260,15 @@ internal sealed class Ra2VoxelColourTechniquePolicy
     internal int DarkOpeningMinimumDelta { get; }
     internal Ra2VoxelAccentPolicy AccentPolicy { get; }
     internal Ra2VoxelQuantizationFallback QuantizationFallback { get; }
+    internal Ra2VoxelTechniqueSpatialProfile SpatialProfile { get; }
+    internal int PreferredBodyBandCount { get; }
+    internal Ra2VoxelBoundaryIntent AllowedBoundaryIntents { get; }
+    internal bool PreserveMesoDetails { get; }
+    internal bool CompressMicroDetails { get; }
+    internal double MaximumAccentVisibleShare { get; }
+    internal double MaximumAccentComponentShare { get; }
+    internal int MaximumAccentLuminanceJump { get; }
+    internal int MinimumAccentRun { get; }
     internal string PolicyHash { get; }
 
     private string ComputeHash() => Ra2VoxelColourContractIdentity.ComputeHash(writer =>
@@ -234,6 +287,15 @@ internal sealed class Ra2VoxelColourTechniquePolicy
         writer.Write(DarkOpeningMinimumDelta);
         writer.Write((int)AccentPolicy);
         writer.Write((int)QuantizationFallback);
+        writer.Write((int)SpatialProfile);
+        writer.Write(PreferredBodyBandCount);
+        writer.Write((int)AllowedBoundaryIntents);
+        writer.Write(PreserveMesoDetails);
+        writer.Write(CompressMicroDetails);
+        writer.Write(MaximumAccentVisibleShare);
+        writer.Write(MaximumAccentComponentShare);
+        writer.Write(MaximumAccentLuminanceJump);
+        writer.Write(MinimumAccentRun);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, LuminanceMetricId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, ColourFamilyMetricId);
     });
@@ -243,26 +305,41 @@ internal static class Ra2VoxelColourTechniqueCatalog
 {
     private static readonly Ra2VoxelColourTechniquePolicy[] Policies =
     [
-        new("balanced-rts-volume", "2", "RTS 均衡体积", "中等体积层次、主要语义边界和均衡材质分离。",
+        new("balanced-rts-volume", "3", "RTS 均衡体积", "四到五级连续形体色阶、主要倒角与均衡材质分离。",
             18, -8, -28, -38, Ra2VoxelColourEdgePolicy.Subtle, 24,
             Ra2VoxelMaterialSeparationPolicy.Balanced, 8, 18,
-            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("strong-silhouette-readability", "2", "强轮廓可读", "扩大明暗级差并强化高置信结构与语义边界。",
+            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent,
+            Ra2VoxelTechniqueSpatialProfile.BalancedVolume, 5,
+            Ra2VoxelBoundaryIntent.RaisedBevel | Ra2VoxelBoundaryIntent.StructuralSeam |
+                Ra2VoxelBoundaryIntent.ContactShadow, true, true, 0.030d, 0.015d, 88, 2),
+        new("strong-silhouette-readability", "3", "强轮廓可读", "压缩细碎层次并强化宏观前后、上下和侧面体块。",
             28, -12, -38, -52, Ra2VoxelColourEdgePolicy.Strong, 34,
             Ra2VoxelMaterialSeparationPolicy.Strong, 12, 24,
-            Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("subtle-matte-shading", "2", "克制哑光层次", "使用低频宽阔哑光层次，只保留主要部件细边。",
+            Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent,
+            Ra2VoxelTechniqueSpatialProfile.StrongMacroReadability, 4,
+            Ra2VoxelBoundaryIntent.RaisedBevel | Ra2VoxelBoundaryIntent.ContactShadow,
+            true, true, 0.025d, 0.012d, 104, 2),
+        new("subtle-matte-shading", "3", "克制哑光层次", "使用宽阔低对比色阶并抑制高亮边与微小装饰。",
             12, -5, -20, -28, Ra2VoxelColourEdgePolicy.Subtle, 15,
             Ra2VoxelMaterialSeparationPolicy.Conservative, 6, 14,
-            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent),
-        new("semantic-material-separation", "2", "材质分离优先", "强化可信材质接口，同时保持主体体积克制。",
+            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent,
+            Ra2VoxelTechniqueSpatialProfile.SubtleMatte, 5,
+            Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.ContactShadow,
+            true, true, 0.015d, 0.008d, 64, 3),
+        new("semantic-material-separation", "3", "材质分离优先", "主体层次克制，优先保留材质内部色阶和材质差异。",
             16, -7, -26, -36, Ra2VoxelColourEdgePolicy.Subtle, 34,
             Ra2VoxelMaterialSeparationPolicy.Strong, 8, 18,
-            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.Block),
-        new("compact-unit-clarity", "2", "小型单位清晰化", "优先保护小型部件边界并抑制长平面装饰噪声。",
+            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.Block,
+            Ra2VoxelTechniqueSpatialProfile.MaterialPriority, 3,
+            Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.ContactShadow |
+                Ra2VoxelBoundaryIntent.MaterialInterface, true, true, 0.025d, 0.012d, 80, 2),
+        new("compact-unit-clarity", "3", "小型单位清晰化", "压缩微细节为三个大色块和少量关键识别点。",
             24, -10, -34, -46, Ra2VoxelColourEdgePolicy.Strong, 30,
             Ra2VoxelMaterialSeparationPolicy.Strong, 10, 22,
-            Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent)
+            Ra2VoxelAccentPolicy.EmphasizeSmallMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent,
+            Ra2VoxelTechniqueSpatialProfile.CompactClarity, 3,
+            Ra2VoxelBoundaryIntent.RaisedBevel | Ra2VoxelBoundaryIntent.ContactShadow,
+            false, true, 0.020d, 0.010d, 112, 2)
     ];
 
     internal static IReadOnlyList<Ra2VoxelColourTechniquePolicy> All { get; } = Array.AsReadOnly(Policies);

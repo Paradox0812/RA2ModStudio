@@ -270,7 +270,7 @@ public sealed class Ra2AgentSkillCatalogTests
             UserMode = Ra2AiUserMode.Chat,
             DomainIntentId = "voxel-colour"
         });
-        Assert.Contains("Skill ra2-voxel-colour-techniques@2", request.PromptText, StringComparison.Ordinal);
+        Assert.Contains("Skill ra2-voxel-colour-techniques@3", request.PromptText, StringComparison.Ordinal);
         Assert.Empty(request.Tools);
     }
 

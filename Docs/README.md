@@ -79,6 +79,8 @@
 | 审阅 mask 驱动上色技法、规则与质量门契约 | `ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md`（Approved；4E-1 completed） |
 | 查看 4E 分阶段实现与验证证据 | `ASSET-VOX-4E_StageLedger.md`（4E-1 completed；4E-2 next） |
 | 查看地面/空中单位上色样本、联网来源与内置 Skill 证据 | `ASSET-VOX-4E_GroundAirColourTechniqueSourceStudy.md`（completed；4E-1 specialist Skills completed；compiler 接入待 4E-2） |
+| 查看 Rev.7 形体区、边界意图与游戏尺寸质量的真实代码边界 | `ASSET-VOX-4E_FormZoneBoundaryIntentGameScaleCodeFactAuditRev7.md`（audit completed） |
+| 审阅 Rev.7 精确实现与 UI 契约 | `ASSET-VOX-4E_FormZoneBoundaryIntentGameScaleFinalContractRev7.md`（overall direction approved；exact approval pending） |
 | 查看本地已验证 Git 基线 | `GIT-BASELINE-1_StageLedger.md` |
 | 查找旧阶段证据 | 对应 `*Contract.md`、`*StageLedger.md`、Context Capsule 或 `Archive/` |
 

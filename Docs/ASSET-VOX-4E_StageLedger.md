@@ -1,7 +1,7 @@
 # ASSET-VOX-4E — Stage Result Ledger
 
 日期：2026-08-31
-状态：4E-1..4E-4 Completed / automated verified；4E-5 InProgress / blocked by one full-suite WPF isolation failure and physical acceptance
+状态：4E-1..4E-5 / Rev.7-B..G automated completed；VisualAcceptancePending
 批准契约：`Docs/ASSET-VOX-4E_MaskDrivenColourMaterializationFinalContract.md` Rev.3
 
 ## 4E-1 — Internal contracts, policies and Skill packages
@@ -86,11 +86,12 @@
 | 4E-2 | classification/cache + exact Skill router + style compiler/cache v2 | IDE classifier/cache/router、existing compiler partial v2、focused IDE tests、governance docs | 26/26 classifier/router/compiler/cache focused；49/49 affected Application；107/107 affected IDE；final Debug build 0 warning / 0 error | Completed | Yes：4E-3 deterministic base-centred materialization/quality |
 | 4E-3 | deterministic materialization + contrast/quality | Application family/materializer/quality、existing colourizer/contrast/review package、35 tests | 35/35 new；77/77 affected Application；89/89 affected IDE；Debug build passed | Completed | Yes：4E-4 approved UI contract |
 | 4E-4 | approved UI contract | existing coordinator/ViewModel/workspace XAML/code-behind、UI/ViewModel tests | IDE project XAML build 0 warning/0 error；workspace UI/ViewModel 25/25 | Completed / physical visual Pending | Yes：4E-5 automated verification may run；physical acceptance remains explicit |
-| 4E-5 | full verification/package/physical acceptance | verification and documentation only | Restore/build passed；Application 350/350；AssetHost 50/50；IDE full 2913/2914 with one stable full-suite-only WPF resource failure；failed test alone 1/1 passed | InProgress / mandatory full-suite gate not satisfied | No：clean package and physical model acceptance not claimed |
+| 4E-5 | full verification/package/physical acceptance | WPF visual-resource test lifecycle、verification、documentation、package | 临时 Application 改用 explicit shutdown；visual-resource 1/1、视觉边界 17/17、Application 368/368、AssetHost 50/50、IDE 2922/2922；Debug build 0 warning/error；clean package 1470 entries | Automated completed / physical visual pending | Yes：转交用户完成真实模型与 DPI 验收 |
 | 4E-UI-R1 Rev.4 | manual unit class + five-stage workspace | Application internal identity、IDE router/compiler/coordinator/ViewModel/XAML、focused tests/docs | Release build passed；Application 39/39；IDE 39/39；physical UI pending | Implemented / focused verified / physical pending | No：wait for user screenshot/manual result before final package |
 | 4E-UI-R1-FIX1 | unit-class/base-colour selector visible labels | workspace XAML、UI/ViewModel regression tests、status docs | Isolated Release XAML build 0 warning/0 error；UI/ViewModel 26/26 | Completed / screenshot recheck pending | No：user must rebuild/restart and confirm labels visibly render |
 | 4E-Rev5 / UI-R1-FIX2 | indexed ramp、BodyBase 可见性、edge 收敛、可见表面覆盖与失效预览回退 | Application family/materializer/colourizer/quality/semantic coverage、workspace ViewModel、direct tests/docs | Application 353/353；colour focused 45/45；workspace ViewModel 25/25；Debug solution build 0 warning/0 error；IDE full 2919/2920，唯一既有 WPF resource test 单独复跑 1/1 Passed | Implemented / automated focused verified / physical visual pending | No：等待用户真实模型视觉验收；full-suite isolation gate仍未满足 |
 | 4E-Rev6 | directional surface、effective semantic boundary、five-technique differentiation、全局分类预览入口 | Application geometry/materializer/quality/Skills、workspace XAML/ViewModel、tests/docs | Debug build passed；Application 358/358；AssetHost 50/50；IDE 2920/2920；VoxelColour 55/55；VoxelStyle workspace 28/28；Skill catalog 18/18；final XAML wrap 后 IDE build + UI contract 3/3 | Implemented / automated verified / physical visual pending | No：等待用户真实模型视觉验收 |
+| 4E-Rev7-A | form-zone / boundary-intent / feature-scale / game-scale code fact audit and exact contract | Rev.7 audit/contract、ledger/status/index docs only | docs link/structure/diff audit；build/test NotRun（docs-only） | Completed / exact contract approval pending | No：用户批准精确契约后进入 Rev.7-B；不得提前修改 runtime/XAML |
 
 ## Verification Matrix
 
@@ -111,14 +112,22 @@
 | 4E-4 XAML / UI Contract | Passed (automated) | IDE project build 0 warning/0 error；workspace ViewModel/UI contract 25/25 |
 | 4E-4 UnitClass compatibility fix | Passed (Release isolated output) | classifier + workspace ViewModel 30/30；Debug 输出被用户当前运行的 IDE 进程锁定，未关闭用户程序；Release build/test exit 0 |
 | 4E-5 Restore / Final Build | Passed | restore exit 0；solution Debug build 0 warning/0 error |
-| Full Application suite | Passed | 350/350 |
+| Full Application suite | Passed | 368/368 |
 | Full AssetHost suite | Passed | 50/50 |
-| Full IDE suite | Failed | 两次均 2913/2914；仅 `IdeVisualSystemBoundaryTests.VisualTokens_ResolveWithFrozenTypesAndValuesThroughStaResourceLoad` 在全套运行的 WPF DeferredAppResource/Popup dispatcher 路径失败；该测试单独复跑 1/1 Passed；不在本次 diff |
+| WPF resource lifecycle regression | Passed | failing test 1/1；完整 `IdeVisualSystemBoundaryTests` 17/17；临时 Application 使用 explicit shutdown，并在关闭 Popup/Window 后排空 Dispatcher |
+| Full IDE suite | Passed | 2922/2922；原 DeferredAppResource/Popup failure 已消除 |
 | Skill Creator helper | Failed (optional environment check) | `quick_validate.py` could not start because both available Python runtimes lack PyYAML；no dependency was installed；authoritative project bundled parser/tests passed |
-| Clean package | NotRun | mandatory IDE full-suite gate仍失败，未生成交付包 |
+| Clean package | Passed | `artifacts/RA2IniEditor.IDE.SourceClean.zip`；1470 entries；`.vs/bin/obj/artifacts/TestResults` 与嵌套 zip/7z/rar 违规 0 |
 | Real DeepSeek / WPF / model visual | NotRun / Pending | 未获真实付费调用授权；WPF 截图和用户提供 ground/air/large-surface 样本的物理视觉验收待用户执行 |
 | 4E Rev.5 colour/surface regression | Passed | Application full 353/353；colour/materialization 45/45；workspace ViewModel 25/25；RA2 indexed-ramp、edge policy、interior Unknown、Side→BodyBase、stale-result→3D 均有直接断言 |
 | 4E Rev.6 direction/boundary/technique/UI | Passed | Application 358/358；AssetHost 50/50；IDE 2920/2920；direction masks、side-under protection、effective boundary/direct-material protection、RA2 indexed-ramp 五技法五 candidate hash、全局分类预览均有直接断言 |
+| 4E Rev.7-A docs contract | Passed (docs-only) | 新 audit/contract 文件存在；权威路由、阶段门、UI AutomationIds、验证命令和人工验收项已冻结；未修改 runtime |
+| 4E Rev.7-B FormZone | Passed | 人工前向 hash-bound；Unknown 不猜 front；FormZone focused 5/5，Application build 0 warning/error |
+| 4E Rev.7-C Boundary/Material | Passed | semantic boundary intent、局部同 ramp material family、稀疏区域保护；目标测试 62/62 |
+| 4E Rev.7-D Scale/Technique | Passed | Macro/Meso/Micro/SubPixelRisk；五种 revision-3 空间策略产生不同分布；目标测试 65/65 |
+| 4E Rev.7-E GameScale/Quality | Passed | 八固定视角、normal/VPL 明示状态、多维质量事实；目标测试 94/94，build 0 warning/error |
+| 4E Rev.7-F Skill/UI | Passed | 四个 Skill + 五个 TECHNIQUE revision 3；仅第16节 UI；Application 65/65、IDE/Skill/UI 112/112 |
+| 4E Rev.7-G final gate | Passed / automated completed | 诊断并修复测试自有 Application 的 `OnLastWindowClose`/Popup dispatcher 生命周期；restore passed；build 0 warning/error；Application 368/368；AssetHost 50/50；IDE 2922/2922；IdeOnly clean package 1470 entries；VisualAcceptancePending |
 
 ## Boundary audit
 
@@ -145,8 +154,8 @@
 
 ### Remaining stages
 
-- 修复或单独立约处理全套运行时的既有 WPF visual-resource 测试隔离问题；在它通过前不得把 4E-5 automated
-  verification 写成完成。
 - 运行真实 WPF 截图/布局检查和合同第 13 节用户样本验收；没有这些证据时 `VisualAcceptance` 必须保持 Pending。
 - 真实 DeepSeek classification/style 双调用需要用户明确付费授权；当前全部 Provider 验证只使用 fake clients。
-- mandatory gates 全部通过后再生成 IdeOnly clean package；4E 仍不包含 VXL/HVA、项目 Apply/Save 或 GameReady。
+- automated mandatory gates 与 IdeOnly clean package 已通过；4E 仍不包含 VXL/HVA、项目 Apply/Save 或 GameReady。
+- Rev.7 的 normal context 只消费 snapshot-matched 既有法线；当前 colouring source 没有此 authority 时保持
+  `NotAvailable`。VPL 始终为 `NotEvaluated`，不解析或模拟游戏 VPL。

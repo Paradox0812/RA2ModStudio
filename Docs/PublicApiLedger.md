@@ -560,3 +560,12 @@ compatibility is unchanged; public promotion still requires a separate compatibi
 
 All new masks and metrics are derived session data. Technique/Skill revision changes invalidate derived local caches only;
 the preserved AutomationIds and one new toolbar container do not create a public or persisted API.
+
+## 47. ASSET-VOX-4E Rev.7 public API zero-change confirmation
+
+| Task/Stage | API | Kind | Reason | Stability | Tests | Notes |
+|---|---|---|---|---|---|---|
+| ASSET-VOX-4E Rev.7-B..G | None | Application-internal orientation/form-zone/boundary/material-family/feature-scale/game-scale/quality facts and IDE-internal diagnostic projection | Improve deterministic colour quality without widening model, persistence or writer authority | Internal / automated-verified / physical pending | Application target 65/65；IDE/Skill/UI target 112/112；final Application 368/368、AssetHost 50/50、IDE 2922/2922；clean package 1470 entries | No public type, serializer, 4D sidecar, Provider/AssetHost protocol, project write, VXL/HVA writer, dependency or Shell delta |
+
+ForwardDirection is session-only human input. All projections and reports are hash-bound derived state; the quality JSON and
+ten AutomationIds are review/test surfaces, not public interchange or persisted project APIs.

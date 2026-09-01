@@ -287,10 +287,21 @@ internal sealed record Ra2VoxelSemanticStyleIntegrationResult(
     Ra2CompiledVoxelStylePlan Plan,
     IReadOnlyList<Ra2VoxelExplicitMask> Masks,
     IReadOnlyList<string> UnresolvedRegions,
-    Ra2VoxelSemanticBoundaryProjection? BoundaryProjection = null);
+    Ra2VoxelSemanticBoundaryProjection? BoundaryProjection = null,
+    Ra2VoxelFormZoneProjection? FormZones = null,
+    Ra2VoxelFeatureScaleProjection? FeatureScale = null,
+    Ra2VoxelBoundaryIntentProjection? BoundaryIntents = null,
+    Ra2VoxelMaterialFamilySelection? MaterialFamilies = null);
 
 internal static class Ra2VoxelSemanticStyleIntegrator
 {
+    private enum MaterialBand
+    {
+        Base,
+        Highlight,
+        Shadow
+    }
+
     internal static Ra2VoxelSemanticStyleIntegrationResult Integrate(
         Ra2CompiledVoxelStylePlan normalizedPlan,
         Ra2VoxelSemanticMaskComposition composition,
@@ -298,7 +309,11 @@ internal static class Ra2VoxelSemanticStyleIntegrator
         Ra2VoxelSemanticColourBindingPlan bindingPlan,
         string rawCompiledPlanHash,
         Ra2VoxelSceneSnapshot source,
-        Ra2VoxelColourTechniquePolicy technique)
+        Ra2VoxelColourTechniquePolicy technique,
+        Ra2VoxelFormZoneProjection formZones,
+        Ra2VoxelFeatureScaleProjection featureScale,
+        Ra2VoxelBoundaryIntentProjection boundaryIntents,
+        Ra2VoxelMaterialFamilySelection materialFamilies)
     {
         ArgumentNullException.ThrowIfNull(normalizedPlan);
         ArgumentNullException.ThrowIfNull(composition);
@@ -306,40 +321,68 @@ internal static class Ra2VoxelSemanticStyleIntegrator
         ArgumentNullException.ThrowIfNull(bindingPlan);
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(technique);
+        ArgumentNullException.ThrowIfNull(formZones);
+        ArgumentNullException.ThrowIfNull(featureScale);
+        ArgumentNullException.ThrowIfNull(boundaryIntents);
+        ArgumentNullException.ThrowIfNull(materialFamilies);
         if (!string.Equals(composition.SourceSnapshotHash, requirements.SourceSnapshotHash, StringComparison.Ordinal) ||
             !string.Equals(composition.CompositionHash, requirements.CompositionHash, StringComparison.Ordinal) ||
             composition.CellCount != requirements.CellCount ||
             !string.Equals(bindingPlan.RequirementShapeHash, requirements.RequirementShapeHash, StringComparison.Ordinal) ||
-            !string.Equals(bindingPlan.CompiledPlanHash, rawCompiledPlanHash, StringComparison.Ordinal))
+            !string.Equals(bindingPlan.CompiledPlanHash, rawCompiledPlanHash, StringComparison.Ordinal) ||
+            !string.Equals(formZones.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+            !string.Equals(boundaryIntents.SourceSnapshotHash, source.CanonicalHash, StringComparison.Ordinal) ||
+            formZones.CellCount != composition.CellCount || featureScale.CellCount != composition.CellCount ||
+            boundaryIntents.CellCount != composition.CellCount)
         {
             throw new ArgumentException("Semantic colour integration identities do not match.");
         }
 
         Dictionary<string, Ra2CompiledVoxelStyleRole> roles = normalizedPlan.Roles
             .ToDictionary(role => role.Id, StringComparer.Ordinal);
+        List<Ra2CompiledVoxelStyleRole> roleList = normalizedPlan.Roles.ToList();
         List<Ra2CompiledVoxelStyleRule> rules = normalizedPlan.Rules
             .Where(rule => rule.Region != Ra2VoxelStyleRegionKind.ExplicitMask)
             .ToList();
         List<Ra2VoxelExplicitMask> masks = [];
         List<string> unresolved = [];
-        Ra2VoxelGeometryRegionMask geometry = Ra2VoxelColourizer.BuildGeometryMask(source, technique.EdgePolicy);
-        Ra2VoxelSemanticBoundaryProjection boundary = Ra2VoxelSemanticBoundaryProjector.Project(
-            source, composition, geometry, technique);
-        if (boundary.SelectedCellCount > 0)
+        string bodyBaseRoleId = normalizedPlan.Roles.Single(value =>
+            value.Category == Ra2VoxelStyleRoleCategory.BodyBase).Id;
+        (string lowerRole, string shoulderRole, string bevelRole) = technique.SpatialProfile switch
         {
-            Ra2CompiledVoxelStyleRule? edgeRule = rules.SingleOrDefault(value =>
-                value.IsPaintable && value.Region == Ra2VoxelStyleRegionKind.EdgeOrRidge);
-            if (edgeRule is null)
-                throw new ArgumentException("The normalized style plan has no boundary accent role.");
-            masks.Add(boundary.Mask);
-            rules.Add(new(
-                Ra2VoxelStyleRegionKind.ExplicitMask,
-                edgeRule.RoleId,
-                Ra2VoxelStyleEvidenceKind.DeterministicGeometry,
-                boundary.Mask.MaskId,
-                IsPaintable: true,
-                edgeRule.SourceScopeIds));
-        }
+            Ra2VoxelTechniqueSpatialProfile.BalancedVolume =>
+                ("body.lower.v3", "body.upper.v3", "body.highlight.v3"),
+            Ra2VoxelTechniqueSpatialProfile.StrongMacroReadability =>
+                ("body.shadow.v3", "body.upper.v3", "body.highlight.v3"),
+            Ra2VoxelTechniqueSpatialProfile.SubtleMatte =>
+                ("body.lower.v3", "body.upper.v3", "body.upper.v3"),
+            Ra2VoxelTechniqueSpatialProfile.MaterialPriority =>
+                (bodyBaseRoleId, "body.upper.v3", "body.upper.v3"),
+            Ra2VoxelTechniqueSpatialProfile.CompactClarity =>
+                ("body.shadow.v3", "body.upper.v3", "body.upper.v3"),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        AddPaintedFormMask("form.side-field", Ra2VoxelFormZone.SideField, bodyBaseRoleId);
+        AddPaintedFormMask("form.lower-skirt", Ra2VoxelFormZone.LowerSkirt, lowerRole);
+        AddPaintedFormMask("form.side-shoulder", Ra2VoxelFormZone.SideShoulder, shoulderRole);
+        AddPaintedFormMask("form.upper-plane", Ra2VoxelFormZone.UpperPlane, "body.upper.v3");
+        AddPaintedFormMask("form.upper-bevel", Ra2VoxelFormZone.UpperBevel, bevelRole);
+        AddPaintedFormMask("form.recess", Ra2VoxelFormZone.Recess | Ra2VoxelFormZone.ContactShadow,
+            "body.recess.v3");
+
+        Ra2VoxelExplicitMask raised = boundaryIntents.CreateOwnedMask(
+            Ra2VoxelSemanticBoundaryProjector.MaskId, Ra2VoxelBoundaryIntent.RaisedBevel);
+        AddExplicitMask(raised, "body.highlight.v3", Ra2VoxelStyleEvidenceKind.DeterministicGeometry);
+        Ra2VoxelExplicitMask seam = CombinedBoundaryMask(
+            "boundary.intent.shadow", Ra2VoxelBoundaryIntent.StructuralSeam | Ra2VoxelBoundaryIntent.ContactShadow);
+        AddExplicitMask(seam, "body.recess.v3", Ra2VoxelStyleEvidenceKind.DeterministicGeometry);
+        int boundaryOpportunities = boundaryIntents.Counts.Sum(value => value.OpportunityCellCount);
+        Ra2VoxelSemanticBoundaryProjection boundary = new(
+            raised,
+            boundaryOpportunities,
+            raised.SelectedCount,
+            boundaryIntents.Diagnostics.Count(value => value.StartsWith("ProtectedDirectMaterialInterfaces:",
+                StringComparison.Ordinal)));
         foreach (Ra2VoxelSemanticColourBinding binding in bindingPlan.Bindings
                      .Where(value => value.Requirement != Ra2VoxelSemanticColourRequirementKind.PaintedSurface &&
                                      value.Requirement != Ra2VoxelSemanticColourRequirementKind.ApprovedRemap)
@@ -347,21 +390,22 @@ internal static class Ra2VoxelSemanticStyleIntegrator
         {
             if (!roles.TryGetValue(binding.RoleId, out Ra2CompiledVoxelStyleRole? role))
                 throw new ArgumentException("A semantic binding role is missing from the normalized style plan.");
-            byte[] selected = new byte[composition.CellCount];
-            for (int index = 0; index < composition.CellCount; index++)
+            Ra2VoxelMaterialFamilyRoleSelection? family = materialFamilies.Find(binding.RoleId);
+            if (family is null)
             {
-                if (Matches(binding.Requirement, composition[index].MaterialRole))
-                    selected[index] = 1;
+                AddMaterialMask(binding.Requirement, role.Id, null);
+                continue;
             }
-            string maskId = $"semantic.binding.{Format(binding.Requirement)}";
-            masks.Add(new(maskId, composition.SourceSnapshotHash, selected));
-            rules.Add(new(
-                Ra2VoxelStyleRegionKind.ExplicitMask,
-                role.Id,
-                Ra2VoxelStyleEvidenceKind.ExplicitUserMask,
-                maskId,
-                IsPaintable: true,
-                role.SourceScopeIds));
+
+            string highlightId = $"material.{Format(binding.Requirement)}.highlight.v1";
+            string shadowId = $"material.{Format(binding.Requirement)}.shadow.v1";
+            AddDerivedRole(highlightId, role, family.HighlightIndex);
+            AddDerivedRole(shadowId, role, family.ShadowIndex);
+            AddMaterialMask(binding.Requirement, role.Id, MaterialBand.Base);
+            if (binding.Requirement is not (Ra2VoxelSemanticColourRequirementKind.Light or
+                Ra2VoxelSemanticColourRequirementKind.Accent))
+                AddMaterialMask(binding.Requirement, shadowId, MaterialBand.Shadow);
+            AddMaterialMask(binding.Requirement, highlightId, MaterialBand.Highlight);
         }
 
         Ra2VoxelSemanticColourBinding? remapBinding = bindingPlan.Bindings.SingleOrDefault(value =>
@@ -389,14 +433,106 @@ internal static class Ra2VoxelSemanticStyleIntegrator
             normalizedPlan.Summary,
             normalizedPlan.SourcePackHash,
             normalizedPlan.PaletteHash,
-            normalizedPlan.CompilerRevision + "+semantic-binding/2",
+            normalizedPlan.CompilerRevision + "+semantic-binding/3",
             normalizedPlan.ModelIdentity,
             remapBinding is null ? Ra2VoxelStyleRemapPolicy.None : Ra2VoxelStyleRemapPolicy.ExplicitMask,
             normalizedPlan.InteriorRoleId,
-            normalizedPlan.Roles,
+            roleList,
             rules,
             normalizedPlan.UnresolvedAssumptions.Concat(unresolved));
-        return new(plan, Array.AsReadOnly(masks.ToArray()), Array.AsReadOnly(unresolved.ToArray()), boundary);
+        return new(plan, Array.AsReadOnly(masks.ToArray()), Array.AsReadOnly(unresolved.ToArray()), boundary,
+            formZones, featureScale, boundaryIntents, materialFamilies);
+
+        void AddPaintedFormMask(string maskId, Ra2VoxelFormZone zones, string roleId)
+        {
+            byte[] selected = new byte[composition.CellCount];
+            for (int index = 0; index < selected.Length; index++)
+            {
+                Ra2VoxelSemanticEffectiveAssignment assignment = composition[index];
+                Ra2VoxelCoordinate coordinate = source.Cells[index].Coordinate;
+                bool dualSurface = Ra2VoxelNeighbourhood.IsFaceExposed(source, coordinate,
+                                       Ra2VoxelFaceDirection.PositiveZ) &&
+                                   Ra2VoxelNeighbourhood.IsFaceExposed(source, coordinate,
+                                       Ra2VoxelFaceDirection.NegativeZ);
+                if (assignment.MaterialRole == Ra2VoxelSemanticMaterialRole.PaintedSurface &&
+                    assignment.RemapIntent != Ra2VoxelSemanticRemapIntent.ExplicitlyApproved &&
+                    !dualSurface && formZones.Contains(index, zones) &&
+                    (!technique.CompressMicroDetails ||
+                     featureScale[index] is Ra2VoxelFeatureScale.Macro or Ra2VoxelFeatureScale.Meso))
+                    selected[index] = 1;
+            }
+            AddExplicitMask(new(maskId, composition.SourceSnapshotHash, selected), roleId,
+                Ra2VoxelStyleEvidenceKind.DeterministicGeometry);
+        }
+
+        Ra2VoxelExplicitMask CombinedBoundaryMask(string maskId, Ra2VoxelBoundaryIntent intents)
+        {
+            byte[] selected = new byte[composition.CellCount];
+            for (int index = 0; index < selected.Length; index++)
+            {
+                if (boundaryIntents.OwnerAt(index) == index && boundaryIntents.Contains(index, intents))
+                    selected[index] = 1;
+            }
+            return new(maskId, composition.SourceSnapshotHash, selected);
+        }
+
+        void AddExplicitMask(
+            Ra2VoxelExplicitMask mask,
+            string roleId,
+            Ra2VoxelStyleEvidenceKind evidence)
+        {
+            if (mask.SelectedCount == 0) return;
+            if (!roles.TryGetValue(roleId, out Ra2CompiledVoxelStyleRole? role))
+                throw new ArgumentException($"The normalized style plan is missing reserved role '{roleId}'.");
+            masks.Add(mask);
+            rules.Add(new(Ra2VoxelStyleRegionKind.ExplicitMask, role.Id, evidence, mask.MaskId,
+                IsPaintable: true, role.SourceScopeIds));
+        }
+
+        void AddDerivedRole(string id, Ra2CompiledVoxelStyleRole sourceRole, byte paletteIndex)
+        {
+            if (roles.ContainsKey(id))
+                throw new ArgumentException("A provider role conflicts with a reserved material family role.");
+            Ra2CompiledVoxelStyleRole derived = new(id, sourceRole.Category, paletteIndex, null,
+                source.Palette[paletteIndex], sourceRole.SourceScopeIds);
+            roles.Add(id, derived);
+            roleList.Add(derived);
+        }
+
+        void AddMaterialMask(
+            Ra2VoxelSemanticColourRequirementKind requirement,
+            string roleId,
+            MaterialBand? band)
+        {
+            byte[] selected = new byte[composition.CellCount];
+            int materialCellCount = Enumerable.Range(0, composition.CellCount)
+                .Count(index => Matches(requirement, composition[index].MaterialRole));
+            for (int index = 0; index < selected.Length; index++)
+            {
+                if (!Matches(requirement, composition[index].MaterialRole)) continue;
+                if (materialCellCount < 3)
+                {
+                    if (band is null or MaterialBand.Base) selected[index] = 1;
+                    continue;
+                }
+                bool highlight = formZones.Contains(index,
+                    Ra2VoxelFormZone.UpperPlane | Ra2VoxelFormZone.UpperBevel | Ra2VoxelFormZone.SideShoulder);
+                bool shadow = formZones.Contains(index,
+                    Ra2VoxelFormZone.LowerSkirt | Ra2VoxelFormZone.Recess | Ra2VoxelFormZone.ContactShadow);
+                bool include = band switch
+                {
+                    null => true,
+                    MaterialBand.Base => !highlight && !shadow,
+                    MaterialBand.Highlight => highlight,
+                    MaterialBand.Shadow => shadow && !highlight,
+                    _ => false
+                };
+                if (include) selected[index] = 1;
+            }
+            AddExplicitMask(new($"semantic.binding.{Format(requirement)}.{band?.ToString().ToLowerInvariant() ?? "base"}",
+                composition.SourceSnapshotHash, selected), roleId, Ra2VoxelStyleEvidenceKind.ExplicitUserMask);
+        }
+
     }
 
     internal static Ra2VoxelSemanticStyleIntegrationResult Integrate(

@@ -26,7 +26,9 @@ internal sealed record Ra2VoxelColourMaterializationContext(
     Ra2VoxelBaseColourSelection BaseColour,
     Ra2VoxelColourTechniquePolicy Technique,
     Ra2VoxelUnitAdaptationPolicy Adaptation,
-    string BindingSchemaRevision = "ra2-voxel-semantic-colour-binding/1");
+    string BindingSchemaRevision = "ra2-voxel-semantic-colour-binding/1",
+    Ra2VoxelForwardDirectionSelection? Orientation = null,
+    Ra2VoxelNormalField? NormalField = null);
 
 internal enum Ra2VoxelColourMaterializationFailureKind
 {
@@ -34,6 +36,8 @@ internal enum Ra2VoxelColourMaterializationFailureKind
     IdentityMismatch,
     BaseColourInvalid,
     PaletteFamilyUnavailable,
+    FormZoneProjectionFailed,
+    BoundaryProjectionFailed,
     NormalizedPlanInvalid,
     SemanticBindingInvalid,
     ColourizationFailed,
@@ -48,7 +52,10 @@ internal sealed record Ra2VoxelColourMaterializationCandidate(
     Ra2VoxelColourQualityReport Quality,
     string BundleHash,
     bool IsContrast,
-    Ra2VoxelPaletteContrastFacts? ContrastFacts);
+    Ra2VoxelPaletteContrastFacts? ContrastFacts,
+    Ra2VoxelGameScaleReviewFacts? GameScale = null,
+    Ra2VoxelNormalContextState NormalContext = Ra2VoxelNormalContextState.NotAvailable,
+    Ra2VoxelVplCompatibilityState VplCompatibility = Ra2VoxelVplCompatibilityState.NotEvaluated);
 
 internal sealed record Ra2VoxelColourMaterializationResult(
     Ra2VoxelColourMaterializationFailureKind FailureKind,
@@ -57,7 +64,8 @@ internal sealed record Ra2VoxelColourMaterializationResult(
     Ra2VoxelColourFamilySelection? FamilySelection,
     Ra2VoxelSemanticStyleIntegrationResult? SemanticIntegration,
     Ra2VoxelColourMaterializationCandidate? Ordinary,
-    Ra2VoxelColourMaterializationCandidate? Contrast)
+    Ra2VoxelColourMaterializationCandidate? Contrast,
+    Ra2VoxelMaterialFamilySelection? MaterialFamilies = null)
 {
     internal bool IsSuccess => FailureKind == Ra2VoxelColourMaterializationFailureKind.None &&
                                Ordinary is { Quality.State: not Ra2VoxelColourAdmissionState.Blocked };
@@ -65,7 +73,7 @@ internal sealed record Ra2VoxelColourMaterializationResult(
 
 internal static class Ra2VoxelSemanticColourMaterializer
 {
-    internal const string NormalizerRevision = "ra2-voxel-style-normalizer/3";
+    internal const string NormalizerRevision = "ra2-voxel-style-normalizer/4";
 
     internal static Ra2VoxelColourMaterializationResult Materialize(
         Ra2VoxelColourMaterializationContext context,
@@ -92,6 +100,40 @@ internal static class Ra2VoxelSemanticColourMaterializer
             if (!normalized.IsSuccess || normalized.Plan is null)
                 return Failure(Ra2VoxelColourMaterializationFailureKind.NormalizedPlanInvalid, normalized.Message);
 
+            Ra2VoxelForwardDirectionSelectionResult orientationResult = context.Orientation is null
+                ? Ra2VoxelForwardDirectionSelection.Create(
+                    context.Source, context.Composition.CompositionHash, Ra2VoxelForwardDirection.Unknown)
+                : new(Ra2VoxelForwardDirectionFailureKind.None, string.Empty, context.Orientation);
+            if (!orientationResult.IsSuccess || orientationResult.Selection is null)
+                return Failure(Ra2VoxelColourMaterializationFailureKind.FormZoneProjectionFailed,
+                    orientationResult.Message, normalized.Plan, familyResult.Selection);
+            Ra2VoxelFormZoneProjectionResult formZoneResult = Ra2VoxelFormZoneProjector.Project(
+                context.Source,
+                context.Composition.CompositionHash,
+                orientationResult.Selection,
+                context.Adaptation,
+                cancellationToken);
+            if (!formZoneResult.IsSuccess || formZoneResult.Projection is null)
+                return Failure(Ra2VoxelColourMaterializationFailureKind.FormZoneProjectionFailed,
+                    formZoneResult.Message, normalized.Plan, familyResult.Selection);
+            Ra2VoxelMaterialFamilySelection materialFamilies = Ra2VoxelMaterialFamilySelector.Select(
+                context.Source.Palette, normalized.Plan, context.BindingPlan);
+            Ra2VoxelFeatureScaleProjection featureScale = Ra2VoxelFeatureScaleProjector.Project(
+                context.Source, context.Composition, formZoneResult.Projection);
+            Ra2VoxelBoundaryIntentProjection boundaryIntents;
+            try
+            {
+                boundaryIntents = Ra2VoxelBoundaryIntentProjector.Project(
+                    context.Source, context.Composition, formZoneResult.Projection, context.Technique,
+                    featureScale);
+            }
+            catch (ArgumentException)
+            {
+                return Failure(Ra2VoxelColourMaterializationFailureKind.BoundaryProjectionFailed,
+                    "Boundary intent projection inputs are inconsistent.", normalized.Plan,
+                    familyResult.Selection, materialFamilies: materialFamilies);
+            }
+
             Ra2VoxelSemanticStyleIntegrationResult integration = Ra2VoxelSemanticStyleIntegrator.Integrate(
                 normalized.Plan,
                 context.Composition,
@@ -99,8 +141,12 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 context.BindingPlan,
                 context.RawPlan.PlanHash,
                 context.Source,
-                context.Technique);
-            string ordinaryBundleHash = ComputeBundleHash(context, integration.Plan.PlanHash, contrast: false);
+                context.Technique,
+                formZoneResult.Projection,
+                featureScale,
+                boundaryIntents,
+                materialFamilies);
+            string ordinaryBundleHash = ComputeBundleHash(context, integration, contrast: false);
             Ra2VoxelColourizationResult ordinaryColourization = Ra2VoxelColourizer.Colourize(
                 context.Source,
                 integration.Plan,
@@ -112,6 +158,11 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 return Failure(Ra2VoxelColourMaterializationFailureKind.ColourizationFailed, ordinaryColourization.Message,
                     normalized.Plan, familyResult.Selection, integration);
 
+            Ra2VoxelGameScaleReviewFacts ordinaryGameScale = Ra2VoxelGameScaleReviewProjector.Project(
+                context.Source, ordinaryColourization.Snapshot!, featureScale);
+            Ra2VoxelNormalContextState normalContext = Ra2VoxelGameScaleReviewProjector.NormalContext(
+                context.Source, context.NormalField);
+            const Ra2VoxelVplCompatibilityState vplCompatibility = Ra2VoxelVplCompatibilityState.NotEvaluated;
             Ra2VoxelColourQualityReport ordinaryQuality = Ra2VoxelColourQualityEvaluator.Evaluate(
                 context.Source,
                 integration.Plan,
@@ -127,14 +178,24 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 context.Confirmation,
                 context.ColourSkill,
                 integration.BoundaryProjection,
-                ordinaryBundleHash);
+                ordinaryBundleHash,
+                integration.FormZones,
+                integration.FeatureScale,
+                integration.BoundaryIntents,
+                integration.MaterialFamilies,
+                ordinaryGameScale,
+                normalContext,
+                vplCompatibility);
             Ra2VoxelColourMaterializationCandidate ordinary = new(
                 integration.Plan,
                 ordinaryColourization,
                 ordinaryQuality,
                 ordinaryBundleHash,
                 IsContrast: false,
-                ContrastFacts: null);
+                ContrastFacts: null,
+                GameScale: ordinaryGameScale,
+                NormalContext: normalContext,
+                VplCompatibility: vplCompatibility);
             if (ordinaryQuality.State == Ra2VoxelColourAdmissionState.Blocked)
                 return Failure(Ra2VoxelColourMaterializationFailureKind.QualityBlocked,
                     "The ordinary colour candidate failed a hard quality gate.", normalized.Plan,
@@ -166,7 +227,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
                         contrast: true);
                     if (contrastFamily.IsSuccess && contrastFamily.Selection is not null)
                     {
-                        string contrastBundleHash = ComputeBundleHash(context, contrast.Plan.PlanHash, contrast: true);
+                        string contrastBundleHash = ComputeBundleHash(context, integration with { Plan = contrast.Plan }, contrast: true);
                         Ra2VoxelColourizationResult contrastColourization = Ra2VoxelColourizer.Colourize(
                             context.Source,
                             contrast.Plan,
@@ -176,6 +237,8 @@ internal static class Ra2VoxelSemanticColourMaterializer
                             cancellationToken);
                         if (contrastColourization.IsSuccess)
                         {
+                            Ra2VoxelGameScaleReviewFacts contrastGameScale = Ra2VoxelGameScaleReviewProjector.Project(
+                                context.Source, contrastColourization.Snapshot!, featureScale);
                             Ra2VoxelColourQualityReport contrastQuality = Ra2VoxelColourQualityEvaluator.Evaluate(
                                 context.Source,
                                 contrast.Plan,
@@ -191,14 +254,24 @@ internal static class Ra2VoxelSemanticColourMaterializer
                                 context.Confirmation,
                                 context.ColourSkill,
                                 integration.BoundaryProjection,
-                                contrastBundleHash);
+                                contrastBundleHash,
+                                integration.FormZones,
+                                integration.FeatureScale,
+                                integration.BoundaryIntents,
+                                integration.MaterialFamilies,
+                                contrastGameScale,
+                                normalContext,
+                                vplCompatibility);
                             contrastCandidate = new(
                                 contrast.Plan,
                                 contrastColourization,
                                 contrastQuality,
                                 contrastBundleHash,
                                 IsContrast: true,
-                                contrast.Facts);
+                                ContrastFacts: contrast.Facts,
+                                GameScale: contrastGameScale,
+                                NormalContext: normalContext,
+                                VplCompatibility: vplCompatibility);
                         }
                     }
                 }
@@ -215,7 +288,8 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 familyResult.Selection,
                 integration,
                 ordinary,
-                contrastCandidate);
+                contrastCandidate,
+                materialFamilies);
         }
         catch (OperationCanceledException)
         {
@@ -261,6 +335,12 @@ internal static class Ra2VoxelSemanticColourMaterializer
             !string.Equals(context.BindingSchemaRevision, "ra2-voxel-semantic-colour-binding/1", StringComparison.Ordinal))
         {
             return "Technique, adaptation, metric, quality, or binding-schema policy identity is invalid.";
+        }
+        if (context.Orientation is not null &&
+            (!string.Equals(context.Orientation.SourceSnapshotHash, context.Source.CanonicalHash, StringComparison.Ordinal) ||
+             !string.Equals(context.Orientation.CompositionHash, context.Composition.CompositionHash, StringComparison.Ordinal)))
+        {
+            return "The human forward-direction selection is stale for the current model or semantics.";
         }
         return null;
     }
@@ -324,6 +404,16 @@ internal static class Ra2VoxelSemanticColourMaterializer
                 roles.Add(new(role.Id, role.Category, role.RequestedExactPaletteIndex, role.RequestedColour, role.SourceScopeIds));
             }
         }
+        AddDerivedBodyRole("body.highlight.v3", Ra2VoxelStyleRoleCategory.BodyLight,
+            Ra2VoxelBodyColourRole.BodyHighlight, bodyLight.SourceScopeIds);
+        AddDerivedBodyRole("body.upper.v3", Ra2VoxelStyleRoleCategory.BodyLight,
+            Ra2VoxelBodyColourRole.BodyUpper, bodyLight.SourceScopeIds);
+        AddDerivedBodyRole("body.lower.v3", Ra2VoxelStyleRoleCategory.BodyMid,
+            Ra2VoxelBodyColourRole.BodyLower, bodyMid.SourceScopeIds);
+        AddDerivedBodyRole("body.shadow.v3", Ra2VoxelStyleRoleCategory.BodyDark,
+            Ra2VoxelBodyColourRole.BodyShadow, bodyDark.SourceScopeIds);
+        AddDerivedBodyRole("body.recess.v3", Ra2VoxelStyleRoleCategory.BodyDark,
+            Ra2VoxelBodyColourRole.BodyRecess, bodyDark.SourceScopeIds);
 
         List<Ra2VoxelStyleRuleDefinition> rules =
         [
@@ -358,6 +448,18 @@ internal static class Ra2VoxelSemanticColourMaterializer
             context.Source.Palette,
             scopes);
 
+        void AddDerivedBodyRole(
+            string id,
+            Ra2VoxelStyleRoleCategory category,
+            Ra2VoxelBodyColourRole familyRole,
+            IReadOnlyList<string> sourceScopeIds)
+        {
+            if (roles.Any(value => string.Equals(value.Id, id, StringComparison.Ordinal)))
+                throw new InvalidOperationException("A provider role conflicts with a reserved Rev.7 body role.");
+            byte index = family[familyRole].PaletteIndex;
+            roles.Add(new(id, category, null, context.Source.Palette[index], sourceScopeIds));
+        }
+
         Ra2CompiledVoxelStyleRole FindGeometryRole(
             Ra2VoxelStyleRegionKind region,
             Ra2VoxelStyleRoleCategory expectedCategory)
@@ -384,10 +486,10 @@ internal static class Ra2VoxelSemanticColourMaterializer
 
     private static string ComputeBundleHash(
         Ra2VoxelColourMaterializationContext context,
-        string materializedPlanHash,
+        Ra2VoxelSemanticStyleIntegrationResult integration,
         bool contrast) => Ra2VoxelColourContractIdentity.ComputeHash(writer =>
     {
-        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-materialization-bundle/2");
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, "ra2-voxel-colour-materialization-bundle/3");
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.RawPlan.PlanHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.BindingPlan.BindingPlanHash);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, context.Source.Palette.ProfileHash);
@@ -407,7 +509,11 @@ internal static class Ra2VoxelSemanticColourMaterializer
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.LuminanceMetricId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourTechniquePolicy.ColourFamilyMetricId);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, Ra2VoxelColourQualityEvaluator.QualityPolicyHash);
-        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, materializedPlanHash);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, integration.Plan.PlanHash);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, integration.FormZones?.ProjectionHash ?? string.Empty);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, integration.FeatureScale?.ProjectionHash ?? string.Empty);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, integration.BoundaryIntents?.ProjectionHash ?? string.Empty);
+        Ra2VoxelSceneSnapshot.WriteCanonicalString(writer, integration.MaterialFamilies?.SelectionHash ?? string.Empty);
         Ra2VoxelSceneSnapshot.WriteCanonicalString(writer,
             contrast ? Ra2VoxelPaletteContrastOptimizer.PolicyAwareRevision : string.Empty);
     });
@@ -425,6 +531,7 @@ internal static class Ra2VoxelSemanticColourMaterializer
         Ra2CompiledVoxelStylePlan? normalized = null,
         Ra2VoxelColourFamilySelection? family = null,
         Ra2VoxelSemanticStyleIntegrationResult? integration = null,
-        Ra2VoxelColourMaterializationCandidate? ordinary = null)
-        => new(kind, message, normalized, family, integration, ordinary, null);
+        Ra2VoxelColourMaterializationCandidate? ordinary = null,
+        Ra2VoxelMaterialFamilySelection? materialFamilies = null)
+        => new(kind, message, normalized, family, integration, ordinary, null, materialFamilies);
 }

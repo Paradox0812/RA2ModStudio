@@ -20,6 +20,13 @@ using Ra2VoxelSemanticEffectiveAssignment = Ra2Application::RA2IniEditor.Applica
 using Ra2VoxelSemanticMaterialRole = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaterialRole;
 using Ra2VoxelSemanticPartRole = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticPartRole;
 using Ra2VoxelSemanticMaskComposition = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticMaskComposition;
+using Ra2VoxelFormZone = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFormZone;
+using Ra2VoxelFormZoneProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFormZoneProjection;
+using Ra2VoxelBoundaryIntent = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBoundaryIntent;
+using Ra2VoxelBoundaryIntentProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelBoundaryIntentProjection;
+using Ra2VoxelFeatureScale = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFeatureScale;
+using Ra2VoxelFeatureScaleProjection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelFeatureScaleProjection;
+using Ra2VoxelColourQualityReport = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourQualityReport;
 
 namespace RA2IniEditor.IDE.AssetAuthoring;
 
@@ -29,7 +36,10 @@ internal enum Ra2VoxelViewportColourMode
     GeometryRegion,
     Difference,
     SemanticStructure,
-    SemanticMask
+    SemanticMask,
+    FormZone,
+    BoundaryIntent,
+    RiskOverlay
 }
 
 internal enum Ra2VoxelSemanticReviewDimension
@@ -188,6 +198,12 @@ internal static class Ra2VoxelViewportSceneBuilder
         IReadOnlyList<Ra2VoxelSemanticEffectiveAssignment>? semanticAssignments = null,
         Ra2VoxelSemanticMaskComposition? semanticComposition = null,
         Ra2VoxelSemanticReviewDimension semanticReviewDimension = Ra2VoxelSemanticReviewDimension.Material,
+        Ra2VoxelFormZoneProjection? formZones = null,
+        Ra2VoxelBoundaryIntentProjection? boundaryIntents = null,
+        Ra2VoxelFeatureScaleProjection? featureScale = null,
+        Ra2VoxelSceneSnapshot? riskCandidate = null,
+        Ra2VoxelSemanticMaskComposition? riskComposition = null,
+        Ra2VoxelColourQualityReport? quality = null,
         int maximumFaceCount = DefaultMaximumFaceCount,
         CancellationToken cancellationToken = default)
     {
@@ -219,6 +235,21 @@ internal static class Ra2VoxelViewportSceneBuilder
         {
             return Failure(Ra2VoxelViewportSceneFailureKind.InvalidRegionMask, "语义掩码与当前模型不匹配。");
         }
+        if (colourMode == Ra2VoxelViewportColourMode.FormZone &&
+            (formZones is null || formZones.CellCount != snapshot.OccupancyCount ||
+             !string.Equals(formZones.SourceSnapshotHash, snapshot.CanonicalHash, StringComparison.Ordinal)))
+            return Failure(Ra2VoxelViewportSceneFailureKind.InvalidRegionMask, "形体区投影与当前模型不匹配。");
+        if (colourMode == Ra2VoxelViewportColourMode.BoundaryIntent &&
+            (boundaryIntents is null || boundaryIntents.CellCount != snapshot.OccupancyCount ||
+             !string.Equals(boundaryIntents.SourceSnapshotHash, snapshot.CanonicalHash, StringComparison.Ordinal)))
+            return Failure(Ra2VoxelViewportSceneFailureKind.InvalidRegionMask, "边界意图投影与当前模型不匹配。");
+        if (colourMode == Ra2VoxelViewportColourMode.RiskOverlay &&
+            (featureScale is null || riskCandidate is null || riskComposition is null ||
+             featureScale.CellCount != snapshot.OccupancyCount || riskComposition.CellCount != snapshot.OccupancyCount ||
+             !string.Equals(featureScale.SourceSnapshotHash, snapshot.CanonicalHash, StringComparison.Ordinal) ||
+             !string.Equals(riskComposition.SourceSnapshotHash, snapshot.CanonicalHash, StringComparison.Ordinal) ||
+             !HasSameGrid(snapshot, riskCandidate)))
+            return Failure(Ra2VoxelViewportSceneFailureKind.InvalidRegionMask, "风险投影与当前 generation 不匹配。");
 
         try
         {
@@ -242,7 +273,8 @@ internal static class Ra2VoxelViewportSceneBuilder
                 ? snapshot.Cells.Select((cell, index) => (cell.Coordinate, index))
                     .ToDictionary(item => item.Coordinate, item => item.index)
                 : null;
-            if (colourMode == Ra2VoxelViewportColourMode.SemanticMask)
+            if (colourMode is Ra2VoxelViewportColourMode.SemanticMask or Ra2VoxelViewportColourMode.FormZone or
+                Ra2VoxelViewportColourMode.BoundaryIntent or Ra2VoxelViewportColourMode.RiskOverlay)
                 cellIndices = snapshot.Cells.Select((cell, index) => (cell.Coordinate, index))
                     .ToDictionary(item => item.Coordinate, item => item.index);
             Ra2VoxelSemanticEffectiveAssignment?[]? semanticByCell = colourMode == Ra2VoxelViewportColourMode.SemanticMask
@@ -256,6 +288,9 @@ internal static class Ra2VoxelViewportSceneBuilder
             Dictionary<Ra2VoxelCoordinate, int>? comparisonIndices = colourMode == Ra2VoxelViewportColourMode.Difference
                 ? comparisonSnapshot!.Cells.Select((cell, index) => (cell.Coordinate, index))
                     .ToDictionary(value => value.Coordinate, value => value.index)
+                : null;
+            Ra2Rgba32[]? riskColours = colourMode == Ra2VoxelViewportColourMode.RiskOverlay
+                ? BuildRiskColours(snapshot, riskCandidate!, featureScale!, riskComposition!, quality)
                 : null;
 
             Dictionary<uint, MeshBatch> batches = [];
@@ -278,6 +313,12 @@ internal static class Ra2VoxelViewportSceneBuilder
                         semanticPartition!.DispositionAt(face.Coordinate)),
                     Ra2VoxelViewportColourMode.SemanticMask => SemanticMaskColour(
                         semanticByCell![cellIndices![face.Coordinate]], semanticReviewDimension),
+                    Ra2VoxelViewportColourMode.FormZone => FormZoneColour(
+                        formZones![cellIndices![face.Coordinate]]),
+                    Ra2VoxelViewportColourMode.BoundaryIntent => BoundaryIntentColour(
+                        boundaryIntents!.IntentAt(cellIndices![face.Coordinate]),
+                        boundaryIntents.OwnerAt(cellIndices[face.Coordinate]) >= 0),
+                    Ra2VoxelViewportColourMode.RiskOverlay => riskColours![cellIndices![face.Coordinate]],
                     _ => throw new ArgumentOutOfRangeException(nameof(colourMode))
                 };
                 uint key = ((uint)rgba.Alpha << 24) | ((uint)rgba.Red << 16) | ((uint)rgba.Green << 8) | rgba.Blue;
@@ -353,6 +394,94 @@ internal static class Ra2VoxelViewportSceneBuilder
         if (inCandidate && !inComparison) return new(64, 170, 92);
         if (!inCandidate && inComparison) return new(214, 72, 72);
         return new(128, 135, 146, 52);
+    }
+
+    private static Ra2Rgba32 FormZoneColour(Ra2VoxelFormZone zone)
+    {
+        if ((zone & Ra2VoxelFormZone.FrontEnd) != 0) return new(238, 119, 51);
+        if ((zone & Ra2VoxelFormZone.RearEnd) != 0) return new(170, 51, 119);
+        if ((zone & Ra2VoxelFormZone.LongitudinalEndUnknown) != 0) return new(204, 187, 68);
+        if ((zone & Ra2VoxelFormZone.UpperPlane) != 0) return new(102, 194, 165);
+        if ((zone & Ra2VoxelFormZone.UpperBevel) != 0) return new(73, 151, 208);
+        if ((zone & Ra2VoxelFormZone.SideShoulder) != 0) return new(91, 126, 184);
+        if ((zone & Ra2VoxelFormZone.SideField) != 0) return new(68, 119, 170);
+        if ((zone & Ra2VoxelFormZone.LowerSkirt) != 0) return new(101, 80, 146);
+        if ((zone & Ra2VoxelFormZone.Recess) != 0) return new(82, 68, 91);
+        if ((zone & Ra2VoxelFormZone.ContactShadow) != 0) return new(55, 55, 62);
+        if ((zone & Ra2VoxelFormZone.SilhouetteRidge) != 0) return new(238, 213, 99);
+        return new(138, 143, 152);
+    }
+
+    private static Ra2Rgba32 BoundaryIntentColour(Ra2VoxelBoundaryIntent intent, bool owned)
+    {
+        if (!owned) return new(112, 118, 128, 92);
+        if ((intent & Ra2VoxelBoundaryIntent.DeepOpening) != 0) return new(36, 28, 43);
+        if ((intent & Ra2VoxelBoundaryIntent.ContactShadow) != 0) return new(76, 62, 48);
+        if ((intent & Ra2VoxelBoundaryIntent.MaterialInterface) != 0) return new(45, 168, 210);
+        if ((intent & Ra2VoxelBoundaryIntent.StructuralSeam) != 0) return new(170, 51, 119);
+        if ((intent & Ra2VoxelBoundaryIntent.RaisedBevel) != 0) return new(238, 187, 68);
+        if ((intent & Ra2VoxelBoundaryIntent.Silhouette) != 0) return new(246, 212, 75);
+        if ((intent & Ra2VoxelBoundaryIntent.PanelLine) != 0) return new(91, 158, 82);
+        if ((intent & Ra2VoxelBoundaryIntent.DecorativeMark) != 0) return new(224, 104, 62);
+        return new(112, 118, 128, 92);
+    }
+
+    private static Ra2Rgba32[] BuildRiskColours(
+        Ra2VoxelSceneSnapshot source,
+        Ra2VoxelSceneSnapshot candidate,
+        Ra2VoxelFeatureScaleProjection featureScale,
+        Ra2VoxelSemanticMaskComposition composition,
+        Ra2VoxelColourQualityReport? quality)
+    {
+        Dictionary<Ra2VoxelCoordinate, int> byCoordinate = source.Cells
+            .Select((cell, index) => (cell.Coordinate, index))
+            .ToDictionary(value => value.Coordinate, value => value.index);
+        Ra2Rgba32[] colours = Enumerable.Repeat(new Ra2Rgba32(112, 118, 128, 72), source.OccupancyCount).ToArray();
+        bool accentExceeded = quality?.Warnings.Any(value => value.Code is "AccentVisibleShare" or
+            "AccentComponentShare" or "AccentMinimumRun" or "AccentContrastPeak") == true;
+        for (int index = 0; index < source.OccupancyCount; index++)
+        {
+            if (featureScale[index] == Ra2VoxelFeatureScale.SubPixelRisk)
+            {
+                colours[index] = new(205, 65, 185);
+                continue;
+            }
+            Ra2VoxelSemanticMaterialRole material = composition[index].MaterialRole;
+            if (accentExceeded && material is Ra2VoxelSemanticMaterialRole.Light or Ra2VoxelSemanticMaterialRole.Accent)
+            {
+                colours[index] = new(245, 133, 35);
+                continue;
+            }
+            int samePaletteNeighbours = 0;
+            int brighterNeighbours = 0;
+            int luminance = Luminance(candidate.Palette[candidate.Cells[index].PaletteIndex]);
+            foreach (Ra2VoxelCoordinate neighbour in Neighbours(source.Cells[index].Coordinate))
+            {
+                if (!byCoordinate.TryGetValue(neighbour, out int neighbourIndex)) continue;
+                if (candidate.Cells[neighbourIndex].PaletteIndex == candidate.Cells[index].PaletteIndex)
+                    samePaletteNeighbours++;
+                if (Luminance(candidate.Palette[candidate.Cells[neighbourIndex].PaletteIndex]) - luminance >= 48)
+                    brighterNeighbours++;
+            }
+            if (brighterNeighbours >= 3)
+                colours[index] = new(214, 72, 72);
+            else if (samePaletteNeighbours == 0)
+                colours[index] = new(246, 212, 75);
+        }
+        return colours;
+    }
+
+    private static int Luminance(Ra2Rgba32 colour) =>
+        ((299 * colour.Red) + (587 * colour.Green) + (114 * colour.Blue)) / 1000;
+
+    private static IEnumerable<Ra2VoxelCoordinate> Neighbours(Ra2VoxelCoordinate c)
+    {
+        yield return new(c.X - 1, c.Y, c.Z);
+        yield return new(c.X + 1, c.Y, c.Z);
+        yield return new(c.X, c.Y - 1, c.Z);
+        yield return new(c.X, c.Y + 1, c.Z);
+        yield return new(c.X, c.Y, c.Z - 1);
+        yield return new(c.X, c.Y, c.Z + 1);
     }
 
     private static Ra2Rgba32 SemanticStructureColour(Ra2VoxelSymmetryDisposition disposition) => disposition switch

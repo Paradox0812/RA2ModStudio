@@ -37,6 +37,7 @@ using Ra2VoxelBaseColourSelection = Ra2Application::RA2IniEditor.Application.Aut
 using Ra2VoxelColourMaterializationContext = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourMaterializationContext;
 using Ra2VoxelColourMaterializationResult = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourMaterializationResult;
 using Ra2VoxelColourTechniquePolicy = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelColourTechniquePolicy;
+using Ra2VoxelForwardDirectionSelection = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelForwardDirectionSelection;
 using Ra2VoxelConfirmedUnitClass = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelConfirmedUnitClass;
 using Ra2VoxelSemanticColourMaterializer = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticColourMaterializer;
 using Ra2VoxelSemanticColourRequirements = Ra2Application::RA2IniEditor.Application.Automation.Experimental.VoxelAuthoring.Ra2VoxelSemanticColourRequirements;
@@ -568,6 +569,7 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         Ra2VoxelConfirmedUnitClass confirmation,
         Ra2VoxelBaseColourSelection baseColour,
         Ra2VoxelColourTechniquePolicy technique,
+        Ra2VoxelForwardDirectionSelection orientation,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -576,6 +578,7 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
         ArgumentNullException.ThrowIfNull(confirmation);
         ArgumentNullException.ThrowIfNull(baseColour);
         ArgumentNullException.ThrowIfNull(technique);
+        ArgumentNullException.ThrowIfNull(orientation);
         if (!source.IsSuccess || source.Snapshot is null)
             return PreviewFailure(Ra2VoxelStylePreviewFailureKind.InvalidSource, "请先载入一个有效的体素模型。");
 
@@ -638,7 +641,8 @@ internal sealed class Ra2VoxelStylePreviewCoordinator
                     new Ra2VoxelSkillIdentity(route.ColourSkill.Name, route.ColourSkill.Version, route.ColourSkill.ContentHash),
                     baseColour,
                     technique,
-                    route.Adaptation),
+                    route.Adaptation,
+                    Orientation: orientation),
                 cancellationToken);
             if (!materialization.IsSuccess || materialization.Ordinary is null ||
                 materialization.SemanticIntegration is null)

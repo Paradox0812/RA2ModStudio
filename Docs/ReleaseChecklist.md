@@ -234,3 +234,17 @@ Use this checklist before publishing or handing off an IDE-only source package.
 - [ ] On a real ground vehicle, confirm long side black strips are gone and front/rear direction remains recognizable.
 - [ ] Compare at least three techniques on the same base colour and confirm visibly different, coherent results.
 - [ ] Verify the global Part/Material classification preview, legend, 3D return and 100%/125% DPI layout manually.
+
+## ASSET-VOX-4E Rev.7 form-zone and game-scale preview
+
+- [x] Human ForwardDirection is snapshot/composition-bound; Unknown does not guess front/rear.
+- [x] FormZone, BoundaryIntent, material-local families and Macro/Meso/Micro/SubPixelRisk are derived and hash-bound.
+- [x] Five revision-3 techniques have distinct typed spatial/boundary/detail policies.
+- [x] Fixed eight-view game-scale facts and explicit NormalContext/VplNotEvaluated quality facts are present.
+- [x] Section-16 AutomationIds are unique; no Shell, persistence, Provider protocol or writer changes.
+- [x] Focused Application 65/65 and IDE/Skill/UI 112/112 pass.
+- [x] Rev.7-G gate: WPF test-owned Application lifecycle fixed without product theme/Shell changes；restore passed；
+  build 0 warning/error；Application 368/368；AssetHost 50/50；IDE 2922/2922.
+- [x] IdeOnly clean package created with 1470 entries；forbidden directory/archive scan found 0 violations.
+- [ ] Manually verify one ground, one air and one large-surface model, game-scale readability, five-technique distinction,
+  diagnostic entries, no Slice switch, and 100%/125% DPI. User owns this acceptance; do not use computer control.

@@ -24,10 +24,13 @@ public sealed class Ra2VoxelColourTemplateContractTests
         });
 
         Ra2VoxelColourTechniquePolicy copy = new(
-            "balanced-rts-volume", "2", "不同显示名", "不同说明不属于运行时数值身份。",
+            "balanced-rts-volume", "3", "不同显示名", "不同说明不属于运行时数值身份。",
             18, -8, -28, -38, Ra2VoxelColourEdgePolicy.Subtle, 24,
             Ra2VoxelMaterialSeparationPolicy.Balanced, 8, 18,
-            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent);
+            Ra2VoxelAccentPolicy.PreserveMask, Ra2VoxelQuantizationFallback.WarnAndPreserveIntent,
+            Ra2VoxelTechniqueSpatialProfile.BalancedVolume, 5,
+            Ra2VoxelBoundaryIntent.RaisedBevel | Ra2VoxelBoundaryIntent.StructuralSeam |
+                Ra2VoxelBoundaryIntent.ContactShadow, true, true, 0.030d, 0.015d, 88, 2);
         Assert.Equal(Ra2VoxelColourTechniqueCatalog.Default.PolicyHash, copy.PolicyHash);
     }
 
@@ -42,10 +45,14 @@ public sealed class Ra2VoxelColourTemplateContractTests
             value.EdgePolicy,
             value.EdgeLuminanceOffset,
             value.MaterialSeparationPolicy,
-            value.AccentPolicy)).ToArray();
+            value.AccentPolicy,
+            value.SpatialProfile,
+            value.PreferredBodyBandCount,
+            value.AllowedBoundaryIntents,
+            value.MaximumAccentVisibleShare)).ToArray();
 
         Assert.Equal(5, signatures.Distinct(StringComparer.Ordinal).Count());
-        Assert.All(Ra2VoxelColourTechniqueCatalog.All, value => Assert.Equal("2", value.Revision));
+        Assert.All(Ra2VoxelColourTechniqueCatalog.All, value => Assert.Equal("3", value.Revision));
         Assert.All(Ra2VoxelUnitAdaptationCatalog.All, value => Assert.Equal("2", value.Revision));
     }
 

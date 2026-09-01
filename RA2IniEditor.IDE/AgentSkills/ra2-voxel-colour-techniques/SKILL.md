@@ -2,7 +2,7 @@
 name: ra2-voxel-colour-techniques
 description: Explain, review, or plan evidence-bound RA2/YR VXL and MagicaVoxel VOX colouring techniques for ground, air, and large surface units. Use for voxel colouring, shading, palette ramps, remap placement, material separation, or colour-quality review.
 metadata:
-  version: "2"
+  version: "3"
   ra2-domains: voxel-colour
   ra2-modes: chat
 ---
@@ -55,13 +55,17 @@ metadata:
 
 ## Directional surfaces and semantic boundaries
 
-- Treat the longest horizontal extent as the longitudinal axis when the Host supplies no stronger orientation fact. Keep
-  lateral sides distinct from front/rear end planes: broad lateral painted surfaces stay close to BodyBase, while readable
-  end planes may use BodyMid to expose facing direction.
+- Use only the Host's human `ForwardDirection` fact for front/rear. If it is unconfirmed, keep longitudinal ends explicitly
+  unknown and require review; never infer front from length, filename, weapon direction, or silhouette.
+- Reason in form zones before palette bands: upper plane, upper bevel, side shoulder, side field, lower skirt, confirmed
+  front/rear ends, recess, contact shadow and silhouette ridge. A zone describes geometric purpose, not a colour.
 - A cell that is both lateral-side and underside must not become an underside-black strip. Underside treatment is reserved
   for genuinely downward structure that is not also a visible side plane; top-facing treatment remains dominant.
-- Emphasize a one-cell boundary only where adjacent visible cells change effective PartRole or eligible MaterialRole.
-  Ignore boundaries caused solely by spatial RegionId/partition changes, or large planes will become tiled.
+- Distinguish boundary intent: raised bevel, structural seam, deep opening, contact shadow, material interface, panel line,
+  silhouette and decorative mark are not interchangeable. Emphasize only the owning painted-side cell; never outline every
+  region or every exposed voxel.
+- Treat Macro features as primary mass, Meso as structural support, Micro as optional recognition detail and SubPixelRisk as
+  review-only. Compress unsupported micro detail rather than turning it into black spots or bright glitter.
 - The Host owns boundary extraction, ownership and mask order. Boundary accents are applied only on the PaintedSurface side;
   glass, rubber, bare metal, lights, dark openings, accents and approved remap remain exact and must never be overwritten.
 - Part boundaries are eligible for all techniques. Material boundaries follow the selected technique's local separation
@@ -69,28 +73,18 @@ metadata:
 
 ## Ground-unit adaptation
 
-- Establish the body mass first: upper armour, side armour, lower hull, undercarriage, and recesses should form a readable stepped volume at game scale.
-- Use coherent painted ramps for hull and turret. Ground samples commonly use the RA2 `unittem.pal` olive ramp around 70-77 or blue-grey ramp around 88-95, with neutral greys around 48-62 for tracks, wheels, openings, and mechanical parts. These ranges are evidence examples, not mandatory themes.
-- Top-plane lightening should follow actual armour planes and semantic masks. Preserve dark roof equipment, vents, launchers, deck plates, or glass rather than flattening them into the body highlight.
-- Tracks, tyres, wheel wells, suspension gaps, exhausts, and lower hull require explicit neutral-dark treatment. Keep enough separation that wheels/tracks remain legible without becoming a black outline around the entire vehicle.
-- Turret rings, gun mantlets, barrels, missiles, radar dishes, and AA equipment need local material continuity. Use contrast to expose their attachment and direction, not to recolour each subpart arbitrarily.
-- For small tanks, strengthen top/side/under separation and a few structural breaks. For large tanks, reduce high-frequency contrast and preserve long armour planes.
+- Build upper armour, side field, lower skirt, undercarriage and recesses as a readable mass. Keep tracks/wheels/openings
+  distinct without outlining the hull; preserve turret/barrel continuity and reduce high-frequency contrast on large armour.
 
 ## Air-unit adaptation
 
-- Aircraft are shallow, surface-heavy shapes. Prioritize planform silhouette, wing roots, leading/trailing edges, nose/tail direction, and separation between fuselage, wings, nacelles, and control surfaces.
-- Use broad, quiet top-plane bands. Do not apply a tank-like vertical-side gradient across an entire wing.
-- Treat the underside as a separate readable region. Darker underside is a useful default, but it is not a hard invariant: the studied A10 uses a distinct blue-grey ramp whose aggregate underside is not darker than every top region. Preserve source/palette evidence and require contrast, not a predetermined sign.
-- Canopy/glass, intake, exhaust, engine opening, landing gear, weapon pylons, and lights should use explicit material roles. A canopy must not be synthesized from an arbitrary bright body index.
-- Keep paired wing/nacelle markings and remap masks symmetric when the geometry and user intent are symmetric. Use small high-value accents for recognition; avoid large remap fields that erase airframe form.
-- Review at the intended orthographic/isometric game scale. A rule that looks subtle in a close editor view may disappear completely in flight.
+- Preserve planform, wing roots, confirmed nose/tail direction and broad quiet bands. Treat underside as distinct but not
+  universally darker; canopy/openings/lights need semantic roles, and paired markings remain sparse and symmetric when proven.
 
 ## Large surface or naval adaptation
 
-- Separate deck, hull side, superstructure, openings, weapons, and below-water/underside structure before adding local highlights.
-- Preserve long planar rhythm. Large carrier-like samples benefit from low-frequency value grouping and sparse accents; per-voxel speckle reads as damage or noise.
-- Keep the deck readable against superstructure and aircraft/equipment, but do not assume the deck is the brightest material. Semantic function and active palette evidence outrank geometric “top.”
-- Use remap very sparingly on large hulls; small deliberate identification zones normally survive scale better than full-side remap.
+- Preserve long-plane rhythm and separate supplied deck/hull/superstructure/opening facts before highlights. Use low-frequency
+  grouping and sparse identification zones; top geometry alone does not prove the brightest material.
 
 ## Technique policies
 
@@ -101,6 +95,11 @@ metadata:
 - `compact-unit-clarity`: strengthen a few top, lower, opening, and accent cues for low-voxel-count units; reject decorative noise.
 
 These policies define technique, not hue, faction, theatre, RGB, palette index, or material membership. Select one explicitly; do not infer a template from a unit name or colour word.
+
+The five policies must remain spatially distinct: balanced uses a moderate multi-band volume; strong silhouette prioritizes
+macro silhouette and confirmed end recognition; subtle matte reduces band count and micro contrast; semantic separation
+spends contrast at eligible material interfaces; compact clarity compresses micro detail while retaining a few recognition
+cues. Different labels with the same form-zone, boundary and detail result are a failed differentiation.
 
 In compiled 4E, technique differentiation is a Host guarantee: each policy has a distinct numeric value hierarchy, edge
 coverage/material-boundary policy, or accent policy. A model may return the same structurally valid raw role proposal for
@@ -114,6 +113,10 @@ fields to carry technique parameters.
 - Mark ReviewReady only when hard invariants pass and the ordinary or contrast candidate is readable in multiple views and at intended scale.
 - Report separate facts for invariants, palette legality, semantic coverage, regional value separation, material separation, remap coverage, spatial distribution, symmetry, and small-scale readability. Do not hide them behind one opaque score.
 - Compare top/side/under values within the same material and spatial region. Whole-model average luminance is diagnostic context, not an artistic pass/fail rule.
+- Inspect all eight fixed horizontal views at game scale. Report flat-surface dark spots, isolated colour components, tonal
+  continuity, confirmed-front recognition, accent coverage/component/run/contrast limits and subpixel-risk survival.
+- A missing or stale normal field is `NeedsReview`; never synthesize normals from colour. Without an authoritative VPL
+  profile, report `VplNotEvaluated` and do not claim RA2 runtime-lighting compatibility.
 
 ## DeepSeek response shape
 

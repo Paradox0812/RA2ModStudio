@@ -2,7 +2,7 @@
 name: ra2-large-surface-voxel-colour-techniques
 description: Propose evidence-bound colour roles and semantic bindings for a human-confirmed large RA2/YR naval or surface unit with quiet long-plane shading.
 metadata:
-  version: "2"
+  version: "3"
   ra2-domains: voxel-colour-large-surface
   ra2-modes: chat
 ---
@@ -23,11 +23,14 @@ metadata:
   frequent alternating bands read as noise or damage.
 - Separate the broad painted family from superstructure, weapon mounts, openings and underside/below-water structure using
   supplied semantics. Top-facing geometry is not automatically the brightest material.
-- Keep large planes coherent while using sparse structural breaks to reveal bow/stern direction, deck boundaries and major
+- Keep large planes coherent while using sparse structural breaks to reveal bow/stern direction only when the human
+  ForwardDirection confirms it, plus deck boundaries and major
   height changes. A darker underside is a preference, not a hard substitute for local evidence.
 - Accept the Host's TopPreferred decision for top/underside dual-surface cells; do not create order-dependent rules.
 - Preserve bow/stern directional end cues separately from long hull sides. A visible hull-side cell with an exposed bottom
   face remains body-family colour; do not create a continuous underside stripe along the waterline or lower silhouette.
+- Treat long hull/deck surfaces as Macro, major superstructure transitions as Meso, and isolated fittings as Micro or
+  SubPixelRisk. Do not spend contrast on repeated micro seams that destroy long-plane rhythm.
 
 ## Materials and remap
 
@@ -44,3 +47,5 @@ metadata:
   low-frequency contrast and visual noise at game scale.
 - Report missing deck/hull semantics as a limitation and keep the candidate review-bound rather than claiming completion.
 - Do not claim naval locomotion, waterline behavior, normals, HVA, shadow or GameReady correctness.
+- Require eight-view game-scale continuity facts; missing normals and unavailable authoritative VPL remain explicit review
+  limits rather than inferred runtime-lighting claims.
